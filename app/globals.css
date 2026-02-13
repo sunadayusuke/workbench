@@ -1,36 +1,285 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@import url("https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@100;400;700&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
 
+/* ============================================================
+   Layer 1 — Primitive Scale (OKLCH, achromatic)
+   ============================================================ */
 :root {
-  --color-bg: #0b0b0f;
-  --color-surface: #16161e;
-  --color-surface-hover: #1e1e2a;
-  --color-border: #2a2a3a;
-  --color-text: #e4e4e7;
-  --color-text-muted: #71717a;
-  --color-primary: #6366f1;
-  --color-primary-hover: #818cf8;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --gray-50:  oklch(0.985 0 0);
+  --gray-100: oklch(0.960 0 0);
+  --gray-200: oklch(0.900 0 0);
+  --gray-300: oklch(0.820 0 0);
+  --gray-400: oklch(0.640 0 0);
+  --gray-500: oklch(0.500 0 0);
+  --gray-600: oklch(0.400 0 0);
+  --gray-700: oklch(0.310 0 0);
+  --gray-800: oklch(0.210 0 0);
+  --gray-900: oklch(0.140 0 0);
+  --gray-950: oklch(0.070 0 0);
+}
+
+/* ============================================================
+   Layer 2 — shadcn Semantic Tokens (dark-first)
+   ============================================================ */
+:root {
+  --background:       var(--gray-950);
+  --foreground:       var(--gray-50);
+
+  --card:             var(--gray-900);
+  --card-foreground:  var(--gray-50);
+
+  --popover:          var(--gray-900);
+  --popover-foreground: var(--gray-50);
+
+  --primary:          var(--gray-50);
+  --primary-foreground: var(--gray-950);
+
+  --secondary:        var(--gray-800);
+  --secondary-foreground: var(--gray-50);
+
+  --muted:            var(--gray-800);
+  --muted-foreground: var(--gray-400);
+
+  --accent:           var(--gray-800);
+  --accent-foreground: var(--gray-50);
+
+  --destructive:      oklch(0.55 0.20 27);
+  --destructive-foreground: var(--gray-50);
+
+  --border:           var(--gray-800);
+  --input:            var(--gray-800);
+  --ring:             var(--gray-300);
+
+  --radius: 0.75rem;
+
+  --chart-1: oklch(0.70 0 0);
+  --chart-2: oklch(0.60 0 0);
+  --chart-3: oklch(0.50 0 0);
+  --chart-4: oklch(0.40 0 0);
+  --chart-5: oklch(0.30 0 0);
+
+  --sidebar-background:   var(--gray-950);
+  --sidebar-foreground:   var(--gray-200);
+  --sidebar-primary:      var(--gray-50);
+  --sidebar-primary-foreground: var(--gray-950);
+  --sidebar-accent:       var(--gray-800);
+  --sidebar-accent-foreground: var(--gray-200);
+  --sidebar-border:       var(--gray-800);
+  --sidebar-ring:         var(--gray-300);
+}
+
+/* Light mode (opt-in via .light class) */
+.light {
+  --background:       var(--gray-50);
+  --foreground:       var(--gray-950);
+
+  --card:             var(--gray-50);
+  --card-foreground:  var(--gray-950);
+
+  --popover:          var(--gray-50);
+  --popover-foreground: var(--gray-950);
+
+  --primary:          var(--gray-950);
+  --primary-foreground: var(--gray-50);
+
+  --secondary:        var(--gray-100);
+  --secondary-foreground: var(--gray-950);
+
+  --muted:            var(--gray-100);
+  --muted-foreground: var(--gray-500);
+
+  --accent:           var(--gray-100);
+  --accent-foreground: var(--gray-950);
+
+  --destructive:      oklch(0.55 0.20 27);
+  --destructive-foreground: var(--gray-50);
+
+  --border:           var(--gray-200);
+  --input:            var(--gray-200);
+  --ring:             var(--gray-950);
+
+  --chart-1: oklch(0.30 0 0);
+  --chart-2: oklch(0.40 0 0);
+  --chart-3: oklch(0.50 0 0);
+  --chart-4: oklch(0.60 0 0);
+  --chart-5: oklch(0.70 0 0);
+
+  --sidebar-background:   var(--gray-50);
+  --sidebar-foreground:   var(--gray-700);
+  --sidebar-primary:      var(--gray-950);
+  --sidebar-primary-foreground: var(--gray-50);
+  --sidebar-accent:       var(--gray-100);
+  --sidebar-accent-foreground: var(--gray-700);
+  --sidebar-border:       var(--gray-200);
+  --sidebar-ring:         var(--gray-950);
+}
+
+/* ============================================================
+   Layer 3 — Custom Semantic Tokens, Typography, Legacy Aliases
+   ============================================================ */
+:root {
+  /* ---- Status colors ---- */
+  --success:            oklch(0.60 0.15 145);
+  --success-foreground: var(--gray-50);
+  --warning:            oklch(0.70 0.15 85);
+  --warning-foreground: var(--gray-950);
+  --danger:             oklch(0.55 0.20 27);
+  --danger-foreground:  var(--gray-50);
+  --info:               oklch(0.60 0.15 245);
+  --info-foreground:    var(--gray-50);
+
+  /* ---- Typography ---- */
+  --font-sans: "LINE Seed JP", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "SF Mono", "Fira Code", monospace;
+
+  /* ---- Legacy aliases (existing CSS Modules compatibility) ---- */
+  --color-bg:            var(--background);
+  --color-surface:       var(--card);
+  --color-surface-hover: var(--accent);
+  --color-border:        var(--border);
+  --color-text:          var(--foreground);
+  --color-text-muted:    var(--muted-foreground);
+  --color-primary:       var(--primary);
+  --color-primary-hover: var(--ring);
+  --radius-sm:           calc(var(--radius) - 4px);
 }
 
-html,
-body {
-  height: 100%;
-  font-family: var(--font-sans);
-  background: var(--color-bg);
-  color: var(--color-text);
-  -webkit-font-smoothing: antialiased;
+/* ============================================================
+   Register tokens with Tailwind v4
+   ============================================================ */
+@theme inline {
+  --color-background:       var(--background);
+  --color-foreground:       var(--foreground);
+
+  --color-card:             var(--card);
+  --color-card-foreground:  var(--card-foreground);
+
+  --color-popover:          var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary:          var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary:        var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted:            var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent:           var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive:      var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border:           var(--border);
+  --color-input:            var(--input);
+  --color-ring:             var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar-background:        var(--sidebar-background);
+  --color-sidebar-foreground:        var(--sidebar-foreground);
+  --color-sidebar-primary:           var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent:            var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border:            var(--sidebar-border);
+  --color-sidebar-ring:              var(--sidebar-ring);
+
+  --color-success:          var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning:          var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger:           var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-info:             var(--info);
+  --color-info-foreground:  var(--info-foreground);
+
+  --radius-sm:   calc(var(--radius) - 4px);
+  --radius-md:   var(--radius);
+  --radius-lg:   calc(var(--radius) + 4px);
+  --radius-xl:   calc(var(--radius) + 8px);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* ============================================================
+   Base layer — defaults
+   ============================================================ */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border-color: var(--border);
+  }
+
+  html,
+  body {
+    height: 100%;
+    font-family: var(--font-sans);
+    background: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Interactive elements — cursor & transitions */
+  button,
+  [role="button"],
+  a,
+  select,
+  summary,
+  [type="checkbox"],
+  [type="radio"],
+  [type="submit"],
+  [type="reset"],
+  label[for] {
+    cursor: pointer;
+  }
+
+  textarea,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"],
+  input[type="number"],
+  [contenteditable] {
+    cursor: text;
+  }
+
+  /* Focus-visible ring for keyboard navigation */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Selection highlight */
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  /* Color input swatch — remove default chrome */
+  .color-swatch::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  .color-swatch::-webkit-color-swatch {
+    border: none;
+    border-radius: var(--radius-sm);
+  }
 }

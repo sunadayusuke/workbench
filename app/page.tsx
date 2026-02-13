@@ -7,6 +7,12 @@ const apps = [
     href: "/apps/shader",
     icon: "🌊",
   },
+  {
+    name: "カラー",
+    description: "OKLCHカラースケール＆コントラストチェッカー",
+    href: "/apps/color",
+    icon: "🎨",
+  },
 ];
 
 export default function Home() {

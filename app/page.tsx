@@ -2,16 +2,16 @@ import Link from "next/link";
 
 const apps = [
   {
-    name: "シェーダー",
-    description: "WebGLシェーダーデザインツール",
-    href: "/apps/shader",
-    icon: "🌊",
-  },
-  {
     name: "カラー",
     description: "OKLCHカラースケール＆コントラストチェッカー",
     href: "/apps/color",
     icon: "🎨",
+  },
+  {
+    name: "シェーダー",
+    description: "WebGLシェーダーデザインツール",
+    href: "/apps/shader",
+    icon: "🌊",
   },
 ];
 
@@ -19,7 +19,7 @@ export default function Home() {
   return (
     <div className="min-h-screen px-12 py-10">
       <h1 className="text-[28px] font-bold tracking-tight mb-2">Workbench</h1>
-      <p className="text-[15px] text-muted-foreground mb-9">個人用ツールキット</p>
+      <p className="text-[15px] text-muted-foreground mb-9">デザインツールキット</p>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
         {apps.map((app) => (
           <Link

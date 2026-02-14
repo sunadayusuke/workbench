@@ -22,7 +22,12 @@ export default function Home() {
         <h1 className="text-[28px] font-bold tracking-tight">
           <img src="/images/workbench_logo.svg" alt="Workbench" className="w-[160px]" />
         </h1>
-        <p className="text-[15px] text-muted-foreground">sunaのデザイン作業台</p>
+        <div className="flex items-center gap-8">
+          <p className="text-[15px] text-muted-foreground">sunaのデザイン作業台</p>
+          <a href="https://x.com/YusukeSunada" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-100 transition-opacity">
+            <img src="/images/x_logo.svg" alt="X" className="w-[18px]" />
+          </a>
+        </div>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
         {apps.map((app) => (

@@ -17,15 +17,19 @@ const apps = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen px-12 py-10">
-      <h1 className="text-[28px] font-bold tracking-tight mb-2">Workbench</h1>
-      <p className="text-[15px] text-muted-foreground mb-9">デザインツールキット</p>
+    <div className="min-h-screen px-12 py-12">
+      <div className="flex items-center justify-between gap-3 mb-9">
+        <h1 className="text-[28px] font-bold tracking-tight">
+          <img src="/images/workbench_logo.svg" alt="Workbench" className="w-[160px]" />
+        </h1>
+        <p className="text-[15px] text-muted-foreground">sunaのデザイン作業台</p>
+      </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
         {apps.map((app) => (
           <Link
             key={app.href}
             href={app.href}
-            className="bg-card border border-border rounded-[var(--radius)] p-6 transition-all select-none hover:border-foreground hover:bg-accent active:scale-[0.98]"
+            className="bg-card border border-border rounded-2xl p-6 transition-all select-none hover:border-foreground hover:bg-accent active:scale-[0.98]"
           >
             <div className="text-[28px] mb-3">{app.icon}</div>
             <div className="text-[15px] font-semibold mb-1">{app.name}</div>

@@ -157,7 +157,7 @@
   --color-text-muted:    var(--muted-foreground);
   --color-primary:       var(--primary);
   --color-primary-hover: var(--ring);
-  --radius-sm:           calc(var(--radius) - 4px);
+  --radius1-sm:           calc(var(--radius1) - 4px);
 }
 
 /* ============================================================
@@ -216,10 +216,10 @@
   --color-info:             var(--info);
   --color-info-foreground:  var(--info-foreground);
 
-  --radius-sm:   calc(var(--radius) - 4px);
-  --radius-md:   var(--radius);
-  --radius-lg:   calc(var(--radius) + 4px);
-  --radius-xl:   calc(var(--radius) + 8px);
+  --radius1-sm:   calc(var(--radius1) - 4px);
+  --radius1-md:   var(--radius1);
+  --radius1-lg:   calc(var(--radius1) + 4px);
+  --radius1-xl:   calc(var(--radius1) + 8px);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
@@ -295,7 +295,7 @@
   }
   .color-swatch::-webkit-color-swatch {
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius1-sm);
   }
 
   /* UI Sample hover states */

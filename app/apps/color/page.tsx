@@ -207,18 +207,19 @@ function findCorrectedHue(
 /*  Scale generation                                                   */
 /* ================================================================== */
 
+// Tailwind準拠の固定明度分布
 const SCALE_STEPS: { step: number; lightness: number }[] = [
-  { step: 50, lightness: 0.98 },
-  { step: 100, lightness: 0.95 },
+  { step: 50, lightness: 0.97 },
+  { step: 100, lightness: 0.93 },
   { step: 200, lightness: 0.88 },
-  { step: 300, lightness: 0.78 },
-  { step: 400, lightness: 0.66 },
-  { step: 500, lightness: 0.55 },
-  { step: 600, lightness: 0.44 },
-  { step: 700, lightness: 0.34 },
-  { step: 800, lightness: 0.24 },
-  { step: 900, lightness: 0.15 },
-  { step: 950, lightness: 0.07 },
+  { step: 300, lightness: 0.81 },
+  { step: 400, lightness: 0.71 },
+  { step: 500, lightness: 0.62 },
+  { step: 600, lightness: 0.55 },
+  { step: 700, lightness: 0.49 },
+  { step: 800, lightness: 0.42 },
+  { step: 900, lightness: 0.38 },
+  { step: 950, lightness: 0.28 },
 ];
 
 // Binary search for maximum in-gamut chroma at given L and H
@@ -241,30 +242,141 @@ function generateScale(
   baseC: number,
   H: number
 ): { step: number; L: number; C: number; H: number; hex: string; isBase: boolean }[] {
-  // ベースカラーの明度における最大彩度に対する比率を求める
   const maxCAtBase = maxChromaInGamut(baseL, H);
   const chromaRatio = maxCAtBase > 0 ? Math.min(baseC / maxCAtBase, 1) : 0;
 
-  // ベースカラーの知覚色相を取得
   const baseHex = oklchToHex(baseL, baseC, H);
   const targetHue = perceivedHue(baseHex);
 
-  // ベースカラーに最も近いステップを見つける
-  let closestIdx = 0;
-  let closestDiff = Infinity;
+  // ベースカラーに最も近いステップをベースステップとする
+  let baseIdx = 0;
+  let bestDiff = Infinity;
   SCALE_STEPS.forEach(({ lightness }, i) => {
     const diff = Math.abs(lightness - baseL);
-    if (diff < closestDiff) { closestDiff = diff; closestIdx = i; }
+    if (diff < bestDiff) { bestDiff = diff; baseIdx = i; }
   });
 
-  return SCALE_STEPS.map(({ step, lightness }, i) => {
-    // 最も近いステップをベースカラーの実値で置き換え
-    const isBase = i === closestIdx;
-    const L = isBase ? baseL : lightness;
-    const stepC = isBase ? baseC : chromaRatio * maxChromaInGamut(lightness, H);
-    const correctedH = isBase ? H : findCorrectedHue(targetHue, lightness, stepC, H);
-    const hex = oklchToHex(L, stepC, correctedH);
-    return { step, L, C: stepC, H: correctedH, hex, isBase };
+  // 高明度 × 高彩度の色はスケール上端から離す（黄色〜黄緑の鮮やかな色向け）
+  const chromaWeight = Math.min(1, baseC / 0.10);
+  const effectiveSat = chromaRatio * chromaWeight;
+  const pushSteps = Math.round(2 * effectiveSat * effectiveSat);
+  let anchorIdx = Math.max(pushSteps, baseIdx);
+
+  // 高彩度色が steps 300-400 にある場合、gamut cliff を越えて step 500 へ押し出す
+  // （赤〜ピンク系は L=0.70-0.80 で gamut が急激に狭まり、base だけ彩度が突出する）
+  if (effectiveSat > 0.7 && anchorIdx >= 3 && anchorIdx <= 4) {
+    anchorIdx = 5;
+  }
+
+  const pushed = anchorIdx > baseIdx;
+
+  // === 明度 ===
+  const K_L = 0.15;
+  const last = SCALE_STEPS.length - 1;
+  let lightnessValues: number[];
+
+  if (pushed) {
+    // 押し出しあり: SCALE_STEPS を区分線形リスケール
+    // アンカー位置で baseL を通るように上下を伸縮（標準比率を維持）
+    const stdAbove = SCALE_STEPS[0].lightness - SCALE_STEPS[anchorIdx].lightness;
+    const newAbove = SCALE_STEPS[0].lightness - baseL;
+    const stdBelow = SCALE_STEPS[anchorIdx].lightness - SCALE_STEPS[last].lightness;
+    const newBelow = baseL - SCALE_STEPS[last].lightness;
+    lightnessValues = SCALE_STEPS.map(({ lightness }, i) => {
+      if (i <= anchorIdx) {
+        const t = stdAbove > 0 ? (SCALE_STEPS[0].lightness - lightness) / stdAbove : 1;
+        return SCALE_STEPS[0].lightness - t * newAbove;
+      }
+      const t = stdBelow > 0 ? (SCALE_STEPS[anchorIdx].lightness - lightness) / stdBelow : 1;
+      return baseL - t * newBelow;
+    });
+  } else {
+    // 押し出しなし: ガウシアンシフト（従来通り）
+    const lShift = baseL - SCALE_STEPS[anchorIdx].lightness;
+    lightnessValues = SCALE_STEPS.map(({ lightness }, i) => {
+      const dist = i - anchorIdx;
+      return lightness + lShift * Math.exp(-K_L * dist * dist);
+    });
+  }
+
+  // 単調減少を保証 + 範囲クランプ
+  lightnessValues = lightnessValues.map((v) => Math.max(0.01, Math.min(0.995, v)));
+  for (let i = 1; i < lightnessValues.length; i++) {
+    if (lightnessValues[i] >= lightnessValues[i - 1]) {
+      lightnessValues[i] = lightnessValues[i - 1] - 0.005;
+    }
+  }
+
+  // === 彩度 ===
+  // peakRatio: 遠いステップが目指す gamut max に対する彩度比率
+  // chromaRatio > 0.5（淡色でもガマット境界に近い）→ フルブースト（鮮やかなスケール）
+  // chromaRatio < 0.2（グレー系）→ ブーストなし（chromaRatio をそのまま使用）
+  const colorFactor = Math.min(1, baseC / 0.01);
+  const boostGate = Math.min(1, Math.max(0, (chromaRatio - 0.2) / 0.3));
+  const crBoost = boostGate * 0.9 * (1 - Math.pow(1 - chromaRatio, 3)) * colorFactor;
+  const peakRatio = Math.max(chromaRatio, crBoost);
+  const K_C = 0.15;
+
+  // 押し出し時: 上端の彩度（step 50 を淡くする）
+  const topEndC = pushed
+    ? 0.35 * maxChromaInGamut(lightnessValues[0], H)
+    : 0;
+
+  // === 第1パス: L, C を計算 ===
+  const rawSteps = SCALE_STEPS.map(({ step }, i) => {
+    const L = lightnessValues[i];
+    const maxC = maxChromaInGamut(L, H);
+    const idealC = peakRatio * maxC;
+    let stepC: number;
+
+    if (pushed && i < anchorIdx) {
+      const t = anchorIdx > 0 ? i / anchorIdx : 0;
+      stepC = topEndC + (baseC - topEndC) * t;
+      stepC = Math.min(stepC, maxC);
+    } else {
+      const dist = i - anchorIdx;
+      const blendT = 1 - Math.exp(-K_C * dist * dist);
+      stepC = baseC + (idealC - baseC) * blendT;
+      stepC = Math.max(0, Math.min(stepC, maxC));
+    }
+
+    return { step, L, C: stepC, isBase: i === anchorIdx };
+  });
+
+  // === 第2パス: 色相をスムーズ化 ===
+  // 各ステップで独立に色相補正すると赤〜ピンク系で大きなジャンプが生じる
+  // → 端点の補正色相を求め、ベースを通る線形補間で均一なグラデーションにする
+  const hue0 = rawSteps[0].C > 0.005
+    ? findCorrectedHue(targetHue, rawSteps[0].L, rawSteps[0].C, H) : H;
+  const hueLast = rawSteps[last].C > 0.005
+    ? findCorrectedHue(targetHue, rawSteps[last].L, rawSteps[last].C, H) : H;
+
+  // 色相差を [-180, 180) に正規化
+  const normHueDiff = (a: number, b: number) => {
+    let d = b - a;
+    if (d > 180) d -= 360;
+    if (d < -180) d += 360;
+    return d;
+  };
+  const diffAbove = normHueDiff(hue0, H);
+  const diffBelow = normHueDiff(H, hueLast);
+
+  return rawSteps.map((s, i) => {
+    let finalH: number;
+    if (s.isBase) {
+      finalH = H;
+    } else if (i < anchorIdx) {
+      const t = anchorIdx > 0 ? i / anchorIdx : 0;
+      finalH = hue0 + diffAbove * t;
+    } else {
+      const remaining = last - anchorIdx;
+      const t = remaining > 0 ? (i - anchorIdx) / remaining : 1;
+      finalH = H + diffBelow * t;
+    }
+    finalH = ((finalH % 360) + 360) % 360;
+
+    const hex = oklchToHex(s.L, s.C, finalH);
+    return { step: s.step, L: s.L, C: s.C, H: finalH, hex, isBase: s.isBase };
   });
 }
 
@@ -369,7 +481,7 @@ function ColorInput({
             setDraft(e.target.value);
             setInvalid(false);
           }}
-          className="size-9 shrink-0 border border-border rounded-md bg-transparent cursor-pointer p-0 color-swatch"
+          className="size-9 shrink-0 border border-border rounded-xl bg-transparent cursor-pointer p-0 color-swatch"
         />
         <Input
           value={displayValue}
@@ -575,7 +687,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
       {/* Buttons */}
       <div className="flex flex-wrap gap-2">
         <button
-          className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-medium transition-all active:scale-[0.97] ui-btn-primary"
+          className="inline-flex items-center justify-center h-9 px-4 rounded-xl text-[13px] font-medium transition-all active:scale-[0.97] ui-btn-primary"
           style={{
             "--btn-bg": accent,
             "--btn-bg-hover": accentHover,
@@ -588,7 +700,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
           保存する
         </button>
         <button
-          className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-medium transition-all active:scale-[0.97] ui-btn-secondary"
+          className="inline-flex items-center justify-center h-9 px-4 rounded-xl text-[13px] font-medium transition-all active:scale-[0.97] ui-btn-secondary"
           style={{
             "--btn-bg": surfaceRaised,
             "--btn-bg-hover": raisedHover,
@@ -599,7 +711,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
           下書き
         </button>
         <button
-          className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-medium transition-all active:scale-[0.97] ui-btn-outline"
+          className="inline-flex items-center justify-center h-9 px-4 rounded-xl text-[13px] font-medium transition-all active:scale-[0.97] ui-btn-outline"
           style={{
             "--btn-border": borderColor,
             "--btn-border-hover": borderHover,
@@ -634,7 +746,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
       <div className="flex flex-col gap-1.5">
         <span className="text-[13px] font-medium">メールアドレス</span>
         <div
-          className="h-9 rounded-md px-3 flex items-center text-[13px]"
+          className="h-9 rounded-xl px-3 flex items-center text-[13px]"
           style={{
             backgroundColor: inputBg,
             border: `1px solid ${borderColor}`,
@@ -765,7 +877,7 @@ export default function ColorPage() {
             </h3>
             <div className="flex gap-4 items-stretch">
               <div
-                className="w-32 h-32 rounded-xl border border-border shrink-0"
+                className="w-32 h-32 rounded-3xl border border-border shrink-0"
                 style={{ backgroundColor: hex }}
               />
               <div className="flex flex-col justify-center gap-1 min-w-0">

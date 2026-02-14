@@ -249,7 +249,7 @@ function ColorRow({
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="size-8 border border-border rounded-md bg-transparent cursor-pointer p-0 color-swatch"
+          className="size-8 border border-border rounded-xl bg-transparent cursor-pointer p-0 color-swatch"
         />
         <span className="text-xs font-mono text-muted-foreground">{value}</span>
       </div>

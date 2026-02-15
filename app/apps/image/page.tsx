@@ -48,12 +48,22 @@ uniform float uShadows;
 
 uniform float uGlitchAmount;
 uniform float uGlitchSeed;
-uniform float uChromaticAberration;
-uniform int uChromaticAberrationMode;
 uniform float uNoise;
 uniform float uBlur;
 uniform float uVignette;
 uniform float uPixelate;
+uniform float uHueShift;
+uniform float uFade;
+uniform float uDuotone;
+uniform vec3 uDuotoneShadow;
+uniform vec3 uDuotoneHighlight;
+uniform float uHalftone;
+uniform float uScanline;
+uniform float uRGBShift;
+uniform int uRGBShiftMode;
+uniform float uRGBShiftAngle;
+uniform float uWaveAmount;
+uniform float uWaveFrequency;
 
 float rand(vec2 co) {
   return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
@@ -61,6 +71,21 @@ float rand(vec2 co) {
 
 float hash(float n) {
   return fract(sin(n) * 43758.5453123);
+}
+
+vec3 rgb2hsv(vec3 c) {
+  vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
+  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+  float d = q.x - min(q.w, q.y);
+  float e = 1.0e-10;
+  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 hsv2rgb(vec3 c) {
+  vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
 // ガウシアンぼかし（任意UVで使用可能）
@@ -156,23 +181,31 @@ void main() {
     glitchScanline = max(blockOn, sliceOn) * amt;
   }
 
-  // 4+5. サンプリング（ぼかし + 色収差 + グリッチRGB分離を統合）
-  vec2 caOffset = vec2(0.0);
-  if (uChromaticAberration > 0.0) {
-    if (uChromaticAberrationMode == 0) {
-      caOffset = vec2(uChromaticAberration, 0.0);
+  // Wave distortion（UV歪み）
+  if (uWaveAmount > 0.0) {
+    uv.x += sin(uv.y * uWaveFrequency + uGlitchSeed * 0.1) * uWaveAmount * 0.1;
+    uv.y += cos(uv.x * uWaveFrequency + uGlitchSeed * 0.1) * uWaveAmount * 0.05;
+  }
+
+  // 4+5. サンプリング（ぼかし + RGBシフト + グリッチRGB分離を統合）
+  vec2 rgbOffset = vec2(0.0);
+  if (uRGBShift > 0.0) {
+    if (uRGBShiftMode == 0) {
+      // リニア: 指定角度方向にオフセット
+      rgbOffset = vec2(cos(uRGBShiftAngle), sin(uRGBShiftAngle)) * uRGBShift * 0.02;
     } else {
+      // ラジアル: 中心からの距離に応じたオフセット
       vec2 dir = uv - 0.5;
       float dist = length(dir);
-      caOffset = dir * dist * uChromaticAberration;
+      rgbOffset = normalize(dir + 1e-6) * dist * uRGBShift * 0.08;
     }
   }
 
   vec2 rgbSplitOffset = vec2(glitchRGBSplit, 0.0);
   vec3 color;
-  color.r = sampleBlur(uv + caOffset + rgbSplitOffset).r;
+  color.r = sampleBlur(uv + rgbOffset + rgbSplitOffset).r;
   color.g = sampleBlur(uv).g;
-  color.b = sampleBlur(uv - caOffset - rgbSplitOffset).b;
+  color.b = sampleBlur(uv - rgbOffset - rgbSplitOffset).b;
 
   // グリッチ：スキャンライン暗転 + 色の歪み
   if (glitchScanline > 0.0) {
@@ -196,15 +229,55 @@ void main() {
   color.r -= uTint * 0.05;
   color.b -= uTint * 0.05;
 
+  // Hue shift
+  if (uHueShift != 0.0) {
+    vec3 hsv = rgb2hsv(color);
+    hsv.x = fract(hsv.x + uHueShift);
+    color = hsv2rgb(hsv);
+  }
+
   // 7. ハイライト/シャドウ
   float lumMask = dot(color, vec3(0.2126, 0.7152, 0.0722));
   color += uHighlights * smoothstep(0.5, 1.0, lumMask) * 0.3;
   color += uShadows * (1.0 - smoothstep(0.0, 0.5, lumMask)) * 0.3;
 
+  // Fade（黒浮き＋ウォッシュアウト）
+  if (uFade > 0.0) {
+    float fadeLum = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    // 黒を持ち上げる
+    color = max(color, vec3(uFade * 0.18));
+    // 全体を中間調へ寄せる
+    color = mix(color, vec3(mix(fadeLum, 0.55, 0.3)), uFade * 0.35);
+  }
+
+  // Duotone（二色調マッピング）
+  if (uDuotone > 0.0) {
+    float duoLum = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    vec3 duoColor = mix(uDuotoneShadow, uDuotoneHighlight, duoLum);
+    color = mix(color, duoColor, uDuotone);
+  }
+
   // 8. ノイズ/グレイン
   if (uNoise > 0.0) {
     float n = rand(uv * 1000.0 + uGlitchSeed * 0.01) - 0.5;
     color += n * uNoise * 0.5;
+  }
+
+  // Halftone（ドットパターン）
+  if (uHalftone > 0.0) {
+    float htSize = mix(3.0, 12.0, uHalftone);
+    vec2 htUV = vUv * uResolution / htSize;
+    float htLum = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    float htDist = length(fract(htUV) - 0.5);
+    float htRadius = sqrt(1.0 - htLum) * 0.5;
+    float htDot = smoothstep(htRadius, htRadius - 0.07, htDist);
+    color = mix(color, color * htDot, uHalftone);
+  }
+
+  // Scanline（水平走査線）
+  if (uScanline > 0.0) {
+    float sl = sin(vUv.y * uResolution.y * 1.5) * 0.5 + 0.5;
+    color *= mix(1.0, sl * 0.35 + 0.65, uScanline);
   }
 
   // 9. ビネット
@@ -232,12 +305,22 @@ interface ImageParams {
   shadows: number;
   glitchAmount: number;
   glitchSeed: number;
-  chromaticAberration: number;
-  chromaticAberrationMode: number;
   noise: number;
   blur: number;
   vignette: number;
   pixelate: number;
+  hueShift: number;
+  fade: number;
+  duotone: number;
+  duotoneShadow: string;
+  duotoneHighlight: string;
+  halftone: number;
+  scanline: number;
+  rgbShift: number;
+  rgbShiftMode: number;
+  rgbShiftAngle: number;
+  waveAmount: number;
+  waveFrequency: number;
 }
 
 const DEFAULT_PARAMS: ImageParams = {
@@ -251,12 +334,22 @@ const DEFAULT_PARAMS: ImageParams = {
   shadows: 0,
   glitchAmount: 0,
   glitchSeed: 0,
-  chromaticAberration: 0,
-  chromaticAberrationMode: 0,
   noise: 0,
   blur: 0,
   vignette: 0,
   pixelate: 0,
+  hueShift: 0,
+  fade: 0,
+  duotone: 0,
+  duotoneShadow: "#000033",
+  duotoneHighlight: "#ffcc00",
+  halftone: 0,
+  scanline: 0,
+  rgbShift: 0,
+  rgbShiftMode: 0,
+  rgbShiftAngle: 0,
+  waveAmount: 0,
+  waveFrequency: 10,
 };
 
 /* ------------------------------------------------------------------ */
@@ -409,12 +502,22 @@ export default function ImagePage() {
           uShadows: { value: 0 },
           uGlitchAmount: { value: 0 },
           uGlitchSeed: { value: 0 },
-          uChromaticAberration: { value: 0 },
-          uChromaticAberrationMode: { value: 0 },
           uNoise: { value: 0 },
           uBlur: { value: 0 },
           uVignette: { value: 0 },
           uPixelate: { value: 0 },
+          uHueShift: { value: 0 },
+          uFade: { value: 0 },
+          uDuotone: { value: 0 },
+          uDuotoneShadow: { value: new THREE.Color(0x000033) },
+          uDuotoneHighlight: { value: new THREE.Color(0xffcc00) },
+          uHalftone: { value: 0 },
+          uScanline: { value: 0 },
+          uRGBShift: { value: 0 },
+          uRGBShiftMode: { value: 0 },
+          uRGBShiftAngle: { value: 0 },
+          uWaveAmount: { value: 0 },
+          uWaveFrequency: { value: 10 },
         },
         vertexShader: VERTEX_SHADER,
         fragmentShader: FRAGMENT_SHADER,
@@ -473,12 +576,22 @@ export default function ImagePage() {
     u.uShadows.value = params.shadows;
     u.uGlitchAmount.value = params.glitchAmount;
     u.uGlitchSeed.value = params.glitchSeed;
-    u.uChromaticAberration.value = params.chromaticAberration;
-    u.uChromaticAberrationMode.value = params.chromaticAberrationMode;
     u.uNoise.value = params.noise;
     u.uBlur.value = params.blur;
     u.uVignette.value = params.vignette;
     u.uPixelate.value = params.pixelate;
+    u.uHueShift.value = params.hueShift;
+    u.uFade.value = params.fade;
+    u.uDuotone.value = params.duotone;
+    (u.uDuotoneShadow.value as { set(v: string): void }).set(params.duotoneShadow);
+    (u.uDuotoneHighlight.value as { set(v: string): void }).set(params.duotoneHighlight);
+    u.uHalftone.value = params.halftone;
+    u.uScanline.value = params.scanline;
+    u.uRGBShift.value = params.rgbShift;
+    u.uRGBShiftMode.value = params.rgbShiftMode;
+    u.uRGBShiftAngle.value = params.rgbShiftAngle * Math.PI / 180;
+    u.uWaveAmount.value = params.waveAmount;
+    u.uWaveFrequency.value = params.waveFrequency;
     renderOnce();
   }, [params, hasImage, renderOnce]);
 
@@ -679,8 +792,6 @@ export default function ImagePage() {
           <ParamSlider label="コントラスト" value={params.contrast} min={-1} max={1} step={0.01} onChange={(v) => updateParam("contrast", v)} />
           <ParamSlider label="彩度" value={params.saturation} min={-1} max={1} step={0.01} onChange={(v) => updateParam("saturation", v)} />
           <ParamSlider label="露出" value={params.exposure} min={-2} max={2} step={0.01} onChange={(v) => updateParam("exposure", v)} />
-          <ParamSlider label="シアン ↔ イエロー" value={params.temperature} min={-1} max={1} step={0.01} onChange={(v) => updateParam("temperature", v)} />
-          <ParamSlider label="グリーン ↔ マゼンタ" value={params.tint} min={-1} max={1} step={0.01} onChange={(v) => updateParam("tint", v)} />
           <ParamSlider label="ハイライト" value={params.highlights} min={-1} max={1} step={0.01} onChange={(v) => updateParam("highlights", v)} />
           <ParamSlider label="シャドウ" value={params.shadows} min={-1} max={1} step={0.01} onChange={(v) => updateParam("shadows", v)} />
 
@@ -694,28 +805,75 @@ export default function ImagePage() {
               <ParamSlider label="シード" value={params.glitchSeed} min={0} max={100} step={1} onChange={(v) => updateParam("glitchSeed", v)} />
             </div>
           )}
-          <ParamSlider label="色収差" value={params.chromaticAberration} min={0} max={0.05} step={0.001} onChange={(v) => updateParam("chromaticAberration", v)} />
-          {params.chromaticAberration > 0 && (
-            <div className="pl-3 border-l-2 border-border flex flex-col gap-2">
-              <Label className="text-[13px]">タイプ</Label>
-              <Select
-                value={String(params.chromaticAberrationMode)}
-                onValueChange={(v) => updateParam("chromaticAberrationMode", Number(v))}
-              >
-                <SelectTrigger className="cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">リニア</SelectItem>
-                  <SelectItem value="1">ラジアル</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <ParamSlider label="ノイズ" value={params.noise} min={0} max={1} step={0.01} onChange={(v) => updateParam("noise", v)} />
           <ParamSlider label="ぼかし" value={params.blur} min={0} max={20} step={0.1} onChange={(v) => updateParam("blur", v)} />
           <ParamSlider label="ビネット" value={params.vignette} min={0} max={1} step={0.01} onChange={(v) => updateParam("vignette", v)} />
           <ParamSlider label="ピクセレート" value={params.pixelate} min={0} max={1} step={0.01} onChange={(v) => updateParam("pixelate", v)} />
+          <ParamSlider label="RGBシフト" value={params.rgbShift} min={0} max={1} step={0.01} onChange={(v) => updateParam("rgbShift", v)} />
+          {params.rgbShift > 0 && (
+            <div className="pl-3 border-l-2 border-border flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
+                <Label className="text-[13px]">タイプ</Label>
+                <Select
+                  value={String(params.rgbShiftMode)}
+                  onValueChange={(v) => updateParam("rgbShiftMode", Number(v))}
+                >
+                  <SelectTrigger className="cursor-pointer">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">リニア</SelectItem>
+                    <SelectItem value="1">ラジアル</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {params.rgbShiftMode === 0 && (
+                <ParamSlider label="角度" value={params.rgbShiftAngle} min={0} max={360} step={1} onChange={(v) => updateParam("rgbShiftAngle", v)} />
+              )}
+            </div>
+          )}
+          <ParamSlider label="ウェーブ" value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("waveAmount", v)} />
+          {params.waveAmount > 0 && (
+            <div className="pl-3 border-l-2 border-border">
+              <ParamSlider label="周波数" value={params.waveFrequency} min={1} max={50} step={0.5} onChange={(v) => updateParam("waveFrequency", v)} />
+            </div>
+          )}
+          <ParamSlider label="ハーフトーン" value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => updateParam("halftone", v)} />
+          <ParamSlider label="スキャンライン" value={params.scanline} min={0} max={1} step={0.01} onChange={(v) => updateParam("scanline", v)} />
+
+          <Separator />
+
+          {/* カラーエフェクト */}
+          <SectionHeader>カラーエフェクト</SectionHeader>
+          <ParamSlider label="シアン ↔ イエロー" value={params.temperature} min={-1} max={1} step={0.01} onChange={(v) => updateParam("temperature", v)} />
+          <ParamSlider label="グリーン ↔ マゼンタ" value={params.tint} min={-1} max={1} step={0.01} onChange={(v) => updateParam("tint", v)} />
+          <ParamSlider label="色相シフト" value={params.hueShift} min={-0.5} max={0.5} step={0.01} onChange={(v) => updateParam("hueShift", v)} />
+          <ParamSlider label="フェード" value={params.fade} min={0} max={1} step={0.01} onChange={(v) => updateParam("fade", v)} />
+          <ParamSlider label="デュオトーン" value={params.duotone} min={0} max={1} step={0.01} onChange={(v) => updateParam("duotone", v)} />
+          {params.duotone > 0 && (
+            <div className="pl-3 border-l-2 border-border flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Label className="text-[13px] flex-1">シャドウ</Label>
+                <input
+                  type="color"
+                  value={params.duotoneShadow}
+                  onChange={(e) => updateParam("duotoneShadow", e.target.value)}
+                  className="w-8 h-8 rounded border border-border cursor-pointer bg-transparent"
+                />
+                <span className="text-xs font-mono text-muted-foreground w-16">{params.duotoneShadow}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-[13px] flex-1">ハイライト</Label>
+                <input
+                  type="color"
+                  value={params.duotoneHighlight}
+                  onChange={(e) => updateParam("duotoneHighlight", e.target.value)}
+                  className="w-8 h-8 rounded border border-border cursor-pointer bg-transparent"
+                />
+                <span className="text-xs font-mono text-muted-foreground w-16">{params.duotoneHighlight}</span>
+              </div>
+            </div>
+          )}
 
           <Separator />
           <Button className="w-full" onClick={() => setShowDownload(true)} disabled={!hasImage}>

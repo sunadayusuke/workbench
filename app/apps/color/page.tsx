@@ -875,7 +875,7 @@ export default function ColorPage() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-background">
       {/* Main area */}
-      <div className="h-[60vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0">
+      <div className="h-[55vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0">
         {/* Top bar */}
         <div className="flex items-center px-4 md:px-5 h-12 md:h-14 border-b border-border shrink-0">
           <Link href="/">

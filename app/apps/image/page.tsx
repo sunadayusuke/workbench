@@ -596,7 +596,7 @@ export default function ImagePage() {
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-black">
       {/* メインエリア */}
       <div
-        className="h-[60vh] md:h-auto md:flex-1 relative min-w-0 shrink-0"
+        className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}

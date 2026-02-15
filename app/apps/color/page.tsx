@@ -875,9 +875,9 @@ export default function ColorPage() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-background">
       {/* Main area */}
-      <div className="h-[55vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0">
-        {/* Top bar */}
-        <div className="flex items-center px-4 md:px-5 h-12 md:h-14 border-b border-border shrink-0">
+      <div className="h-[55vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0 relative">
+        {/* Back button */}
+        <div className="absolute top-0 left-0 p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
             <Button variant="outline" size="sm">
               ← 戻る
@@ -886,7 +886,7 @@ export default function ColorPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6 md:gap-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 pt-14 md:pt-16 flex flex-col gap-6 md:gap-8">
           {/* Color preview */}
           <section className="flex flex-col gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">

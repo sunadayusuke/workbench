@@ -19,6 +19,12 @@ const apps = [
     href: "/apps/image",
     icon: "🖼️",
   },
+  {
+    name: "イージング",
+    description: "ベジェカーブエディター＆アニメーションプレビュー",
+    href: "/apps/easing",
+    icon: "⏱️",
+  },
 ];
 
 export default function Home() {

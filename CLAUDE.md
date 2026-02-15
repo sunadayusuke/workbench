@@ -11,7 +11,7 @@
 - **Tailwind CSS v4** — CSS-first設定（`tailwind.config.js` なし、`postcss.config.mjs` で `@tailwindcss/postcss` 使用）
 - **shadcn/ui** — new-york スタイル、neutral ベースカラー、CSS Variables モード
 - **React 19** / **TypeScript 5**
-- **Three.js** — シェーダーアプリで使用
+- **Three.js** — シェーダーアプリ・画像加工アプリで使用
 - フォント: **LINE Seed JP**（CSS `@import` で読み込み。next/font/google は非対応だった）
 
 ## デザインシステム
@@ -29,7 +29,9 @@ app/
   page.tsx            — ホーム（アプリカード一覧）
   globals.css         — デザイントークン + ベーススタイル
   apps/
+    color/page.tsx    — OKLCHカラースケール＆コントラストチェッカー
     shader/page.tsx   — WebGLシェーダーデザインツール（Three.js）
+    image/page.tsx    — 画像補正＆エフェクトツール（Three.js + WebGLシェーダー）
 components/
   ui/                 — shadcn/ui コンポーネント（button, slider, select, dialog, label, separator, sheet）
 lib/
@@ -49,7 +51,20 @@ lib/
 ## UI言語
 全テキスト日本語。
 
+## レスポンシブ対応
+- 全ページ対応済み。ブレークポイントは `md:` (768px)
+- 各アプリのレイアウト: モバイルは `flex-col`（キャンバス60vh + 設定パネル40vh）、デスクトップは `flex-row`（キャンバス + サイドバー）
+- モバイル時の設定パネルには上方向シャドウ（`shadow-[0_-8px_24px_...]`）でレイヤー感を出す
+- ホーム: ヘッダーはモバイルで縦積み、デスクトップで横並び
+
+## アプリ共通レイアウトパターン
+- トップバー: 戻るボタン（シェーダー・イメージはキャンバス上にオーバーレイ、カラーは固定ヘッダー）
+- サイドバー: 設定スライダー群 + アクションボタン（CSS出力 / ダウンロード等）を最下部に配置
+- ネスト要素: 親パラメータが有効な時だけ子オプションを表示（`pl-3 border-l-2 border-border`）
+
 ## 注意点
 - Three.js は SSR 不可 → `useEffect` 内で `await import("three")` の動的インポートパターン
+- Three.js で `preserveDrawingBuffer: true` はダウンロード用（`canvas.toDataURL()` に必要）
+- `next build` 中に `.next` キャッシュが壊れることがある → `rm -rf .next` で解消
 - Tailwind v4 の important 修飾子は `!` サフィックス（例: `bg-black/55!`）
 - ドメイン: ムームードメインで `suna.design` を管理、`workbench` サブドメインを CNAME で Vercel に向けている

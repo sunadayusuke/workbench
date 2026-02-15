@@ -147,6 +147,19 @@ function isValidHex(hex: string): boolean {
   return /^#[0-9a-fA-F]{6}$/.test(hex);
 }
 
+// oklch(...) 文字列をパースしてHEXに変換
+function parseOklchString(str: string): string | null {
+  const m = str.match(/oklch\(\s*([\d.]+)%?\s+([\d.]+)\s+([\d.]+)\s*\)/i);
+  if (!m) return null;
+  let L = parseFloat(m[1]);
+  const C = parseFloat(m[2]);
+  const H = parseFloat(m[3]);
+  // % 表記の場合は 0-1 に変換
+  if (L > 1) L = L / 100;
+  if (isNaN(L) || isNaN(C) || isNaN(H)) return null;
+  return oklchToHex(L, C, H);
+}
+
 // sRGB → HSL hue (0-360, or -1 if achromatic)
 function srgbHue(r: number, g: number, b: number): number {
   const max = Math.max(r, g, b);
@@ -449,22 +462,28 @@ function ColorInput({
 }) {
   const [draft, setDraft] = useState(hex);
   const [editing, setEditing] = useState(false);
-  const [invalid, setInvalid] = useState(false);
 
   const commitDraft = useCallback(
     (val: string) => {
-      let normalized = val.trim();
+      const trimmed = val.trim();
+      // oklch(...) をパース
+      const fromOklch = parseOklchString(trimmed);
+      if (fromOklch) {
+        onChangeHex(fromOklch);
+        setDraft(fromOklch);
+        return;
+      }
+      // HEX正規化
+      let normalized = trimmed.replace(/^#+/, "#");
       if (!normalized.startsWith("#")) normalized = "#" + normalized;
       if (isValidHex(normalized)) {
         onChangeHex(normalized);
         setDraft(normalized);
-        setInvalid(false);
       } else {
-        setInvalid(true);
+        setDraft(hex);
       }
-      setEditing(false);
     },
-    [onChangeHex]
+    [onChangeHex, hex]
   );
 
   const displayValue = editing ? draft : hex;
@@ -479,26 +498,24 @@ function ColorInput({
           onChange={(e) => {
             onChangeHex(e.target.value);
             setDraft(e.target.value);
-            setInvalid(false);
           }}
-          className="size-9 shrink-0 border border-border rounded-xl bg-transparent cursor-pointer p-0 color-swatch"
+          className="size-9 shrink-0 border border-border rounded-xl bg-transparent cursor-pointer p-0 overflow-hidden color-swatch"
         />
         <Input
           value={displayValue}
           onFocus={() => {
             setDraft(hex);
             setEditing(true);
-            setInvalid(false);
           }}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            setInvalid(false);
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => {
+            commitDraft(draft);
+            setEditing(false);
           }}
-          onBlur={() => commitDraft(draft)}
           onKeyDown={(e) => {
             if (e.key === "Enter") commitDraft(draft);
           }}
-          className={`font-mono text-xs ${invalid ? "border-destructive!" : ""} ${inputClassName ?? ""}`}
+          className={`font-mono text-xs ${inputClassName ?? ""}`}
         />
       </div>
     </div>

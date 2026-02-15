@@ -7,6 +7,20 @@ export const metadata: Metadata = {
   icons: {
     icon: "/images/favicon.svg",
   },
+  openGraph: {
+    title: "Workbench",
+    description: "sunaのデザイン作業台",
+    url: "https://workbench.suna.design",
+    siteName: "Workbench",
+    images: [{ url: "/images/ogp.png" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Workbench",
+    description: "sunaのデザイン作業台",
+    images: ["/images/ogp.png"],
+  },
 };
 
 export default function RootLayout({

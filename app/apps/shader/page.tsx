@@ -381,27 +381,24 @@ export default function ShaderPage() {
   }, [exportCode]);
 
   return (
-    <div className="fixed inset-0 z-50 flex bg-black">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-black">
       {/* Canvas area */}
-      <div className="flex-1 relative min-w-0">
+      <div className="h-[60vh] md:h-auto md:flex-1 relative min-w-0 shrink-0">
         <div ref={containerRef} className="w-full h-full" />
 
         {/* Top bar */}
-        <div className="absolute inset-x-0 top-0 flex justify-between items-center p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
+        <div className="absolute inset-x-0 top-0 flex items-center p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
             <Button variant="outline" size="sm" className="bg-black/55! border-white/15! text-white/85! backdrop-blur-xl hover:bg-black/75! hover:border-white/30! hover:text-white!">
               ← 戻る
             </Button>
           </Link>
-          <Button variant="outline" size="sm" onClick={handleExport} className="bg-black/55! border-white/15! text-white/85! backdrop-blur-xl hover:bg-black/75! hover:border-white/30! hover:text-white!">
-            コード出力
-          </Button>
         </div>
       </div>
 
       {/* Sidebar */}
-      <aside className="w-70 shrink-0 bg-background border-l border-border flex flex-col overflow-hidden">
-        <div className="px-6 pt-5 pb-4 border-b border-border shrink-0">
+      <aside className="flex-1 md:flex-none md:w-70 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.25)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
+        <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0">
           <h2 className="text-[15px] font-semibold -tracking-[0.01em]">設定</h2>
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
@@ -447,6 +444,12 @@ export default function ShaderPage() {
           <ColorRow label="色" value={params.color2} onChange={(v) => updateParam("color2", v)} />
           <ParamSlider label="強度" value={params.intensity2} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity2", v)} />
           <ParamSlider label="しきい値" value={params.threshold2} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold2", v)} />
+
+          <Separator />
+
+          <Button size="sm" onClick={handleExport}>
+            コード出力
+          </Button>
         </div>
       </aside>
 

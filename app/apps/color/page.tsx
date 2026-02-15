@@ -856,11 +856,11 @@ export default function ColorPage() {
   }, [cssOutput]);
 
   return (
-    <div className="fixed inset-0 z-50 flex bg-background">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-background">
       {/* Main area */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      <div className="h-[60vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0">
         {/* Top bar */}
-        <div className="flex items-center px-5 h-14 border-b border-border shrink-0">
+        <div className="flex items-center px-4 md:px-5 h-12 md:h-14 border-b border-border shrink-0">
           <Link href="/">
             <Button variant="outline" size="sm">
               ← 戻る
@@ -869,7 +869,7 @@ export default function ColorPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6 md:gap-8">
           {/* Color preview */}
           <section className="flex flex-col gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -921,12 +921,12 @@ export default function ColorPage() {
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               カラースケール
             </h3>
-            <div className="flex -mx-6 -mb-6">
-              <div className="flex-1 min-w-0 bg-white px-9 py-9">
+            <div className="flex flex-col sm:flex-row -mx-4 md:-mx-6 -mb-6">
+              <div className="flex-1 min-w-0 bg-white px-5 py-6 md:px-9 md:py-9">
                 <p className="text-[13px] font-medium text-black mb-4">Light</p>
                 <ScaleSwatch scale={scale} />
               </div>
-              <div className="flex-1 min-w-0 bg-black px-9 py-9">
+              <div className="flex-1 min-w-0 bg-black px-5 py-6 md:px-9 md:py-9">
                 <p className="text-[13px] font-medium text-white mb-4">Dark</p>
                 <ScaleSwatch scale={darkScale} />
               </div>
@@ -940,11 +940,11 @@ export default function ColorPage() {
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               UIサンプル
             </h3>
-            <div className="flex -mx-6 -mb-6">
-              <div className="flex-1 min-w-0 bg-white px-9 py-9">
+            <div className="flex flex-col sm:flex-row -mx-4 md:-mx-6 -mb-6">
+              <div className="flex-1 min-w-0 bg-white px-5 py-6 md:px-9 md:py-9">
                 <UiSample scale={scale} bg="light" />
               </div>
-              <div className="flex-1 min-w-0 bg-black px-9 py-9">
+              <div className="flex-1 min-w-0 bg-black px-5 py-6 md:px-9 md:py-9">
                 <UiSample scale={scale} bg="dark" />
               </div>
             </div>
@@ -953,8 +953,8 @@ export default function ColorPage() {
       </div>
 
       {/* Sidebar */}
-      <aside className="w-80 shrink-0 bg-background border-l border-border flex flex-col overflow-hidden">
-        <div className="flex items-center px-6 h-14 border-b border-border shrink-0">
+      <aside className="flex-1 md:flex-none w-full md:w-80 bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.15)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
+        <div className="flex items-center px-6 h-10 md:h-14 border-b border-border shrink-0">
           <h2 className="text-[15px] font-semibold -tracking-[0.01em]">
             設定
           </h2>

@@ -13,17 +13,23 @@ const apps = [
     href: "/apps/shader",
     icon: "🌊",
   },
+  {
+    name: "イメージ",
+    description: "画像補正＆エフェクトツール",
+    href: "/apps/image",
+    icon: "🖼️",
+  },
 ];
 
 export default function Home() {
   return (
-    <div className="min-h-screen px-12 py-12">
-      <div className="flex items-center justify-between gap-3 mb-9">
+    <div className="min-h-screen px-5 py-8 md:px-12 md:py-12">
+      <div className="flex flex-col gap-[20px] mb-8 md:flex-row md:items-center md:justify-between md:gap-3 md:mb-12">
         <h1 className="text-[28px] font-bold tracking-tight">
-          <img src="/images/workbench_logo.svg" alt="Workbench" className="w-[160px]" />
+          <img src="/images/workbench_logo.svg" alt="Workbench" className="w-[140px] md:w-[160px] -ml-[3px]" />
         </h1>
-        <div className="flex items-center gap-8">
-          <p className="text-[15px] text-muted-foreground">sunaのデザイン作業台</p>
+        <div className="flex items-center justify-between md:gap-8">
+          <p className="text-[13px] md:text-[15px] text-muted-foreground">sunaのデザイン作業台</p>
           <a href="https://x.com/YusukeSunada" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-100 transition-opacity">
             <img src="/images/x_logo.svg" alt="X" className="w-[18px]" />
           </a>

@@ -571,11 +571,37 @@ export default function ImagePage() {
       quality = jpegQuality;
     }
 
-    const dataUrl = r.renderer.domElement.toDataURL(mimeType, quality);
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `${fileName}_edited.${ext}`;
-    a.click();
+    const outputName = `${fileName}_edited.${ext}`;
+    const canvas = r.renderer.domElement;
+
+    // モバイル: Web Share API で共有シート（写真フォルダに保存可能）
+    const canShare = typeof navigator.share === "function" && typeof navigator.canShare === "function";
+    if (canShare) {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mimeType, quality));
+      if (blob) {
+        const file = new File([blob], outputName, { type: mimeType });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file] });
+          } catch {
+            // ユーザーがキャンセルした場合は無視
+          }
+        } else {
+          // canShare非対応の場合はフォールバック
+          const dataUrl = canvas.toDataURL(mimeType, quality);
+          const a = document.createElement("a");
+          a.href = dataUrl;
+          a.download = outputName;
+          a.click();
+        }
+      }
+    } else {
+      const dataUrl = canvas.toDataURL(mimeType, quality);
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = outputName;
+      a.click();
+    }
 
     // プレビューサイズに復帰
     const container = containerRef.current;

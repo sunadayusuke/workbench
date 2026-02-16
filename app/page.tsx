@@ -25,6 +25,12 @@ const apps = [
     href: "/apps/easing",
     icon: "⏱️",
   },
+  {
+    name: "グラデーション",
+    description: "メッシュグラデーション壁紙ジェネレーター",
+    href: "/apps/gradient",
+    icon: "🌈",
+  },
 ];
 
 export default function Home() {

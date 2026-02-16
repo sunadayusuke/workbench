@@ -687,8 +687,12 @@ export default function ImagePage() {
     const outputName = `${fileName}_edited.${ext}`;
     const canvas = r.renderer.domElement;
 
-    // モバイル: Web Share API で共有シート（写真フォルダに保存可能）
-    const canShare = typeof navigator.share === "function" && typeof navigator.canShare === "function";
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const canShare =
+      isMobile &&
+      typeof navigator.share === "function" &&
+      typeof navigator.canShare === "function";
+
     if (canShare) {
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mimeType, quality));
       if (blob) {
@@ -699,13 +703,6 @@ export default function ImagePage() {
           } catch {
             // ユーザーがキャンセルした場合は無視
           }
-        } else {
-          // canShare非対応の場合はフォールバック
-          const dataUrl = canvas.toDataURL(mimeType, quality);
-          const a = document.createElement("a");
-          a.href = dataUrl;
-          a.download = outputName;
-          a.click();
         }
       }
     } else {

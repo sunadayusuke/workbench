@@ -43,7 +43,7 @@ uniform float uStippleSize;
 uniform float uHalftone;
 uniform float uGlassAmount;
 uniform float uGlassFreq;
-uniform float uGlassRefract;
+uniform float uGlassShift;
 uniform float uChromatic;
 uniform float uWaveAmount;
 uniform float uWaveFrequency;
@@ -118,11 +118,17 @@ void main() {
 
     // --- Rib effect: cylindrical lens per strip ---
     if (uGlassAmount > 0.0) {
-        float freq = mix(20.0, 70.0, uGlassFreq);
+        float freq = mix(3.0, 70.0, uGlassFreq);
+        float stripIndex = floor(suv.x * freq);
         float cell = fract(suv.x * freq);
-        float stripCenter = (floor(suv.x * freq) + 0.5) / freq;
-        float stretch = 1.0 + uGlassRefract * 20.0;
-        suv.x = stripCenter + (cell - 0.5) * stretch / freq;
+        float stripCenter = (stripIndex + 0.5) / freq;
+        float stretch = 1.0 + uGlassAmount * 20.0;
+        float ribX = stripCenter + (cell - 0.5) * stretch / freq;
+        suv.x = ribX;
+        // Progressive vertical shift per strip
+        if (uGlassShift > 0.0) {
+            suv.y += stripIndex * uGlassShift * 0.01;
+        }
     }
 
     // --- Chromatic aberration: sample R/G/B at offset UVs ---
@@ -284,7 +290,7 @@ interface GradientParams {
   halftone: number;
   glassAmount: number;
   glassFreq: number;
-  glassRefract: number;
+  glassShift: number;
   chromatic: number;
   waveAmount: number;
   waveFrequency: number;
@@ -330,7 +336,7 @@ const DEFAULT_PARAMS: GradientParams = {
   halftone: 0,
   glassAmount: 0,
   glassFreq: 0.3,
-  glassRefract: 0.5,
+  glassShift: 0,
   chromatic: 0,
   waveAmount: 0,
   waveFrequency: 10,
@@ -557,7 +563,7 @@ export default function GradientPage() {
           uHalftone: { value: 0 },
           uGlassAmount: { value: 0 },
           uGlassFreq: { value: 0.3 },
-          uGlassRefract: { value: 0.5 },
+          uGlassShift: { value: 0 },
           uChromatic: { value: 0 },
           uWaveAmount: { value: 0 },
           uWaveFrequency: { value: 10 },
@@ -639,7 +645,7 @@ export default function GradientPage() {
     u.uHalftone.value = params.halftone;
     u.uGlassAmount.value = params.glassAmount;
     u.uGlassFreq.value = params.glassFreq;
-    u.uGlassRefract.value = params.glassRefract;
+    u.uGlassShift.value = params.glassShift;
     u.uChromatic.value = params.chromatic;
     u.uWaveAmount.value = params.waveAmount;
     u.uWaveFrequency.value = params.waveFrequency;
@@ -962,7 +968,7 @@ export default function GradientPage() {
           {params.glassAmount > 0 && (
             <div className="pl-3 border-l-2 border-border flex flex-col gap-2">
               <ParamSlider label="密度" value={params.glassFreq} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassFreq: v }))} />
-              <ParamSlider label="屈折" value={params.glassRefract} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassRefract: v }))} />
+              <ParamSlider label="ズレ" value={params.glassShift} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassShift: v }))} />
             </div>
           )}
           <ParamSlider label="色収差" value={params.chromatic} min={0} max={2} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, chromatic: v }))} />

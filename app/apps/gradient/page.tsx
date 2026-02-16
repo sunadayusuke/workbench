@@ -657,14 +657,19 @@ export default function GradientPage() {
   }, [params, seed, renderOnce]);
 
   /* --- Handle dragging on canvas --- */
+  const dragPosRef = useRef<{ x: number; y: number } | null>(null);
+
   const handlePointerDown = useCallback((index: number) => (e: React.PointerEvent) => {
     e.preventDefault();
     draggingRef.current = index;
+    dragPosRef.current = { x: params.colors[index].x, y: params.colors[index].y };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, []);
+  }, [params.colors]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (draggingRef.current === null) return;
+    const r = rendererRef.current;
+    if (!r) return;
     const overlay = e.currentTarget;
     const rect = overlay.getBoundingClientRect();
     const { width: tw, height: th } = getOutputSize(params);
@@ -674,15 +679,31 @@ export default function GradientPage() {
     const x = Math.max(0, Math.min(1, (sx - cr.x) / cr.w));
     const y = Math.max(0, Math.min(1, 1 - (sy - cr.y) / cr.h));
     const idx = draggingRef.current;
-    setParams((prev) => {
-      const newColors = [...prev.colors];
-      newColors[idx] = { ...newColors[idx], x, y };
-      return { ...prev, colors: newColors };
-    });
+    // Update uniform + render directly, skip React state
+    dragPosRef.current = { x, y };
+    r.material.uniforms.uColorPositions.value[idx].set(x, y);
+    r.renderer.render(r.scene, r.camera);
+    // Update handle position via DOM
+    const handle = overlay.children[idx] as HTMLElement;
+    if (handle) {
+      handle.style.left = `${cr.x + x * cr.w}px`;
+      handle.style.top = `${cr.y + (1 - y) * cr.h}px`;
+    }
   }, [params]);
 
   const handlePointerUp = useCallback(() => {
+    const idx = draggingRef.current;
+    const pos = dragPosRef.current;
+    if (idx !== null && pos) {
+      // Sync final position back to React state
+      setParams((prev) => {
+        const newColors = [...prev.colors];
+        newColors[idx] = { ...newColors[idx], ...pos };
+        return { ...prev, colors: newColors };
+      });
+    }
     draggingRef.current = null;
+    dragPosRef.current = null;
   }, []);
 
   /* --- Color management --- */
@@ -807,7 +828,7 @@ export default function GradientPage() {
                   return (
                     <div
                       key={i}
-                      className="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/80 shadow-[0_0_8px_rgba(0,0,0,0.5)] cursor-grab active:cursor-grabbing active:scale-125 transition-all opacity-0 group-hover:opacity-100"
+                      className="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/80 shadow-[0_0_8px_rgba(0,0,0,0.5)] cursor-grab active:cursor-grabbing active:scale-125 transition-opacity opacity-0 group-hover:opacity-100"
                       style={{
                         left,
                         top,

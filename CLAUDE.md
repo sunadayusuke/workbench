@@ -32,6 +32,7 @@ app/
     color/page.tsx    — OKLCHカラースケール＆コントラストチェッカー
     shader/page.tsx   — WebGLシェーダーデザインツール（Three.js）
     image/page.tsx    — 画像補正＆エフェクトツール（Three.js + WebGLシェーダー）
+    gradient/page.tsx — メッシュグラデーションツール（Three.js + WebGLシェーダー）
 components/
   ui/                 — shadcn/ui コンポーネント（button, slider, select, dialog, label, separator, sheet）
 lib/
@@ -65,6 +66,10 @@ lib/
 ## 注意点
 - Three.js は SSR 不可 → `useEffect` 内で `await import("three")` の動的インポートパターン
 - Three.js で `preserveDrawingBuffer: true` はダウンロード用（`canvas.toDataURL()` に必要）
+- Three.js v0.182 の色空間: `ColorManagement` がデフォルト有効。ShaderMaterial では `renderer.outputColorSpace = THREE.LinearSRGBColorSpace` を設定し、色は `hexToRGB()` で手動パースして `Float32Array` で渡す（`THREE.Color` の自動sRGB→リニア変換をバイパス）
+- ShaderMaterial でカスタムシェーダーを書く場合、`THREE.Color` のuniformは色空間変換が入るため、`float[]` 配列で直接渡す方が安全
+- キャンバス上のドラッグ操作: パフォーマンスのため、ドラッグ中は React state をバイパスして uniform + DOM を直接更新し、ドラッグ終了時に state に反映するパターンを使用
+- ダウンロード: デスクトップは `canvas.toDataURL()` + `<a>` で直接ダウンロード、スマホ（`/iPhone|iPad|iPod|Android/i`）のみ Web Share API でシェアシート表示
 - `next build` 中に `.next` キャッシュが壊れることがある → `rm -rf .next` で解消
 - Tailwind v4 の important 修飾子は `!` サフィックス（例: `bg-black/55!`）
 - ドメイン: ムームードメインで `suna.design` を管理、`workbench` サブドメインを CNAME で Vercel に向けている

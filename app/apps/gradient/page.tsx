@@ -828,7 +828,7 @@ export default function GradientPage() {
                   return (
                     <div
                       key={i}
-                      className="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/80 shadow-[0_0_8px_rgba(0,0,0,0.5)] cursor-grab active:cursor-grabbing active:scale-125 transition-opacity opacity-0 group-hover:opacity-100"
+                      className="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/80 shadow-[0_0_8px_rgba(0,0,0,0.5)] cursor-grab active:cursor-grabbing active:scale-125 transition-opacity opacity-100 md:opacity-0 md:group-hover:opacity-100"
                       style={{
                         left,
                         top,

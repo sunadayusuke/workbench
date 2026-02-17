@@ -64,7 +64,7 @@ export default function Home() {
           <Link
             key={app.href}
             href={app.href}
-            className="bg-card border border-border rounded-2xl p-6 transition-all select-none hover:border-foreground hover:bg-accent active:scale-[0.98]"
+            className="bg-card border border-border rounded-2xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_2px_8px_rgba(0,0,0,0.04)] transition-all select-none hover:border-foreground hover:bg-accent hover:shadow-[0_2px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.07)] active:scale-[0.98]"
           >
             <div className="text-[28px] mb-3">{app.icon}</div>
             <div className="text-[15px] font-semibold mb-1">{app.name}</div>

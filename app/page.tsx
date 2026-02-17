@@ -8,8 +8,8 @@ const apps = [
     icon: "🎨",
   },
   {
-    name: "シェーダー",
-    description: "WebGLシェーダーデザインツール",
+    name: "ノイズシェーダー",
+    description: "パーリンノイズ背景デザインツール",
     href: "/apps/shader",
     icon: "🌊",
   },
@@ -30,6 +30,12 @@ const apps = [
     description: "メッシュグラデーション壁紙ジェネレーター",
     href: "/apps/gradient",
     icon: "🌈",
+  },
+  {
+    name: "パーティクル",
+    description: "テキスト＆SVGパーティクルアニメーション",
+    href: "/apps/particle",
+    icon: "✨",
   },
 ];
 

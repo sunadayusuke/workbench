@@ -30,9 +30,10 @@ app/
   globals.css         — デザイントークン + ベーススタイル
   apps/
     color/page.tsx    — OKLCHカラースケール＆コントラストチェッカー
-    shader/page.tsx   — WebGLシェーダーデザインツール（Three.js）
+    shader/page.tsx   — パーリンノイズ背景デザインツール（Three.js）
     image/page.tsx    — 画像補正＆エフェクトツール（Three.js + WebGLシェーダー）
     gradient/page.tsx — メッシュグラデーションツール（Three.js + WebGLシェーダー）
+    particle/page.tsx — パーティクルアニメーションツール（Three.js + Points + ShaderMaterial）
 components/
   ui/                 — shadcn/ui コンポーネント（button, slider, select, dialog, label, separator, sheet）
 lib/

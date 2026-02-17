@@ -687,6 +687,10 @@ export default function ParticlePage() {
     []
   );
 
+  const handleReset = useCallback(() => {
+    setParams({ ...DEFAULT_PARAMS, colors: [...DEFAULT_PARAMS.colors] });
+  }, []);
+
   // Handle SVG file upload
   const handleSvgUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1066,8 +1070,11 @@ export default function ParticlePage() {
 
       {/* Sidebar */}
       <aside className="flex-1 md:flex-none md:w-75 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.25)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
-        <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0">
-          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">設定</h2>
+        <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0 flex items-center justify-between">
+          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">パーティクル</h2>
+          <Button variant="secondary" size="sm" onClick={handleReset}>
+            リセット
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
           {/* Formation */}

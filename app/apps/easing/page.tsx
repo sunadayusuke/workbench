@@ -974,7 +974,11 @@ export default function EasingPage() {
         {/* Top bar */}
         <div className="absolute inset-x-0 top-0 flex items-center gap-2 p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-white/75! border-black/10! text-foreground/80! backdrop-blur-xl hover:bg-white/90! hover:border-black/20!"
+            >
               ← 戻る
             </Button>
           </Link>

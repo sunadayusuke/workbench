@@ -37,6 +37,12 @@ const apps = [
     href: "/apps/particle",
     icon: "✨",
   },
+  {
+    name: "ドットマップ",
+    description: "ドット世界地図SVGジェネレーター",
+    href: "/apps/dotmap",
+    icon: "🌍",
+  },
 ];
 
 export default function Home() {

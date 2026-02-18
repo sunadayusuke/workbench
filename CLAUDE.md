@@ -34,6 +34,7 @@ app/
     image/page.tsx    — 画像補正＆エフェクトツール（Three.js + WebGLシェーダー）
     gradient/page.tsx — メッシュグラデーションツール（Three.js + WebGLシェーダー）
     particle/page.tsx — パーティクルアニメーションツール（Three.js + Points + ShaderMaterial）
+    dotmap/page.tsx   — ドット世界地図SVGジェネレーター（d3-geo + topojson-client、Canvas raster方式）
 components/
   ui/                 — shadcn/ui コンポーネント（button, slider, select, dialog, label, separator, sheet）
 lib/
@@ -60,9 +61,10 @@ lib/
 - ホーム: ヘッダーはモバイルで縦積み、デスクトップで横並び
 
 ## アプリ共通レイアウトパターン
-- トップバー: 戻るボタン（シェーダー・イメージはキャンバス上にオーバーレイ、カラーは固定ヘッダー）
-- サイドバー: 設定スライダー群 + アクションボタン（CSS出力 / ダウンロード等）を最下部に配置
+- トップバー: 戻るボタン（全ページ `backdrop-blur-xl` 付き。暗背景は `bg-black/55!`、明背景は `bg-white/75!`）
+- サイドバー: ヘッダーにタイトル + リセットボタン（`<Button variant="secondary" size="sm">`）、設定スライダー群 + アクションボタン（CSS出力 / ダウンロード等）を最下部に配置
 - ネスト要素: 親パラメータが有効な時だけ子オプションを表示（`pl-3 border-l-2 border-border`）
+- 背景透過トグル: パーティクル・ドットマップで使用。ONでチェッカーボードプレビュー表示
 
 ## 注意点
 - Three.js は SSR 不可 → `useEffect` 内で `await import("three")` の動的インポートパターン
@@ -74,3 +76,15 @@ lib/
 - `next build` 中に `.next` キャッシュが壊れることがある → `rm -rf .next` で解消
 - Tailwind v4 の important 修飾子は `!` サフィックス（例: `bg-black/55!`）
 - ドメイン: ムームードメインで `suna.design` を管理、`workbench` サブドメインを CNAME で Vercel に向けている
+
+## アナリティクス
+- **Vercel Analytics** 導入済み（`@vercel/analytics/react`）。`app/layout.tsx` に `<Analytics />` コンポーネント配置
+- Vercelダッシュボード > プロジェクト > Analytics タブで閲覧（初回は有効化が必要な場合あり）
+
+## ドットマップ固有の注意点
+- **d3-geo**, **topojson-client** を使用（SSR不可 → `useEffect` 内で動的インポート）
+- 陸地判定: GeoJSON → Canvas raster（8192px幅）に描画し、O(1)のピクセルルックアップで高速化
+- 国ハイライト: 国別rasterを `useRef<Map>` でキャッシュ（遅延生成）
+- TopoJSON（`public/data/world-110m.json`）のIDはゼロ埋め3桁文字列（例: `"032"`）。`COUNTRY_NAME_JA` マッピングは先頭ゼロなし → ルックアップ時に `String(Number(id))` で変換
+- 国名は全て日本語（`COUNTRY_NAME_JA` に174カ国分のマッピング）
+- Mercator投影の緯度範囲: -56° 〜 71°（高緯度の歪み回避のため意図的にクリップ）

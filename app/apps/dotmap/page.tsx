@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useLanguage } from "@/lib/i18n";
 
 /* ------------------------------------------------------------------ */
 /*  Types & Constants                                                  */
@@ -301,6 +302,7 @@ interface CountryEntry {
 /* ------------------------------------------------------------------ */
 
 export default function DotMapPage() {
+  const { lang, toggle, t } = useLanguage();
   const [params, setParams] = useState<MapParams>(DEFAULT_PARAMS);
   const [ready, setReady] = useState(false);
   const [countryList, setCountryList] = useState<CountryEntry[]>([]);
@@ -531,7 +533,7 @@ export default function DotMapPage() {
           }}
         >
           {!ready ? (
-            <p className="text-sm text-muted-foreground">読み込み中...</p>
+            <p className="text-sm text-muted-foreground">{t.dotmap.loading}</p>
           ) : (
             <div
               className="w-full h-full flex items-center justify-center [&>svg]:max-w-full [&>svg]:max-h-full"
@@ -541,16 +543,22 @@ export default function DotMapPage() {
         </div>
 
         {/* Top bar */}
-        <div className="absolute inset-x-0 top-0 flex items-center p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
             <Button
               variant="outline"
               size="sm"
               className="bg-white/75! border-black/10! text-foreground/80! backdrop-blur-xl hover:bg-white/90! hover:border-black/20!"
             >
-              ← 戻る
+              {t.back}
             </Button>
           </Link>
+          <button
+            onClick={toggle}
+            className="text-[13px] font-medium bg-white/75! border border-black/10 text-foreground/80 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-white/90! select-none"
+          >
+            {lang === "ja" ? "EN" : "JA"}
+          </button>
         </div>
       </div>
 
@@ -558,18 +566,18 @@ export default function DotMapPage() {
       <aside className="flex-1 md:flex-none md:w-75 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.12)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
         <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold -tracking-[0.01em]">
-            ドットマップ
+            {t.apps.dotmap.name}
           </h2>
           <Button variant="secondary" size="sm" onClick={handleReset}>
-            リセット
+            {t.reset}
           </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
-          <SectionHeader>マップ設定</SectionHeader>
+          <SectionHeader>{t.dotmap.mapSettings}</SectionHeader>
 
           <ParamSlider
-            label="密度（行数）"
+            label={t.dotmap.density}
             value={params.rows}
             min={20}
             max={250}
@@ -578,7 +586,7 @@ export default function DotMapPage() {
           />
 
           <ParamSlider
-            label="横シフト（経度）"
+            label={t.dotmap.lngShift}
             value={params.lngOffset}
             min={-180}
             max={180}
@@ -587,7 +595,7 @@ export default function DotMapPage() {
           />
 
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">グリッドパターン</Label>
+            <Label className="text-[13px]">{t.dotmap.gridPattern}</Label>
             <Select
               value={params.gridPattern}
               onValueChange={(v) =>
@@ -598,24 +606,24 @@ export default function DotMapPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="vertical">垂直</SelectItem>
-                <SelectItem value="diagonal">斜め</SelectItem>
+                <SelectItem value="vertical">{t.dotmap.vertical}</SelectItem>
+                <SelectItem value="diagonal">{t.dotmap.diagonal}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <Separator />
 
-          <SectionHeader>外観</SectionHeader>
+          <SectionHeader>{t.dotmap.appearance}</SectionHeader>
 
           <ColorRow
-            label="ドット色"
+            label={t.dotmap.dotColor}
             value={params.dotColor}
             onChange={(v) => updateParam("dotColor", v)}
           />
 
           <div className="flex items-center justify-between">
-            <Label className="text-[13px]">背景透過</Label>
+            <Label className="text-[13px]">{t.dotmap.transparentBg}</Label>
             <button
               type="button"
               role="switch"
@@ -628,14 +636,14 @@ export default function DotMapPage() {
           </div>
           {!params.bgTransparent && (
             <ColorRow
-              label="背景色"
+              label={t.dotmap.bgColor}
               value={params.backgroundColor}
               onChange={(v) => updateParam("backgroundColor", v)}
             />
           )}
 
           <ParamSlider
-            label="ドット半径"
+            label={t.dotmap.dotRadius}
             value={params.dotRadius}
             min={0.1}
             max={0.6}
@@ -644,7 +652,7 @@ export default function DotMapPage() {
           />
 
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">形状</Label>
+            <Label className="text-[13px]">{t.dotmap.shape}</Label>
             <Select
               value={params.shape}
               onValueChange={(v) =>
@@ -655,22 +663,22 @@ export default function DotMapPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="circle">円</SelectItem>
-                <SelectItem value="hexagon">六角形</SelectItem>
+                <SelectItem value="circle">{t.dotmap.circle}</SelectItem>
+                <SelectItem value="hexagon">{t.dotmap.hexagon}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <Separator />
 
-          <SectionHeader>国ハイライト</SectionHeader>
+          <SectionHeader>{t.dotmap.countryHighlight}</SectionHeader>
 
           {availableCountries.length > 0 && (
             <div className="flex flex-col gap-2">
-              <Label className="text-[13px]">国を追加</Label>
+              <Label className="text-[13px]">{t.dotmap.addCountry}</Label>
               <Select onValueChange={addCountry} value="">
                 <SelectTrigger className="cursor-pointer">
-                  <SelectValue placeholder="国を選択..." />
+                  <SelectValue placeholder={t.dotmap.selectCountry} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[240px]">
                   {availableCountries.map((c) => (
@@ -713,7 +721,7 @@ export default function DotMapPage() {
           <Separator />
 
           <Button className="w-full" onClick={handleDownload}>
-            SVGダウンロード
+            {t.dotmap.svgDownload}
           </Button>
         </div>
       </aside>

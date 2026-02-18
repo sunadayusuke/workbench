@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLanguage } from "@/lib/i18n";
 
 /* ================================================================== */
 /*  Color conversion utilities (no external library)                   */
@@ -529,6 +530,7 @@ function ContrastResult({
   fgHex: string;
   bgHex: string;
 }) {
+  const { t } = useLanguage();
   const ratio = contrastRatio(fgHex, bgHex);
   const checks = [
     { label: "AA", threshold: 4.5 },
@@ -545,12 +547,12 @@ function ContrastResult({
         style={{ backgroundColor: bgHex, color: fgHex }}
       >
         <p className="text-[22px] font-bold leading-tight">Aa</p>
-        <p className="text-xs mt-1">サンプルテキスト</p>
+        <p className="text-xs mt-1">{t.color.sampleText}</p>
       </div>
 
       {/* Ratio */}
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium">コントラスト比</span>
+        <span className="text-[13px] font-medium">{t.color.contrastRatio}</span>
         <span className="text-[15px] font-bold font-mono tabular-nums">
           {ratio.toFixed(2)}:1
         </span>
@@ -651,6 +653,7 @@ function textOnBg(bgHex: string): string {
 }
 
 function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) {
+  const { t } = useLanguage();
   const pageBg = bg === "light" ? "#ffffff" : "#000000";
 
   // コントラスト比ベースで動的にステップを選定
@@ -681,17 +684,17 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
         style={{ backgroundColor: surfaceBg, border: `1px solid ${borderSubtle}` }}
       >
         <div className="flex items-center justify-between">
-          <span className="text-[13px] font-bold">月間レポート</span>
+          <span className="text-[13px] font-bold">{t.color.monthlyReport}</span>
           <span
             className="text-[11px] px-2 py-0.5 rounded-full font-medium"
             style={{ backgroundColor: surfaceRaised, color: raisedText }}
           >
-            公開中
+            {t.color.published}
           </span>
         </div>
         <p className="text-[26px] font-bold tracking-tight">¥1,248,000</p>
         <p className="text-[12px]" style={{ color: textSecondary }}>
-          前月比 +12.5%
+          {t.color.prevMonth}
         </p>
         <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: surfaceRaised }}>
           <div
@@ -714,7 +717,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
             color: "var(--btn-text)",
           } as React.CSSProperties}
         >
-          保存する
+          {t.color.save}
         </button>
         <button
           className="inline-flex items-center justify-center h-9 px-4 rounded-xl text-[13px] font-medium transition-all active:scale-[0.97] ui-btn-secondary"
@@ -725,7 +728,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
             color: textPrimary,
           } as React.CSSProperties}
         >
-          下書き
+          {t.color.draft}
         </button>
         <button
           className="inline-flex items-center justify-center h-9 px-4 rounded-xl text-[13px] font-medium transition-all active:scale-[0.97] ui-btn-outline"
@@ -736,7 +739,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
             color: textPrimary,
           } as React.CSSProperties}
         >
-          キャンセル
+          {t.cancel}
         </button>
       </div>
 
@@ -752,16 +755,16 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
           i
         </span>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[13px] font-semibold">お知らせ</span>
+          <span className="text-[13px] font-semibold">{t.color.notification}</span>
           <span className="text-[12px]" style={{ color: textSecondary }}>
-            新しいアップデートが利用可能です。
+            {t.color.newUpdate}
           </span>
         </div>
       </div>
 
       {/* Input */}
       <div className="flex flex-col gap-1.5">
-        <span className="text-[13px] font-medium">メールアドレス</span>
+        <span className="text-[13px] font-medium">{t.color.email}</span>
         <div
           className="h-9 rounded-xl px-3 flex items-center text-[13px]"
           style={{
@@ -779,7 +782,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
         className="rounded-lg overflow-hidden"
         style={{ border: `1px solid ${borderSubtle}` }}
       >
-        {["ダッシュボード", "プロジェクト", "設定"].map((item, i) => (
+        {[t.color.dashboard, t.color.project, t.settings].map((item, i) => (
           <div
             key={item}
             className="px-4 py-2.5 text-[13px] flex items-center justify-between transition-colors ui-list-item"
@@ -805,6 +808,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
 /* ================================================================== */
 
 export default function ColorPage() {
+  const { lang, toggle, t } = useLanguage();
   // Base color state
   const [hex, setHex] = useState("#2a6db6");
   const [oklch, setOklch] = useState<[number, number, number]>(() =>
@@ -877,16 +881,22 @@ export default function ColorPage() {
       {/* Main area */}
       <div className="h-[55vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0 relative">
         {/* Back button */}
-        <div className="absolute top-0 left-0 p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
             <Button
               variant="outline"
               size="sm"
               className="bg-white/75! border-black/10! text-foreground/80! backdrop-blur-xl hover:bg-white/90! hover:border-black/20!"
             >
-              ← 戻る
+              {t.back}
             </Button>
           </Link>
+          <button
+            onClick={toggle}
+            className="text-[13px] font-medium bg-white/75! border border-black/10 text-foreground/80 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-white/90! select-none"
+          >
+            {lang === "ja" ? "EN" : "JA"}
+          </button>
         </div>
 
         {/* Content */}
@@ -894,7 +904,7 @@ export default function ColorPage() {
           {/* Color preview */}
           <section className="flex flex-col gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              プレビュー
+              {t.color.preview}
             </h3>
             <div className="flex gap-4 items-stretch">
               <div
@@ -909,7 +919,7 @@ export default function ColorPage() {
                 </p>
                 {!gamutOk && (
                   <p className="text-xs text-warning font-medium">
-                    sRGBガマット外（クランプ表示）
+                    {t.color.outOfGamut}
                   </p>
                 )}
               </div>
@@ -921,10 +931,10 @@ export default function ColorPage() {
           {/* Contrast checker */}
           <section className="flex flex-col gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              コントラストチェック
+              {t.color.contrastCheck}
             </h3>
             <ColorInput
-              label="比較色"
+              label={t.color.compareColor}
               hex={contrastHex}
               onChangeHex={setContrastHex}
               inputClassName="w-20"
@@ -940,7 +950,7 @@ export default function ColorPage() {
           {/* Scale */}
           <section className="flex flex-col gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              カラースケール
+              {t.color.colorScale}
             </h3>
             <div className="flex flex-col sm:flex-row -mx-4 md:-mx-6 -mb-6">
               <div className="flex-1 min-w-0 bg-white px-5 py-6 md:px-9 md:py-9">
@@ -959,7 +969,7 @@ export default function ColorPage() {
           {/* UI Samples */}
           <section className="flex flex-col gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              UIサンプル
+              {t.color.uiSample}
             </h3>
             <div className="flex flex-col sm:flex-row -mx-4 md:-mx-6 -mb-6">
               <div className="flex-1 min-w-0 bg-white px-5 py-6 md:px-9 md:py-9">
@@ -977,13 +987,13 @@ export default function ColorPage() {
       <aside className="flex-1 md:flex-none w-full md:w-80 bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.15)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
         <div className="flex items-center px-6 h-10 md:h-14 border-b border-border shrink-0">
           <h2 className="text-[15px] font-semibold -tracking-[0.01em]">
-            設定
+            {t.settings}
           </h2>
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
           {/* Base color input */}
           <ColorInput
-            label="ベースカラー"
+            label={t.color.baseColor}
             hex={hex}
             onChangeHex={updateFromHex}
           />
@@ -995,7 +1005,7 @@ export default function ColorPage() {
             OKLCH
           </p>
           <ParamSlider
-            label="L（明度）"
+            label={t.color.oklchL}
             value={oklch[0]}
             min={0}
             max={1}
@@ -1003,7 +1013,7 @@ export default function ColorPage() {
             onChange={(v) => updateFromOklch(0, v)}
           />
           <ParamSlider
-            label="C（彩度）"
+            label={t.color.oklchC}
             value={oklch[1]}
             min={0}
             max={0.4}
@@ -1011,7 +1021,7 @@ export default function ColorPage() {
             onChange={(v) => updateFromOklch(1, v)}
           />
           <ParamSlider
-            label="H（色相）"
+            label={t.color.oklchH}
             value={oklch[2]}
             min={0}
             max={360}
@@ -1023,7 +1033,7 @@ export default function ColorPage() {
 
           {/* Scale name */}
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">スケール名</Label>
+            <Label className="text-[13px]">{t.color.scaleName}</Label>
             <Input
               value={scaleName}
               onChange={(e) => setScaleName(e.target.value)}
@@ -1031,7 +1041,7 @@ export default function ColorPage() {
               className="font-mono text-xs"
             />
             <p className="text-[11px] text-muted-foreground">
-              CSS変数のプレフィックス（例: --{scaleName}-500）
+              {t.color.scaleNameHint.replace("{name}", scaleName)}
             </p>
           </div>
 
@@ -1044,7 +1054,7 @@ export default function ColorPage() {
               setCopied(false);
             }}
           >
-            CSS出力
+            {t.exportCss}
           </Button>
         </div>
       </aside>
@@ -1053,7 +1063,7 @@ export default function ColorPage() {
       <Dialog open={showCssDialog} onOpenChange={setShowCssDialog}>
         <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
           <DialogHeader>
-            <DialogTitle>CSS出力 — OKLCHカラースケール</DialogTitle>
+            <DialogTitle>{t.color.exportCssTitle}</DialogTitle>
           </DialogHeader>
           <textarea
             className="flex-1 min-h-[300px] bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
@@ -1065,10 +1075,10 @@ export default function ColorPage() {
               variant="outline"
               onClick={() => setShowCssDialog(false)}
             >
-              閉じる
+              {t.close}
             </Button>
             <Button onClick={handleCopyCss}>
-              {copied ? "コピーしました" : "クリップボードにコピー"}
+              {copied ? t.copied : t.copy}
             </Button>
           </div>
         </DialogContent>

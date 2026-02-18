@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLanguage } from "@/lib/i18n";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -405,6 +406,7 @@ function DropZone({
   onFile: (file: File) => void;
   isDragging: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <label
       className={`absolute inset-0 flex flex-col items-center justify-center cursor-pointer transition-colors ${
@@ -413,10 +415,10 @@ function DropZone({
     >
       <div className="text-[48px] mb-4 opacity-60">🖼️</div>
       <p className="text-[15px] text-white/70 font-medium mb-1">
-        画像をドラッグ＆ドロップ
+        {t.image.dropHint}
       </p>
       <p className="text-[13px] text-white/40">
-        またはクリックしてファイルを選択
+        {t.image.clickHint}
       </p>
       <input
         type="file"
@@ -436,6 +438,7 @@ function DropZone({
 /* ------------------------------------------------------------------ */
 
 export default function ImagePage() {
+  const { lang, toggle, t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rendererRef = useRef<{ renderer: any; scene: any; camera: any; material: any } | null>(null);
@@ -743,16 +746,22 @@ export default function ImagePage() {
         {!hasImage && <DropZone onFile={loadImage} isDragging={isDragging} />}
 
         {/* トップバー */}
-        <div className="absolute inset-x-0 top-0 flex items-center p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
             <Button
               variant="outline"
               size="sm"
               className="bg-black/55! border-white/15! text-white/85! backdrop-blur-xl hover:bg-black/75! hover:border-white/30! hover:text-white!"
             >
-              ← 戻る
+              {t.back}
             </Button>
           </Link>
+          <button
+            onClick={toggle}
+            className="text-[13px] font-medium bg-black/55! border border-white/15 text-white/85 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-black/75! select-none"
+          >
+            {lang === "ja" ? "EN" : "JA"}
+          </button>
         </div>
       </div>
 
@@ -760,16 +769,16 @@ export default function ImagePage() {
       <aside className="flex-1 md:flex-none md:w-80 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.25)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
         <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold -tracking-[0.01em]">
-            画像加工
+            {t.apps.image.name}
           </h2>
           <Button variant="secondary" size="sm" onClick={handleReset} disabled={!hasImage}>
-            リセット
+            {t.reset}
           </Button>
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
           {/* アップロード */}
           <label className="flex items-center justify-center gap-2 min-h-10 py-2.5 rounded-lg border border-dashed border-border text-[13px] text-muted-foreground cursor-pointer transition-colors hover:border-foreground hover:text-foreground">
-            {hasImage ? "別の画像を選択" : "画像を選択"}
+            {hasImage ? t.image.changeImage : t.image.selectImage}
             <input
               type="file"
               accept="image/*"
@@ -784,33 +793,33 @@ export default function ImagePage() {
           <Separator />
 
           {/* 基本補正 */}
-          <SectionHeader>基本補正</SectionHeader>
-          <ParamSlider label="明るさ" value={params.brightness} min={-1} max={1} step={0.01} onChange={(v) => updateParam("brightness", v)} />
-          <ParamSlider label="コントラスト" value={params.contrast} min={-1} max={1} step={0.01} onChange={(v) => updateParam("contrast", v)} />
-          <ParamSlider label="彩度" value={params.saturation} min={-1} max={1} step={0.01} onChange={(v) => updateParam("saturation", v)} />
-          <ParamSlider label="露出" value={params.exposure} min={-2} max={2} step={0.01} onChange={(v) => updateParam("exposure", v)} />
-          <ParamSlider label="ハイライト" value={params.highlights} min={-1} max={1} step={0.01} onChange={(v) => updateParam("highlights", v)} />
-          <ParamSlider label="シャドウ" value={params.shadows} min={-1} max={1} step={0.01} onChange={(v) => updateParam("shadows", v)} />
+          <SectionHeader>{t.image.basicAdjustments}</SectionHeader>
+          <ParamSlider label={t.image.brightness} value={params.brightness} min={-1} max={1} step={0.01} onChange={(v) => updateParam("brightness", v)} />
+          <ParamSlider label={t.image.contrast} value={params.contrast} min={-1} max={1} step={0.01} onChange={(v) => updateParam("contrast", v)} />
+          <ParamSlider label={t.image.saturation} value={params.saturation} min={-1} max={1} step={0.01} onChange={(v) => updateParam("saturation", v)} />
+          <ParamSlider label={t.image.exposure} value={params.exposure} min={-2} max={2} step={0.01} onChange={(v) => updateParam("exposure", v)} />
+          <ParamSlider label={t.image.highlights} value={params.highlights} min={-1} max={1} step={0.01} onChange={(v) => updateParam("highlights", v)} />
+          <ParamSlider label={t.image.shadows} value={params.shadows} min={-1} max={1} step={0.01} onChange={(v) => updateParam("shadows", v)} />
 
           <Separator />
 
           {/* エフェクト */}
-          <SectionHeader>エフェクト</SectionHeader>
-          <ParamSlider label="グリッチ" value={params.glitchAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("glitchAmount", v)} />
+          <SectionHeader>{t.image.effects}</SectionHeader>
+          <ParamSlider label={t.image.glitch} value={params.glitchAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("glitchAmount", v)} />
           {params.glitchAmount > 0 && (
             <div className="pl-3 border-l-2 border-border">
-              <ParamSlider label="シード" value={params.glitchSeed} min={0} max={100} step={1} onChange={(v) => updateParam("glitchSeed", v)} />
+              <ParamSlider label={t.image.seed} value={params.glitchSeed} min={0} max={100} step={1} onChange={(v) => updateParam("glitchSeed", v)} />
             </div>
           )}
-          <ParamSlider label="ノイズ" value={params.noise} min={0} max={1} step={0.01} onChange={(v) => updateParam("noise", v)} />
-          <ParamSlider label="ぼかし" value={params.blur} min={0} max={20} step={0.1} onChange={(v) => updateParam("blur", v)} />
-          <ParamSlider label="ビネット" value={params.vignette} min={0} max={1} step={0.01} onChange={(v) => updateParam("vignette", v)} />
-          <ParamSlider label="ピクセレート" value={params.pixelate} min={0} max={1} step={0.01} onChange={(v) => updateParam("pixelate", v)} />
-          <ParamSlider label="RGBシフト" value={params.rgbShift} min={0} max={1} step={0.01} onChange={(v) => updateParam("rgbShift", v)} />
+          <ParamSlider label={t.image.noise} value={params.noise} min={0} max={1} step={0.01} onChange={(v) => updateParam("noise", v)} />
+          <ParamSlider label={t.image.blur} value={params.blur} min={0} max={20} step={0.1} onChange={(v) => updateParam("blur", v)} />
+          <ParamSlider label={t.image.vignette} value={params.vignette} min={0} max={1} step={0.01} onChange={(v) => updateParam("vignette", v)} />
+          <ParamSlider label={t.image.pixelate} value={params.pixelate} min={0} max={1} step={0.01} onChange={(v) => updateParam("pixelate", v)} />
+          <ParamSlider label={t.image.rgbShift} value={params.rgbShift} min={0} max={1} step={0.01} onChange={(v) => updateParam("rgbShift", v)} />
           {params.rgbShift > 0 && (
             <div className="pl-3 border-l-2 border-border flex flex-col gap-3">
               <div className="flex flex-col gap-2">
-                <Label className="text-[13px]">タイプ</Label>
+                <Label className="text-[13px]">{t.image.type}</Label>
                 <Select
                   value={String(params.rgbShiftMode)}
                   onValueChange={(v) => updateParam("rgbShiftMode", Number(v))}
@@ -819,38 +828,38 @@ export default function ImagePage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0">リニア</SelectItem>
-                    <SelectItem value="1">ラジアル</SelectItem>
+                    <SelectItem value="0">{t.image.linear}</SelectItem>
+                    <SelectItem value="1">{t.image.radial}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               {params.rgbShiftMode === 0 && (
-                <ParamSlider label="角度" value={params.rgbShiftAngle} min={0} max={360} step={1} onChange={(v) => updateParam("rgbShiftAngle", v)} />
+                <ParamSlider label={t.image.angle} value={params.rgbShiftAngle} min={0} max={360} step={1} onChange={(v) => updateParam("rgbShiftAngle", v)} />
               )}
             </div>
           )}
-          <ParamSlider label="ウェーブ" value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("waveAmount", v)} />
+          <ParamSlider label={t.image.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("waveAmount", v)} />
           {params.waveAmount > 0 && (
             <div className="pl-3 border-l-2 border-border">
-              <ParamSlider label="周波数" value={params.waveFrequency} min={1} max={50} step={0.5} onChange={(v) => updateParam("waveFrequency", v)} />
+              <ParamSlider label={t.image.frequency} value={params.waveFrequency} min={1} max={50} step={0.5} onChange={(v) => updateParam("waveFrequency", v)} />
             </div>
           )}
-          <ParamSlider label="ハーフトーン" value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => updateParam("halftone", v)} />
-          <ParamSlider label="スキャンライン" value={params.scanline} min={0} max={1} step={0.01} onChange={(v) => updateParam("scanline", v)} />
+          <ParamSlider label={t.image.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => updateParam("halftone", v)} />
+          <ParamSlider label={t.image.scanline} value={params.scanline} min={0} max={1} step={0.01} onChange={(v) => updateParam("scanline", v)} />
 
           <Separator />
 
           {/* カラーエフェクト */}
-          <SectionHeader>カラーエフェクト</SectionHeader>
-          <ParamSlider label="シアン ↔ イエロー" value={params.temperature} min={-1} max={1} step={0.01} onChange={(v) => updateParam("temperature", v)} />
-          <ParamSlider label="グリーン ↔ マゼンタ" value={params.tint} min={-1} max={1} step={0.01} onChange={(v) => updateParam("tint", v)} />
-          <ParamSlider label="色相シフト" value={params.hueShift} min={-0.5} max={0.5} step={0.01} onChange={(v) => updateParam("hueShift", v)} />
-          <ParamSlider label="フェード" value={params.fade} min={0} max={1} step={0.01} onChange={(v) => updateParam("fade", v)} />
-          <ParamSlider label="デュオトーン" value={params.duotone} min={0} max={1} step={0.01} onChange={(v) => updateParam("duotone", v)} />
+          <SectionHeader>{t.image.colorEffects}</SectionHeader>
+          <ParamSlider label={t.image.cyanYellow} value={params.temperature} min={-1} max={1} step={0.01} onChange={(v) => updateParam("temperature", v)} />
+          <ParamSlider label={t.image.greenMagenta} value={params.tint} min={-1} max={1} step={0.01} onChange={(v) => updateParam("tint", v)} />
+          <ParamSlider label={t.image.hueShift} value={params.hueShift} min={-0.5} max={0.5} step={0.01} onChange={(v) => updateParam("hueShift", v)} />
+          <ParamSlider label={t.image.fade} value={params.fade} min={0} max={1} step={0.01} onChange={(v) => updateParam("fade", v)} />
+          <ParamSlider label={t.image.duotone} value={params.duotone} min={0} max={1} step={0.01} onChange={(v) => updateParam("duotone", v)} />
           {params.duotone > 0 && (
             <div className="pl-3 border-l-2 border-border flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <Label className="text-[13px] flex-1">シャドウ</Label>
+                <Label className="text-[13px] flex-1">{t.image.shadow}</Label>
                 <input
                   type="color"
                   value={params.duotoneShadow}
@@ -860,7 +869,7 @@ export default function ImagePage() {
                 <span className="text-xs font-mono text-muted-foreground w-16">{params.duotoneShadow}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-[13px] flex-1">ハイライト</Label>
+                <Label className="text-[13px] flex-1">{t.image.highlight}</Label>
                 <input
                   type="color"
                   value={params.duotoneHighlight}
@@ -874,7 +883,7 @@ export default function ImagePage() {
 
           <Separator />
           <Button className="w-full" onClick={() => setShowDownload(true)} disabled={!hasImage}>
-            ダウンロード
+            {t.download}
           </Button>
         </div>
       </aside>
@@ -883,11 +892,11 @@ export default function ImagePage() {
       <Dialog open={showDownload} onOpenChange={setShowDownload}>
         <DialogContent className="max-w-[400px]!">
           <DialogHeader>
-            <DialogTitle>ダウンロード</DialogTitle>
+            <DialogTitle>{t.download}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-4 pt-2">
             <div className="flex flex-col gap-2">
-              <Label className="text-[13px]">形式</Label>
+              <Label className="text-[13px]">{t.image.format}</Label>
               <Select value={downloadFormat} onValueChange={setDownloadFormat}>
                 <SelectTrigger className="cursor-pointer">
                   <SelectValue />
@@ -901,7 +910,7 @@ export default function ImagePage() {
             </div>
             {(downloadFormat === "jpeg" || downloadFormat === "webp") && (
               <ParamSlider
-                label="品質"
+                label={t.image.quality}
                 value={jpegQuality}
                 min={0.1}
                 max={1}
@@ -911,9 +920,9 @@ export default function ImagePage() {
             )}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setShowDownload(false)}>
-                キャンセル
+                {t.cancel}
               </Button>
-              <Button onClick={handleDownload}>ダウンロード</Button>
+              <Button onClick={handleDownload}>{t.download}</Button>
             </div>
           </div>
         </DialogContent>

@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLanguage } from "@/lib/i18n";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -139,12 +140,7 @@ const DEFAULT_PARAMS: ShaderParams = {
   threshold2: 0.2,
 };
 
-const MODES = [
-  { value: "0", label: "フロー" },
-  { value: "1", label: "ウェーブ" },
-  { value: "2", label: "リップル" },
-  { value: "3", label: "モーフ" },
-];
+const MODE_VALUES = ["0", "1", "2", "3"] as const;
 
 /* ------------------------------------------------------------------ */
 /*  Export code generator                                             */
@@ -262,6 +258,7 @@ function ColorRow({
 /* ------------------------------------------------------------------ */
 
 export default function ShaderPage() {
+  const { lang, toggle, t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const materialRef = useRef<{ uniforms: Record<string, { value: unknown }> } | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -387,24 +384,29 @@ export default function ShaderPage() {
         <div ref={containerRef} className="w-full h-full" />
 
         {/* Top bar */}
-        <div className="absolute inset-x-0 top-0 flex items-center p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
             <Button variant="outline" size="sm" className="bg-black/55! border-white/15! text-white/85! backdrop-blur-xl hover:bg-black/75! hover:border-white/30! hover:text-white!">
-              ← 戻る
+              {t.back}
             </Button>
           </Link>
+          <button
+            onClick={toggle}
+            className="text-[13px] font-medium bg-black/55! border border-white/15 text-white/85 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-black/75! select-none"
+          >
+            {lang === "ja" ? "EN" : "JA"}
+          </button>
         </div>
       </div>
 
       {/* Sidebar */}
       <aside className="flex-1 md:flex-none md:w-70 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.25)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
         <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0">
-          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">設定</h2>
+          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">{t.settings}</h2>
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
-          {/* モード */}
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">モード</Label>
+            <Label className="text-[13px]">{t.shader.mode}</Label>
             <Select
               value={String(params.mode)}
               onValueChange={(v) => updateParam("mode", Number(v))}
@@ -413,42 +415,42 @@ export default function ShaderPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {MODES.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
+                {MODE_VALUES.map((v, i) => (
+                  <SelectItem key={v} value={v}>
+                    {[t.shader.flow, t.shader.wave, t.shader.ripple, t.shader.morph][i]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <ParamSlider label="速度" value={params.speed} min={0} max={1} step={0.01} onChange={(v) => updateParam("speed", v)} />
-          <ParamSlider label="歪み" value={params.warp} min={0.1} max={10} step={0.1} onChange={(v) => updateParam("warp", v)} />
-          <ParamSlider label="ノイズスケール" value={params.noiseScale} min={0.1} max={4} step={0.1} onChange={(v) => updateParam("noiseScale", v)} />
-          <ParamSlider label="色収差" value={params.aberration} min={0} max={0.1} step={0.001} onChange={(v) => updateParam("aberration", v)} />
+          <ParamSlider label={t.shader.speed} value={params.speed} min={0} max={1} step={0.01} onChange={(v) => updateParam("speed", v)} />
+          <ParamSlider label={t.shader.distortion} value={params.warp} min={0.1} max={10} step={0.1} onChange={(v) => updateParam("warp", v)} />
+          <ParamSlider label={t.shader.noiseScale} value={params.noiseScale} min={0.1} max={4} step={0.1} onChange={(v) => updateParam("noiseScale", v)} />
+          <ParamSlider label={t.shader.aberration} value={params.aberration} min={0} max={0.1} step={0.001} onChange={(v) => updateParam("aberration", v)} />
 
           <Separator />
 
-          <ColorRow label="背景色" value={params.colorBg} onChange={(v) => updateParam("colorBg", v)} />
+          <ColorRow label={t.shader.bgColor} value={params.colorBg} onChange={(v) => updateParam("colorBg", v)} />
 
           <Separator />
 
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">カラー 1</p>
-          <ColorRow label="色" value={params.color1} onChange={(v) => updateParam("color1", v)} />
-          <ParamSlider label="強度" value={params.intensity1} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity1", v)} />
-          <ParamSlider label="しきい値" value={params.threshold1} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold1", v)} />
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t.shader.color1}</p>
+          <ColorRow label={t.shader.colorLabel} value={params.color1} onChange={(v) => updateParam("color1", v)} />
+          <ParamSlider label={t.shader.intensity} value={params.intensity1} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity1", v)} />
+          <ParamSlider label={t.shader.threshold} value={params.threshold1} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold1", v)} />
 
           <Separator />
 
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">カラー 2</p>
-          <ColorRow label="色" value={params.color2} onChange={(v) => updateParam("color2", v)} />
-          <ParamSlider label="強度" value={params.intensity2} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity2", v)} />
-          <ParamSlider label="しきい値" value={params.threshold2} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold2", v)} />
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t.shader.color2}</p>
+          <ColorRow label={t.shader.colorLabel} value={params.color2} onChange={(v) => updateParam("color2", v)} />
+          <ParamSlider label={t.shader.intensity} value={params.intensity2} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity2", v)} />
+          <ParamSlider label={t.shader.threshold} value={params.threshold2} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold2", v)} />
 
           <Separator />
 
           <Button size="sm" onClick={handleExport}>
-            コード出力
+            {t.exportCode}
           </Button>
         </div>
       </aside>
@@ -457,7 +459,7 @@ export default function ShaderPage() {
       <Dialog open={showExport} onOpenChange={setShowExport}>
         <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
           <DialogHeader>
-            <DialogTitle>コード出力 — 軽量版HTML</DialogTitle>
+            <DialogTitle>{t.shader.exportCodeTitle}</DialogTitle>
           </DialogHeader>
           <textarea
             className="flex-1 min-h-[300px] bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
@@ -466,10 +468,10 @@ export default function ShaderPage() {
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setShowExport(false)}>
-              閉じる
+              {t.close}
             </Button>
             <Button onClick={handleCopy}>
-              {copied ? "コピーしました" : "クリップボードにコピー"}
+              {copied ? t.copied : t.copy}
             </Button>
           </div>
         </DialogContent>

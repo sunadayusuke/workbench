@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useLanguage } from "@/lib/i18n";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -298,20 +299,16 @@ interface GradientParams {
   waveRandom: number;
 }
 
-const ASPECT_PRESETS = [
-  { key: "9:16", label: "スマホ (9:16)", width: 1080, height: 1920 },
-  { key: "16:9", label: "デスクトップ (16:9)", width: 1920, height: 1080 },
-  { key: "1:1", label: "正方形 (1:1)", width: 1080, height: 1080 },
-  { key: "4:3", label: "4:3", width: 1440, height: 1080 },
-  { key: "3:2", label: "3:2", width: 1620, height: 1080 },
-  { key: "custom", label: "カスタム", width: 1080, height: 1920 },
+const ASPECT_PRESET_KEYS = [
+  { key: "9:16", width: 1080, height: 1920 },
+  { key: "16:9", width: 1920, height: 1080 },
+  { key: "1:1", width: 1080, height: 1080 },
+  { key: "4:3", width: 1440, height: 1080 },
+  { key: "3:2", width: 1620, height: 1080 },
+  { key: "custom", width: 1080, height: 1920 },
 ];
 
-const GRADIENT_TYPES = [
-  { value: "0", label: "メッシュ" },
-  { value: "1", label: "リニア" },
-  { value: "2", label: "ラジアル" },
-];
+const GRADIENT_TYPE_VALUES = ["0", "1", "2"] as const;
 
 const DEFAULT_COLORS: ColorSpot[] = [
   { color: "#ffffff", x: 0.25, y: 0.8 },
@@ -421,7 +418,7 @@ function getOutputSize(p: GradientParams): { width: number; height: number } {
   if (p.aspectPreset === "custom") {
     return { width: p.customWidth, height: p.customHeight };
   }
-  const preset = ASPECT_PRESETS.find((a) => a.key === p.aspectPreset);
+  const preset = ASPECT_PRESET_KEYS.find((a) => a.key === p.aspectPreset);
   return preset
     ? { width: preset.width, height: preset.height }
     : { width: 1080, height: 1920 };
@@ -495,6 +492,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 /* ------------------------------------------------------------------ */
 
 export default function GradientPage() {
+  const { lang, toggle, t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rendererRef = useRef<{ renderer: any; scene: any; camera: any; material: any } | null>(null);
@@ -844,16 +842,22 @@ export default function GradientPage() {
         </div>
 
         {/* Top bar */}
-        <div className="absolute inset-x-0 top-0 flex items-center p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
             <Button
               variant="outline"
               size="sm"
               className="bg-black/55! border-white/15! text-white/85! backdrop-blur-xl hover:bg-black/75! hover:border-white/30! hover:text-white!"
             >
-              ← 戻る
+              {t.back}
             </Button>
           </Link>
+          <button
+            onClick={toggle}
+            className="text-[13px] font-medium bg-black/55! border border-white/15 text-white/85 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-black/75! select-none"
+          >
+            {lang === "ja" ? "EN" : "JA"}
+          </button>
         </div>
       </div>
 
@@ -861,15 +865,15 @@ export default function GradientPage() {
       <aside className="flex-1 md:flex-none md:w-80 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.25)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
         <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold -tracking-[0.01em]">
-            グラデーション
+            {t.apps.gradient.name}
           </h2>
           <Button variant="secondary" size="sm" onClick={handleReset}>
-            リセット
+            {t.reset}
           </Button>
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
           {/* Aspect ratio */}
-          <SectionHeader>アスペクト比</SectionHeader>
+          <SectionHeader>{t.gradient.aspectRatio}</SectionHeader>
           <div className="flex flex-col gap-2">
             <Select
               value={params.aspectPreset}
@@ -879,16 +883,21 @@ export default function GradientPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ASPECT_PRESETS.map((p) => (
-                  <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
-                ))}
+                {ASPECT_PRESET_KEYS.map((p) => {
+                  const labels: Record<string, string> = {
+                    "9:16": t.gradient.phone, "16:9": t.gradient.desktop,
+                    "1:1": t.gradient.square, "4:3": "4:3", "3:2": "3:2",
+                    "custom": t.gradient.custom,
+                  };
+                  return <SelectItem key={p.key} value={p.key}>{labels[p.key]}</SelectItem>;
+                })}
               </SelectContent>
             </Select>
           </div>
           {params.aspectPreset === "custom" && (
             <div className="pl-3 border-l-2 border-border flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <Label className="text-[13px] w-8">幅</Label>
+                <Label className="text-[13px] w-8">{t.gradient.width}</Label>
                 <input
                   type="number"
                   value={params.customWidth}
@@ -897,7 +906,7 @@ export default function GradientPage() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-[13px] w-8">高さ</Label>
+                <Label className="text-[13px] w-8">{t.gradient.height}</Label>
                 <input
                   type="number"
                   value={params.customHeight}
@@ -911,9 +920,9 @@ export default function GradientPage() {
           <Separator />
 
           {/* Gradient type & params */}
-          <SectionHeader>グラデーション</SectionHeader>
+          <SectionHeader>{t.gradient.gradientType}</SectionHeader>
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">タイプ</Label>
+            <Label className="text-[13px]">{t.gradient.type}</Label>
             <Select
               value={String(params.gradientType)}
               onValueChange={(v) => setParams((prev) => ({ ...prev, gradientType: Number(v) }))}
@@ -922,27 +931,29 @@ export default function GradientPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {GRADIENT_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                {GRADIENT_TYPE_VALUES.map((v, i) => (
+                  <SelectItem key={v} value={v}>
+                    {[t.gradient.mesh, t.gradient.linear, t.gradient.radial][i]}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <ParamSlider label="広がり" value={params.spread} min={0.1} max={1.0} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, spread: v }))} />
+          <ParamSlider label={t.gradient.spread} value={params.spread} min={0.1} max={1.0} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, spread: v }))} />
           {params.gradientType === 1 && (
             <div className="pl-3 border-l-2 border-border">
-              <ParamSlider label="角度" value={params.angle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, angle: v }))} />
+              <ParamSlider label={t.gradient.angle} value={params.angle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, angle: v }))} />
             </div>
           )}
-          <ParamSlider label="スケール" value={params.scale} min={0.5} max={3.0} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, scale: v }))} />
-          <ParamSlider label="ノイズ" value={params.noise} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, noise: v }))} />
+          <ParamSlider label={t.gradient.scale} value={params.scale} min={0.5} max={3.0} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, scale: v }))} />
+          <ParamSlider label={t.gradient.noise} value={params.noise} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, noise: v }))} />
 
           <Separator />
 
           {/* Colors */}
-          <SectionHeader>カラー</SectionHeader>
+          <SectionHeader>{t.gradient.color}</SectionHeader>
           <Button variant="secondary" size="sm" className="w-full" onClick={handleShuffle}>
-            シャッフル
+            {t.gradient.shuffle}
           </Button>
           <div className="flex flex-col gap-2">
             {params.colors.map((spot, i) => (
@@ -969,43 +980,43 @@ export default function GradientPage() {
           </div>
           {params.colors.length < 8 && (
             <Button variant="outline" size="sm" className="w-full" onClick={handleAddColor}>
-              + カラー追加
+              {t.gradient.addColor}
             </Button>
           )}
 
           <Separator />
 
           {/* Effects */}
-          <SectionHeader>エフェクト</SectionHeader>
-          <ParamSlider label="グレイン" value={params.grain} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, grain: v }))} />
-          <ParamSlider label="粒子" value={params.stipple} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stipple: v }))} />
+          <SectionHeader>{t.gradient.effects}</SectionHeader>
+          <ParamSlider label={t.gradient.grain} value={params.grain} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, grain: v }))} />
+          <ParamSlider label={t.gradient.particle} value={params.stipple} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stipple: v }))} />
           {params.stipple > 0 && (
             <div className="pl-3 border-l-2 border-border">
-              <ParamSlider label="粒度" value={params.stippleSize} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stippleSize: v }))} />
+              <ParamSlider label={t.gradient.granularity} value={params.stippleSize} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stippleSize: v }))} />
             </div>
           )}
-          <ParamSlider label="ハーフトーン" value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, halftone: v }))} />
-          <ParamSlider label="リブ" value={params.glassAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassAmount: v }))} />
+          <ParamSlider label={t.gradient.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, halftone: v }))} />
+          <ParamSlider label={t.gradient.rib} value={params.glassAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassAmount: v }))} />
           {params.glassAmount > 0 && (
             <div className="pl-3 border-l-2 border-border flex flex-col gap-2">
-              <ParamSlider label="密度" value={params.glassFreq} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassFreq: v }))} />
-              <ParamSlider label="ズレ" value={params.glassShift} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassShift: v }))} />
+              <ParamSlider label={t.gradient.density} value={params.glassFreq} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassFreq: v }))} />
+              <ParamSlider label={t.gradient.shift} value={params.glassShift} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassShift: v }))} />
             </div>
           )}
-          <ParamSlider label="色収差" value={params.chromatic} min={0} max={2} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, chromatic: v }))} />
-          <ParamSlider label="ウェーブ" value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveAmount: v }))} />
+          <ParamSlider label={t.gradient.chromaticAberration} value={params.chromatic} min={0} max={2} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, chromatic: v }))} />
+          <ParamSlider label={t.gradient.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveAmount: v }))} />
           {params.waveAmount > 0 && (
             <div className="pl-3 border-l-2 border-border flex flex-col gap-2">
-              <ParamSlider label="周波数" value={params.waveFrequency} min={1} max={30} step={0.5} onChange={(v) => setParams((prev) => ({ ...prev, waveFrequency: v }))} />
-              <ParamSlider label="方向" value={params.waveAngle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, waveAngle: v }))} />
-              <ParamSlider label="ランダム" value={params.waveRandom} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveRandom: v }))} />
+              <ParamSlider label={t.gradient.frequency} value={params.waveFrequency} min={1} max={30} step={0.5} onChange={(v) => setParams((prev) => ({ ...prev, waveFrequency: v }))} />
+              <ParamSlider label={t.gradient.direction} value={params.waveAngle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, waveAngle: v }))} />
+              <ParamSlider label={t.gradient.random} value={params.waveRandom} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveRandom: v }))} />
             </div>
           )}
 
           <Separator />
 
           <Button className="w-full" onClick={handleDownload}>
-            ダウンロード
+            {t.download}
           </Button>
         </div>
       </aside>

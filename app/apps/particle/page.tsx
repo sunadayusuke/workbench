@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLanguage } from "@/lib/i18n";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -274,31 +275,22 @@ const DEFAULT_PARAMS: ParticleParams = {
 
 const MAX_PARTICLES = 500000;
 
-const PARTICLE_COUNTS = [
-  { value: "30000", label: "3万" },
-  { value: "50000", label: "5万" },
-  { value: "80000", label: "8万" },
-  { value: "100000", label: "10万" },
-  { value: "150000", label: "15万" },
-  { value: "200000", label: "20万" },
-  { value: "300000", label: "30万" },
-  { value: "500000", label: "50万" },
+const PARTICLE_COUNT_VALUES = [
+  { value: "30000",  ja: "3万",  en: "30K" },
+  { value: "50000",  ja: "5万",  en: "50K" },
+  { value: "80000",  ja: "8万",  en: "80K" },
+  { value: "100000", ja: "10万", en: "100K" },
+  { value: "150000", ja: "15万", en: "150K" },
+  { value: "200000", ja: "20万", en: "200K" },
+  { value: "300000", ja: "30万", en: "300K" },
+  { value: "500000", ja: "50万", en: "500K" },
 ];
 
-const ANIM_MODES = [
-  { value: "0", label: "フロー" },
-  { value: "1", label: "ウェーブ" },
-  { value: "3", label: "拡散" },
-];
-
-const FORMATION_MODES = [
-  { value: "0", label: "自由" },
-  { value: "1", label: "球" },
-  { value: "2", label: "キューブ" },
-{ value: "4", label: "リング" },
-{ value: "5", label: "テキスト" },
-  { value: "6", label: "SVG" },
-];
+const ANIM_MODE_VALUES = ["0", "1", "3"] as const;
+const FORMATION_MODE_VALUES = [
+  { value: "0" }, { value: "1" }, { value: "2" },
+  { value: "4" }, { value: "5" }, { value: "6" },
+] as const;
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
@@ -652,6 +644,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 /* ------------------------------------------------------------------ */
 
 export default function ParticlePage() {
+  const { lang, toggle, t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const threeRef = useRef<{
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1055,32 +1048,38 @@ export default function ParticlePage() {
         <div ref={containerRef} className="w-full h-full" />
 
         {/* Top bar */}
-        <div className="absolute inset-x-0 top-0 flex items-center p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
             <Button
               variant="outline"
               size="sm"
               className="bg-black/55! border-white/15! text-white/85! backdrop-blur-xl hover:bg-black/75! hover:border-white/30! hover:text-white!"
             >
-              ← 戻る
+              {t.back}
             </Button>
           </Link>
+          <button
+            onClick={toggle}
+            className="text-[13px] font-medium bg-black/55! border border-white/15 text-white/85 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-black/75! select-none"
+          >
+            {lang === "ja" ? "EN" : "JA"}
+          </button>
         </div>
       </div>
 
       {/* Sidebar */}
       <aside className="flex-1 md:flex-none md:w-75 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.25)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
         <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">パーティクル</h2>
+          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">{t.apps.particle.name}</h2>
           <Button variant="secondary" size="sm" onClick={handleReset}>
-            リセット
+            {t.reset}
           </Button>
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
           {/* Formation */}
-          <SectionHeader>フォーメーション</SectionHeader>
+          <SectionHeader>{t.particle.formation}</SectionHeader>
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">モード</Label>
+            <Label className="text-[13px]">{t.particle.mode}</Label>
             <Select
               value={String(params.formationMode)}
               onValueChange={(v) => updateParam("formationMode", Number(v))}
@@ -1089,11 +1088,13 @@ export default function ParticlePage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {FORMATION_MODES.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
+                {FORMATION_MODE_VALUES.map((m) => {
+                  const labels: Record<string, string> = {
+                    "0": t.particle.free, "1": t.particle.sphere, "2": t.particle.cube,
+                    "4": t.particle.ring, "5": t.particle.text, "6": t.particle.svg,
+                  };
+                  return <SelectItem key={m.value} value={m.value}>{labels[m.value]}</SelectItem>;
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -1101,12 +1102,12 @@ export default function ParticlePage() {
           {params.formationMode === 5 && (
             <div className="pl-3 border-l-2 border-border">
               <div className="flex flex-col gap-2">
-                <Label className="text-[13px]">テキスト</Label>
+                <Label className="text-[13px]">{t.particle.text}</Label>
                 <input
                   type="text"
                   value={params.inputText}
                   onChange={(e) => updateParam("inputText", e.target.value)}
-                  placeholder="テキストを入力"
+                  placeholder={t.particle.enterText}
                   className="h-9 rounded-md border border-border bg-transparent px-3 text-sm outline-none focus:border-ring"
                 />
               </div>
@@ -1129,7 +1130,7 @@ export default function ParticlePage() {
                   className="w-full"
                   onClick={() => svgInputRef.current?.click()}
                 >
-                  SVGファイルを選択
+                  {t.particle.selectSvg}
                 </Button>
                 {svgFileName && (
                   <p className="text-xs text-muted-foreground truncate">
@@ -1141,7 +1142,7 @@ export default function ParticlePage() {
           )}
 
           <ParamSlider
-            label="スケール"
+            label={t.particle.scale}
             value={params.formationScale}
             min={0.5}
             max={2.0}
@@ -1149,7 +1150,7 @@ export default function ParticlePage() {
             onChange={(v) => updateParam("formationScale", v)}
           />
           <ParamSlider
-            label="ばらつき"
+            label={t.particle.variation}
             value={params.formationSpread}
             min={0}
             max={1}
@@ -1157,7 +1158,7 @@ export default function ParticlePage() {
             onChange={(v) => updateParam("formationSpread", v)}
           />
           <ParamSlider
-            label="散布"
+            label={t.particle.scatter}
             value={params.scatter}
             min={0}
             max={1}
@@ -1167,7 +1168,7 @@ export default function ParticlePage() {
           {params.scatter > 0 && (
             <div className="pl-3 border-l-2 border-border">
               <ParamSlider
-                label="散布距離"
+                label={t.particle.scatterDistance}
                 value={params.scatterDistance}
                 min={0.02}
                 max={0.5}
@@ -1180,9 +1181,9 @@ export default function ParticlePage() {
           <Separator />
 
           {/* Particles */}
-          <SectionHeader>パーティクル</SectionHeader>
+          <SectionHeader>{t.apps.particle.name}</SectionHeader>
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">数</Label>
+            <Label className="text-[13px]">{t.particle.particleCount}</Label>
             <Select
               value={String(params.particleCount)}
               onValueChange={(v) => updateParam("particleCount", Number(v))}
@@ -1191,16 +1192,16 @@ export default function ParticlePage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PARTICLE_COUNTS.map((c) => (
+                {PARTICLE_COUNT_VALUES.map((c) => (
                   <SelectItem key={c.value} value={c.value}>
-                    {c.label}
+                    {lang === "ja" ? c.ja : c.en}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <ParamSlider
-            label="サイズ"
+            label={t.particle.size}
             value={params.particleSize}
             min={0.5}
             max={5}
@@ -1208,7 +1209,7 @@ export default function ParticlePage() {
             onChange={(v) => updateParam("particleSize", v)}
           />
           <ParamSlider
-            label="サイズ変動"
+            label={t.particle.sizeVariation}
             value={params.sizeVariation}
             min={0}
             max={1}
@@ -1216,7 +1217,7 @@ export default function ParticlePage() {
             onChange={(v) => updateParam("sizeVariation", v)}
           />
           <ParamSlider
-            label="不透明度"
+            label={t.particle.opacity}
             value={params.opacity}
             min={0.1}
             max={1.0}
@@ -1227,9 +1228,9 @@ export default function ParticlePage() {
           <Separator />
 
           {/* Color */}
-          <SectionHeader>カラー</SectionHeader>
+          <SectionHeader>{t.particle.colorSection}</SectionHeader>
           <div className="flex items-center justify-between">
-            <Label className="text-[13px]">背景透過</Label>
+            <Label className="text-[13px]">{t.particle.transparentBg}</Label>
             <button
               type="button"
               role="switch"
@@ -1242,21 +1243,21 @@ export default function ParticlePage() {
           </div>
           {!params.colorBgTransparent && (
             <ColorRow
-              label="背景色"
+              label={t.particle.bgColor}
               value={params.colorBg}
               onChange={(v) => updateParam("colorBg", v)}
             />
           )}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <Label className="text-[13px]">パーティクル色</Label>
+              <Label className="text-[13px]">{t.particle.particleColor}</Label>
               {(params.colors || []).length < 5 && (
                 <button
                   type="button"
                   onClick={() => updateParam("colors", [...(params.colors || ["#7b68ee"]), "#ffffff"])}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  + 追加
+                  {t.particle.addColor}
                 </button>
               )}
             </div>
@@ -1293,7 +1294,7 @@ export default function ParticlePage() {
             </div>
           </div>
           <ParamSlider
-            label="カラー速度"
+            label={t.particle.colorSpeed}
             value={params.colorSpeed}
             min={-3}
             max={3}
@@ -1301,7 +1302,7 @@ export default function ParticlePage() {
             onChange={(v) => updateParam("colorSpeed", v)}
           />
           <ParamSlider
-            label="カラー周波数"
+            label={t.particle.colorFrequency}
             value={params.colorFreq}
             min={0.1}
             max={5}
@@ -1312,9 +1313,9 @@ export default function ParticlePage() {
           <Separator />
 
           {/* Animation */}
-          <SectionHeader>アニメーション</SectionHeader>
+          <SectionHeader>{t.particle.animation}</SectionHeader>
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">タイプ</Label>
+            <Label className="text-[13px]">{t.particle.animationType}</Label>
             <Select
               value={String(params.animMode)}
               onValueChange={(v) => updateParam("animMode", Number(v))}
@@ -1323,16 +1324,16 @@ export default function ParticlePage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ANIM_MODES.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
+                {ANIM_MODE_VALUES.map((v, i) => (
+                  <SelectItem key={v} value={v}>
+                    {[t.particle.flow, t.particle.wave, t.particle.diffusion][i]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <ParamSlider
-            label="速度"
+            label={t.particle.speed}
             value={params.speed}
             min={0}
             max={2}
@@ -1340,7 +1341,7 @@ export default function ParticlePage() {
             onChange={(v) => updateParam("speed", v)}
           />
           <ParamSlider
-            label="ノイズスケール"
+            label={t.particle.noiseScale}
             value={params.noiseScale}
             min={0.5}
             max={5}
@@ -1348,7 +1349,7 @@ export default function ParticlePage() {
             onChange={(v) => updateParam("noiseScale", v)}
           />
           <ParamSlider
-            label="乱流"
+            label={t.particle.turbulence}
             value={params.turbulence}
             min={0}
             max={3}
@@ -1358,7 +1359,7 @@ export default function ParticlePage() {
           {params.animMode === 1 && (
             <div className="pl-3 border-l-2 border-border flex flex-col gap-2">
               <ParamSlider
-                label="周波数"
+                label={t.particle.frequency}
                 value={params.waveFrequency}
                 min={1}
                 max={20}
@@ -1366,7 +1367,7 @@ export default function ParticlePage() {
                 onChange={(v) => updateParam("waveFrequency", v)}
               />
               <ParamSlider
-                label="振幅"
+                label={t.particle.amplitude}
                 value={params.waveAmplitude}
                 min={0}
                 max={1}
@@ -1379,9 +1380,9 @@ export default function ParticlePage() {
           <Separator />
 
           {/* Interaction */}
-          <SectionHeader>インタラクション</SectionHeader>
+          <SectionHeader>{t.particle.interaction}</SectionHeader>
           <div className="flex items-center justify-between">
-            <Label className="text-[13px]">マウスホバー</Label>
+            <Label className="text-[13px]">{t.particle.mouseHover}</Label>
             <button
               type="button"
               role="switch"
@@ -1395,7 +1396,7 @@ export default function ParticlePage() {
           {params.mouseInteraction && (
             <div className="pl-3 border-l-2 border-border">
               <ParamSlider
-                label="吸い付き"
+                label={t.particle.attraction}
                 value={params.mouseGravity}
                 min={0}
                 max={3}
@@ -1409,10 +1410,10 @@ export default function ParticlePage() {
 
           <div className="flex flex-col gap-2">
             <Button className="w-full" onClick={handleExport}>
-              コード出力
+              {t.particle.exportCode}
             </Button>
             <Button variant="outline" className="w-full" onClick={handleDownload}>
-              画像として出力
+              {t.particle.exportImage}
             </Button>
           </div>
         </div>
@@ -1422,7 +1423,7 @@ export default function ParticlePage() {
       <Dialog open={showExport} onOpenChange={setShowExport}>
         <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
           <DialogHeader>
-            <DialogTitle>コード出力 — 軽量版HTML</DialogTitle>
+            <DialogTitle>{t.particle.exportCodeTitle}</DialogTitle>
           </DialogHeader>
           <textarea
             className="flex-1 min-h-[300px] bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
@@ -1431,10 +1432,10 @@ export default function ParticlePage() {
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setShowExport(false)}>
-              閉じる
+              {t.close}
             </Button>
             <Button onClick={handleCopy}>
-              {copied ? "コピーしました" : "クリップボードにコピー"}
+              {copied ? t.copied : t.copy}
             </Button>
           </div>
         </DialogContent>

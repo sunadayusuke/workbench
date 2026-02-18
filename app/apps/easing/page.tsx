@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -77,14 +78,14 @@ const PRESET_CATEGORIES = [...new Set(EASING_PRESETS.map((p) => p.category))];
 /*  Scene definitions                                                  */
 /* ------------------------------------------------------------------ */
 
-const SCENES: { key: SceneKey; label: string; mode: SceneMode }[] = [
-  { key: "button", label: "ボタン", mode: "interactive" },
-  { key: "modal", label: "モーダル", mode: "toggle" },
-  { key: "toast", label: "トースト", mode: "toggle" },
-  { key: "sidebar", label: "サイドバー", mode: "toggle" },
-  { key: "drawer", label: "ドロワー", mode: "toggle" },
-  { key: "card", label: "カード", mode: "interactive" },
-  { key: "gallery", label: "ギャラリー", mode: "carousel" },
+const SCENES: { key: SceneKey; mode: SceneMode }[] = [
+  { key: "button", mode: "interactive" },
+  { key: "modal", mode: "toggle" },
+  { key: "toast", mode: "toggle" },
+  { key: "sidebar", mode: "toggle" },
+  { key: "drawer", mode: "toggle" },
+  { key: "card", mode: "interactive" },
+  { key: "gallery", mode: "carousel" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -122,8 +123,8 @@ function generateExportCode(
       return `transition: all ${duration}ms ${cb};`;
     case "css-animation":
       return `@keyframes myAnimation {
-  from { /* 開始状態 */ }
-  to { /* 終了状態 */ }
+  from { /* start state */ }
+  to { /* end state */ }
 }
 
 .element {
@@ -132,8 +133,8 @@ function generateExportCode(
     case "javascript":
       return `element.animate(
   [
-    { /* 開始状態 */ },
-    { /* 終了状態 */ }
+    { /* start state */ },
+    { /* end state */ }
   ],
   {
     duration: ${duration},
@@ -143,7 +144,7 @@ function generateExportCode(
 );`;
     case "framer-motion":
       return `<motion.div
-  animate={{ /* 終了状態 */ }}
+  animate={{ /* end state */ }}
   transition={{
     duration: ${sec},
     ease: [${x1}, ${y1}, ${x2}, ${y2}]
@@ -166,7 +167,7 @@ module.exports = {
   },
 };
 
-// 使用例:
+// Usage:
 // <div className="transition-all duration-[${duration}ms] ease-custom">`;
     default:
       return "";
@@ -485,6 +486,7 @@ interface SceneProps {
 
 function ButtonScene({ easing, duration }: SceneProps) {
   const [pressed, setPressed] = useState(false);
+  const { t } = useLanguage();
 
   const style: React.CSSProperties = {
     transform: pressed ? "scale(0.92)" : "scale(1)",
@@ -503,7 +505,7 @@ function ButtonScene({ easing, duration }: SceneProps) {
         onPointerUp={() => setPressed(false)}
         onPointerLeave={() => setPressed(false)}
       >
-        ボタンを押す
+        {t.easing.pressButton}
       </div>
     </div>
   );
@@ -511,6 +513,7 @@ function ButtonScene({ easing, duration }: SceneProps) {
 
 function CardScene({ easing, duration }: SceneProps) {
   const [hovered, setHovered] = useState(false);
+  const { t } = useLanguage();
 
   const style: React.CSSProperties = {
     transform: hovered ? "translateY(-4px)" : "translateY(0)",
@@ -532,9 +535,9 @@ function CardScene({ easing, duration }: SceneProps) {
       >
         <div className="h-[100px] bg-muted" />
         <div className="p-4">
-          <div className="text-[14px] font-semibold mb-1">カードタイトル</div>
+          <div className="text-[14px] font-semibold mb-1">{t.easing.cardTitle}</div>
           <div className="text-[12px] text-muted-foreground">
-            ホバーでエフェクトを確認
+            {t.easing.hoverHint}
           </div>
         </div>
       </div>
@@ -553,6 +556,7 @@ function ToggleControls({
   onOpen: () => void;
   onClose: () => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
       <button
@@ -560,14 +564,14 @@ function ToggleControls({
         disabled={isOpen}
         className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-foreground text-background text-[13px] font-semibold shadow-lg transition-all cursor-pointer hover:opacity-90 active:scale-95 disabled:opacity-30 disabled:cursor-default disabled:active:scale-100"
       >
-        開く
+        {t.easing.open}
       </button>
       <button
         onClick={onClose}
         disabled={!isOpen}
         className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-muted text-foreground border border-border text-[13px] font-semibold shadow-lg transition-all cursor-pointer hover:opacity-90 active:scale-95 disabled:opacity-30 disabled:cursor-default disabled:active:scale-100"
       >
-        閉じる
+        {t.easing.close}
       </button>
     </div>
   );
@@ -577,6 +581,7 @@ function ModalScene({ easing, duration }: SceneProps) {
   const [isOpen, setIsOpen] = useState(false);
   // Track whether we've ever opened so we can apply transitions only after first open
   const [hasOpened, setHasOpened] = useState(false);
+  const { t } = useLanguage();
 
   const handleOpen = () => {
     setHasOpened(true);
@@ -602,16 +607,16 @@ function ModalScene({ easing, duration }: SceneProps) {
         className="relative bg-card border border-border rounded-xl p-6 w-[280px] shadow-xl"
         style={modalStyle}
       >
-        <div className="text-[15px] font-semibold mb-2">確認</div>
+        <div className="text-[15px] font-semibold mb-2">{t.easing.confirm}</div>
         <div className="text-[13px] text-muted-foreground mb-4">
-          この操作を実行しますか？
+          {t.easing.confirmQuestion}
         </div>
         <div className="flex gap-2 justify-end">
           <div className="px-3 py-1.5 text-[13px] rounded-lg border border-border bg-muted">
-            キャンセル
+            {t.cancel}
           </div>
           <div className="px-3 py-1.5 text-[13px] rounded-lg bg-foreground text-background">
-            確認
+            {t.easing.confirm}
           </div>
         </div>
       </div>
@@ -623,6 +628,7 @@ function ModalScene({ easing, duration }: SceneProps) {
 function ToastScene({ easing, duration }: SceneProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
+  const { t } = useLanguage();
 
   const handleOpen = () => {
     setHasOpened(true);
@@ -641,9 +647,9 @@ function ToastScene({ easing, duration }: SceneProps) {
           <div className="flex items-start gap-3">
             <div className="text-[18px]">✓</div>
             <div>
-              <div className="text-[13px] font-semibold">保存しました</div>
+              <div className="text-[13px] font-semibold">{t.easing.saved}</div>
               <div className="text-[12px] text-muted-foreground mt-0.5">
-                変更が正常に保存されました
+                {t.easing.savedDesc}
               </div>
             </div>
           </div>
@@ -657,6 +663,7 @@ function ToastScene({ easing, duration }: SceneProps) {
 function SidebarScene({ easing, duration }: SceneProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
+  const { t } = useLanguage();
 
   const handleOpen = () => {
     setHasOpened(true);
@@ -685,8 +692,8 @@ function SidebarScene({ easing, duration }: SceneProps) {
         className="absolute inset-y-0 left-0 w-[200px] bg-card border-r border-border p-4"
         style={sidebarStyle}
       >
-        <div className="text-[13px] font-semibold mb-4">メニュー</div>
-        {["ホーム", "プロフィール", "設定", "ヘルプ"].map((item) => (
+        <div className="text-[13px] font-semibold mb-4">{t.easing.menu}</div>
+        {[t.easing.home, t.easing.profile, t.easing.settingsMenu, t.easing.help].map((item) => (
           <div
             key={item}
             className="text-[13px] text-muted-foreground py-2 px-2 rounded-lg hover:bg-muted"
@@ -703,6 +710,7 @@ function SidebarScene({ easing, duration }: SceneProps) {
 function DrawerScene({ easing, duration }: SceneProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
+  const { t } = useLanguage();
 
   const handleOpen = () => {
     setHasOpened(true);
@@ -732,12 +740,12 @@ function DrawerScene({ easing, duration }: SceneProps) {
         style={drawerStyle}
       >
         <div className="w-10 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-4" />
-        <div className="text-[14px] font-semibold mb-2">共有</div>
+        <div className="text-[14px] font-semibold mb-2">{t.easing.share}</div>
         <div className="text-[13px] text-muted-foreground mb-4">
-          このリンクを共有しますか？
+          {t.easing.shareQuestion}
         </div>
         <div className="flex gap-4">
-          {["コピー", "メール", "SNS"].map((item) => (
+          {[t.easing.copyLink, t.easing.email, t.easing.sns].map((item) => (
             <div
               key={item}
               className="flex-1 py-2 text-center text-[13px] rounded-lg bg-muted border border-border"
@@ -877,6 +885,7 @@ function ExportDialog({
 }) {
   const [format, setFormat] = useState("css-transition");
   const [copied, setCopied] = useState(false);
+  const { t } = useLanguage();
 
   const code = generateExportCode(format, points, duration);
 
@@ -890,7 +899,7 @@ function ExportDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
         <DialogHeader>
-          <DialogTitle>コード出力</DialogTitle>
+          <DialogTitle>{t.easing.exportCode}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <Select value={format} onValueChange={setFormat}>
@@ -911,7 +920,7 @@ function ExportDialog({
             className="flex-1 min-h-[200px] bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
           />
           <Button size="sm" onClick={handleCopy}>
-            {copied ? "コピーしました" : "コピー"}
+            {copied ? t.copied : t.copy}
           </Button>
         </div>
       </DialogContent>
@@ -929,6 +938,7 @@ export default function EasingPage() {
   const [activePreset, setActivePreset] = useState<string | null>(DEFAULT_PRESET);
   const [activeScene, setActiveScene] = useState<SceneKey>("button");
   const [showExport, setShowExport] = useState(false);
+  const { lang, toggle, t } = useLanguage();
 
   const easingCSS = formatCubicBezier(controlPoints);
 
@@ -972,16 +982,22 @@ export default function EasingPage() {
       {/* Main area */}
       <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0 flex flex-col">
         {/* Top bar */}
-        <div className="absolute inset-x-0 top-0 flex items-center gap-2 p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
             <Button
               variant="outline"
               size="sm"
               className="bg-white/75! border-black/10! text-foreground/80! backdrop-blur-xl hover:bg-white/90! hover:border-black/20!"
             >
-              ← 戻る
+              {t.back}
             </Button>
           </Link>
+          <button
+            onClick={toggle}
+            className="text-[13px] font-medium bg-white/75! border border-black/10 text-foreground/80 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-white/90! select-none"
+          >
+            {lang === "ja" ? "EN" : "JA"}
+          </button>
         </div>
 
         {/* Scene tabs */}
@@ -996,7 +1012,7 @@ export default function EasingPage() {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
-              {scene.label}
+              {t.easing.scenes[scene.key]}
             </button>
           ))}
         </div>
@@ -1015,10 +1031,10 @@ export default function EasingPage() {
         <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0">
           <div className="flex items-center justify-between">
             <h2 className="text-[15px] font-semibold -tracking-[0.01em]">
-              イージング
+              {t.apps.easing.name}
             </h2>
             <Button variant="secondary" size="sm" onClick={handleReset}>
-              リセット
+              {t.reset}
             </Button>
           </div>
         </div>
@@ -1050,7 +1066,7 @@ export default function EasingPage() {
           {/* Duration */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <Label className="text-[13px]">デュレーション</Label>
+              <Label className="text-[13px]">{t.easing.duration}</Label>
               <span className="text-[12px] text-muted-foreground font-mono">
                 {duration}ms
               </span>
@@ -1068,7 +1084,7 @@ export default function EasingPage() {
 
           {/* Presets */}
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">プリセット</Label>
+            <Label className="text-[13px]">{t.easing.presets}</Label>
             <PresetGrid
               activePreset={activePreset}
               onSelect={handlePresetSelect}
@@ -1079,7 +1095,7 @@ export default function EasingPage() {
 
           {/* Export button */}
           <Button size="sm" onClick={() => setShowExport(true)}>
-            コード出力
+            {t.easing.exportCode}
           </Button>
         </div>
       </aside>

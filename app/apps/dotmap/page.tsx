@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -14,6 +11,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
+import { ParamSlider } from "@/components/ui/param-slider";
+import { SectionHeader } from "@/components/ui/section-header";
+import { downloadBlob } from "@/lib/canvas-download";
 
 /* ------------------------------------------------------------------ */
 /*  Types & Constants                                                  */
@@ -204,40 +204,6 @@ function svgToRaster(
 /*  Sub-components                                                     */
 /* ------------------------------------------------------------------ */
 
-function ParamSlider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex justify-between items-baseline">
-        <Label className="text-[13px]">{label}</Label>
-        <span className="text-xs font-mono text-muted-foreground tabular-nums">
-          {value.toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0)}
-        </span>
-      </div>
-      <Slider
-        value={[value]}
-        min={min}
-        max={max}
-        step={step}
-        onValueChange={([v]) => onChange(v)}
-      />
-    </div>
-  );
-}
-
 function ColorRow({
   label,
   value,
@@ -249,27 +215,19 @@ function ColorRow({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <Label className="text-[13px]">{label}</Label>
+      <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{label}</Label>
       <div className="flex items-center gap-2">
         <input
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="size-8 border border-border rounded-xl bg-transparent cursor-pointer p-0 color-swatch"
+          className="size-8 border border-[#242424] bg-transparent cursor-pointer p-0 color-swatch"
         />
-        <span className="text-xs font-mono text-muted-foreground">
+        <span className="text-[12px] font-mono text-[#242424]">
           {value}
         </span>
       </div>
     </div>
-  );
-}
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-      {children}
-    </p>
   );
 }
 
@@ -449,24 +407,7 @@ export default function DotMapPage() {
   const handleDownload = useCallback(() => {
     if (!svgString) return;
     const blob = new Blob([svgString], { type: "image/svg+xml" });
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const canShare =
-      isMobile &&
-      typeof navigator.share === "function" &&
-      typeof navigator.canShare === "function";
-    if (canShare) {
-      const file = new File([blob], "dotmap.svg", { type: "image/svg+xml" });
-      if (navigator.canShare({ files: [file] })) {
-        navigator.share({ files: [file] }).catch(() => {});
-        return;
-      }
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "dotmap.svg";
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, "dotmap.svg");
   }, [svgString]);
 
   // Add highlighted country
@@ -519,7 +460,7 @@ export default function DotMapPage() {
   }, [countryList, params.highlightedCountries]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-background">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d2d2d2]">
       {/* Preview area */}
       <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0">
         <div
@@ -533,7 +474,7 @@ export default function DotMapPage() {
           }}
         >
           {!ready ? (
-            <p className="text-sm text-muted-foreground">{t.dotmap.loading}</p>
+            <p className="text-[12px] font-mono uppercase tracking-[0.12em] text-[#242424]/60">{t.dotmap.loading}</p>
           ) : (
             <div
               className="w-full h-full flex items-center justify-center [&>svg]:max-w-full [&>svg]:max-h-full"
@@ -545,32 +486,28 @@ export default function DotMapPage() {
         {/* Top bar */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-white/75! border-black/10! text-foreground/80! backdrop-blur-xl hover:bg-white/90! hover:border-black/20!"
-            >
-              {t.back}
-            </Button>
+            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
+              [ {t.back} ]
+            </button>
           </Link>
           <button
             onClick={toggle}
-            className="text-[13px] font-medium bg-white/75! border border-black/10 text-foreground/80 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-white/90! select-none"
+            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.12em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
           >
-            {lang === "ja" ? "EN" : "JA"}
+            [ {lang === "ja" ? "EN" : "JA"} ]
           </button>
         </div>
       </div>
 
       {/* Sidebar */}
-      <aside className="flex-1 md:flex-none md:w-75 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.12)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
-        <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">
+      <aside className="flex-1 md:flex-none md:w-75 shrink bg-[#d2d2d2] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#242424] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
+          <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">
             {t.apps.dotmap.name}
-          </h2>
-          <Button variant="secondary" size="sm" onClick={handleReset}>
-            {t.reset}
-          </Button>
+          </span>
+          <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleReset}>
+            [ {t.reset} ]
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
@@ -595,7 +532,7 @@ export default function DotMapPage() {
           />
 
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">{t.dotmap.gridPattern}</Label>
+            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.dotmap.gridPattern}</Label>
             <Select
               value={params.gridPattern}
               onValueChange={(v) =>
@@ -612,7 +549,7 @@ export default function DotMapPage() {
             </Select>
           </div>
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           <SectionHeader>{t.dotmap.appearance}</SectionHeader>
 
@@ -623,15 +560,15 @@ export default function DotMapPage() {
           />
 
           <div className="flex items-center justify-between">
-            <Label className="text-[13px]">{t.dotmap.transparentBg}</Label>
+            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.dotmap.transparentBg}</Label>
             <button
               type="button"
               role="switch"
               aria-checked={params.bgTransparent}
               onClick={() => updateParam("bgTransparent", !params.bgTransparent)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${params.bgTransparent ? "bg-primary" : "bg-muted"}`}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer border border-[#242424] transition-colors items-center px-[2px] ${params.bgTransparent ? "bg-primary" : "bg-muted"}`}
             >
-              <span className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-sm transition-transform ${params.bgTransparent ? "translate-x-4" : "translate-x-0"}`} />
+              <span className={`pointer-events-none block h-3 w-3 transition-transform ${params.bgTransparent ? "translate-x-[18px] bg-white" : "bg-[#242424]"}`} />
             </button>
           </div>
           {!params.bgTransparent && (
@@ -652,7 +589,7 @@ export default function DotMapPage() {
           />
 
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">{t.dotmap.shape}</Label>
+            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.dotmap.shape}</Label>
             <Select
               value={params.shape}
               onValueChange={(v) =>
@@ -669,13 +606,13 @@ export default function DotMapPage() {
             </Select>
           </div>
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           <SectionHeader>{t.dotmap.countryHighlight}</SectionHeader>
 
           {availableCountries.length > 0 && (
             <div className="flex flex-col gap-2">
-              <Label className="text-[13px]">{t.dotmap.addCountry}</Label>
+              <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.dotmap.addCountry}</Label>
               <Select onValueChange={addCountry} value="">
                 <SelectTrigger className="cursor-pointer">
                   <SelectValue placeholder={t.dotmap.selectCountry} />
@@ -696,7 +633,7 @@ export default function DotMapPage() {
               {params.highlightedCountries.map((hc) => (
                 <div
                   key={hc.code}
-                  className="flex items-center gap-2 pl-3 border-l-2 border-border"
+                  className="flex items-center gap-2 pl-3 border-l-2 border-[#242424]"
                 >
                   <input
                     type="color"
@@ -704,9 +641,9 @@ export default function DotMapPage() {
                     onChange={(e) =>
                       updateCountryColor(hc.code, e.target.value)
                     }
-                    className="size-6 border border-border rounded-lg bg-transparent cursor-pointer p-0 color-swatch shrink-0"
+                    className="size-6 border border-[#242424] bg-transparent cursor-pointer p-0 color-swatch shrink-0"
                   />
-                  <span className="text-[13px] flex-1 truncate">{hc.name}</span>
+                  <span className="text-[12px] font-mono flex-1 truncate text-[#242424]">{hc.name}</span>
                   <button
                     onClick={() => removeCountry(hc.code)}
                     className="text-muted-foreground hover:text-foreground text-sm cursor-pointer shrink-0"
@@ -718,11 +655,14 @@ export default function DotMapPage() {
             </div>
           )}
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
-          <Button className="w-full" onClick={handleDownload}>
+          <button
+            onClick={handleDownload}
+            className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
+          >
             {t.dotmap.svgDownload}
-          </Button>
+          </button>
         </div>
       </aside>
     </div>

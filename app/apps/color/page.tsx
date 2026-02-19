@@ -3,7 +3,6 @@
 import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -22,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
+import { ParamSlider } from "@/components/ui/param-slider";
+import { useClipboard } from "@/hooks/use-clipboard";
 
 /* ================================================================== */
 /*  Color conversion utilities (no external library)                   */
@@ -513,40 +514,6 @@ function generateSvgScale(scale: ReturnType<typeof generateScale>): string {
 /*  Sub-components                                                     */
 /* ================================================================== */
 
-function ParamSlider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex justify-between items-baseline">
-        <Label className="text-[13px]">{label}</Label>
-        <span className="text-xs font-mono text-muted-foreground tabular-nums">
-          {value.toFixed(step < 0.01 ? 4 : step < 0.1 ? 3 : 2)}
-        </span>
-      </div>
-      <Slider
-        value={[value]}
-        min={min}
-        max={max}
-        step={step}
-        onValueChange={([v]) => onChange(v)}
-      />
-    </div>
-  );
-}
-
 function ColorInput({
   label,
   hex,
@@ -590,7 +557,7 @@ function ColorInput({
 
   return (
     <div className={`flex flex-col gap-2 ${className ?? ""}`}>
-      {label && <Label className="text-[13px]">{label}</Label>}
+      {label && <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{label}</Label>}
       <div className="flex items-center gap-2">
         <input
           type="color"
@@ -599,7 +566,7 @@ function ColorInput({
             onChangeHex(e.target.value);
             setDraft(e.target.value);
           }}
-          className="size-9 shrink-0 border border-border rounded-xl bg-transparent cursor-pointer p-0 overflow-hidden color-swatch"
+          className="size-9 shrink-0 block cursor-pointer p-0 overflow-hidden color-swatch border border-[#242424]"
         />
         <Input
           value={displayValue}
@@ -615,7 +582,7 @@ function ColorInput({
           onKeyDown={(e) => {
             if (e.key === "Enter") commitDraft(draft);
           }}
-          className={`font-mono text-xs ${inputClassName ?? ""}`}
+          className={`font-mono text-[12px] bg-white! border-[#242424] shadow-none ${inputClassName ?? ""}`}
         />
       </div>
     </div>
@@ -642,7 +609,7 @@ function ContrastResult({
     <div className="flex flex-col gap-3">
       {/* Preview */}
       <div
-        className="rounded-lg border border-border p-4 text-center"
+        className="rounded-lg border border-[#242424] p-4 text-center"
         style={{ backgroundColor: bgHex, color: fgHex }}
       >
         <p className="text-[22px] font-bold leading-tight">Aa</p>
@@ -651,8 +618,8 @@ function ContrastResult({
 
       {/* Ratio */}
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium">{t.color.contrastRatio}</span>
-        <span className="text-[15px] font-bold font-mono tabular-nums">
+        <span className="text-[12px] font-mono uppercase tracking-[0.06em] text-[#242424]">{t.color.contrastRatio}</span>
+        <span className="text-[14px] font-bold font-mono tabular-nums">
           {ratio.toFixed(2)}:1
         </span>
       </div>
@@ -666,7 +633,7 @@ function ContrastResult({
             className={
               ratio >= c.threshold
                 ? "bg-success text-success-foreground"
-                : "text-muted-foreground"
+                : "text-[#242424]"
             }
           >
             {c.label} {ratio >= c.threshold ? "Pass" : "Fail"}
@@ -691,7 +658,7 @@ function ScaleSwatch({
           style={{ backgroundColor: s.hex }}
         >
           <span
-            className="text-xs font-bold w-8 tabular-nums"
+            className="text-[12px] font-mono font-bold w-8 tabular-nums"
             style={{ color: textOnBg(s.hex) }}
           >
             {s.step}
@@ -703,13 +670,13 @@ function ScaleSwatch({
             />
           )}
           <span
-            className="text-[11px] font-mono flex-1"
+            className="text-[12px] font-mono flex-1"
             style={{ color: textOnBg(s.hex), opacity: 0.8 }}
           >
             oklch({s.L.toFixed(3)} {s.C.toFixed(3)} {s.H.toFixed(1)})
           </span>
           <span
-            className="text-[11px] font-mono"
+            className="text-[12px] font-mono"
             style={{ color: textOnBg(s.hex), opacity: 0.6 }}
           >
             {s.hex}
@@ -776,7 +743,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
   const inputBg      = toOklch(pickByContrast(scale, pageBg, 1.05));
 
   return (
-    <div className="flex flex-col gap-5" style={{ color: textPrimary }}>
+    <div className="flex flex-col gap-5 font-mono" style={{ color: textPrimary }}>
       {/* Card */}
       <div
         className="rounded-xl p-5 flex flex-col gap-3"
@@ -785,7 +752,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
         <div className="flex items-center justify-between">
           <span className="text-[13px] font-bold">{t.color.monthlyReport}</span>
           <span
-            className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+            className="text-[12px] px-2 py-0.5 rounded-full font-medium"
             style={{ backgroundColor: surfaceRaised, color: raisedText }}
           >
             {t.color.published}
@@ -848,7 +815,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
         style={{ backgroundColor: surfaceBg, border: `1px solid ${borderSubtle}` }}
       >
         <span
-          className="shrink-0 mt-0.5 size-5 rounded-full flex items-center justify-center text-[11px] font-bold"
+          className="shrink-0 mt-0.5 size-5 rounded-full flex items-center justify-center text-[12px] font-bold"
           style={{ backgroundColor: accent, color: accentText }}
         >
           i
@@ -894,7 +861,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
             } as React.CSSProperties}
           >
             {item}
-            <span className="text-[11px]" style={{ color: textSecondary }}>→</span>
+            <span className="text-[12px]" style={{ color: textSecondary }}>→</span>
           </div>
         ))}
       </div>
@@ -922,8 +889,8 @@ export default function ColorPage() {
 
   // Export dialog
   const [showCssDialog, setShowCssDialog] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [copiedSvg, setCopiedSvg] = useState(false);
+  const { copy: copyCss, copied } = useClipboard();
+  const { copy: copySvg, copied: copiedSvg } = useClipboard();
   const [colorFmt, setColorFmt] = useState<ColorFmt>("oklch");
   const [outputFmt, setOutputFmt] = useState<OutputFmt>("css");
 
@@ -972,38 +939,22 @@ export default function ColorPage() {
     [scaleName, scale, colorFmt, outputFmt]
   );
 
-  const handleCopyCss = useCallback(() => {
-    navigator.clipboard.writeText(cssOutput);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [cssOutput]);
-
-  const handleCopySvg = useCallback(() => {
-    navigator.clipboard.writeText(generateSvgScale(scale));
-    setCopiedSvg(true);
-    setTimeout(() => setCopiedSvg(false), 2000);
-  }, [scale]);
-
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-background">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d2d2d2]">
       {/* Main area */}
-      <div className="h-[55vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0 relative">
+      <div className="h-[55vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0 relative bg-white">
         {/* Back button */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-white/75! border-black/10! text-foreground/80! backdrop-blur-xl hover:bg-white/90! hover:border-black/20!"
-            >
-              {t.back}
-            </Button>
+            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
+              [ {t.back} ]
+            </button>
           </Link>
           <button
             onClick={toggle}
-            className="text-[13px] font-medium bg-white/75! border border-black/10 text-foreground/80 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-white/90! select-none"
+            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
           >
-            {lang === "ja" ? "EN" : "JA"}
+            [ {lang === "ja" ? "EN" : "JA"} ]
           </button>
         </div>
 
@@ -1011,22 +962,23 @@ export default function ColorPage() {
         <div className="flex-1 overflow-y-auto p-4 md:p-6 pt-14 md:pt-16 flex flex-col gap-6 md:gap-8">
           {/* Color preview */}
           <section className="flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {t.color.preview}
-            </h3>
+            <div className="flex items-center gap-3">
+              <div className="text-[12px] font-mono uppercase tracking-[0.2em] text-[#242424] whitespace-nowrap select-none">{t.color.preview}</div>
+              <div className="groove flex-1" />
+            </div>
             <div className="flex gap-4 items-stretch">
               <div
-                className="w-32 h-32 rounded-3xl border border-border shrink-0"
+                className="w-32 h-32 rounded-3xl border border-[#242424] shrink-0"
                 style={{ backgroundColor: hex }}
               />
               <div className="flex flex-col justify-center gap-1 min-w-0">
                 <p className="text-[15px] font-bold font-mono">{hex}</p>
-                <p className="text-[13px] font-mono text-muted-foreground">
+                <p className="text-[13px] font-mono text-[#242424]">
                   oklch({oklch[0].toFixed(3)} {oklch[1].toFixed(3)}{" "}
                   {oklch[2].toFixed(1)})
                 </p>
                 {!gamutOk && (
-                  <p className="text-xs text-warning font-medium">
+                  <p className="text-[12px] font-mono text-warning font-medium">
                     {t.color.outOfGamut}
                   </p>
                 )}
@@ -1034,13 +986,12 @@ export default function ColorPage() {
             </div>
           </section>
 
-          <Separator />
-
           {/* Contrast checker */}
           <section className="flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {t.color.contrastCheck}
-            </h3>
+            <div className="flex items-center gap-3">
+              <div className="text-[12px] font-mono uppercase tracking-[0.2em] text-[#242424] whitespace-nowrap select-none">{t.color.contrastCheck}</div>
+              <div className="groove flex-1" />
+            </div>
             <ColorInput
               label={t.color.compareColor}
               hex={contrastHex}
@@ -1053,40 +1004,36 @@ export default function ColorPage() {
             </div>
           </section>
 
-          <Separator />
-
           {/* Scale */}
           <section className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                {t.color.colorScale}
-              </h3>
+            <div className="flex items-center gap-3">
+              <div className="text-[12px] font-mono uppercase tracking-[0.2em] text-[#242424] whitespace-nowrap select-none">{t.color.colorScale}</div>
+              <div className="groove flex-1" />
               <button
-                onClick={handleCopySvg}
-                className="text-[12px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-accent select-none"
+                onClick={() => copySvg(generateSvgScale(scale))}
+                className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-2.5 py-1 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none whitespace-nowrap"
               >
-                {copiedSvg ? t.copied : t.color.copySvg}
+                [ {copiedSvg ? t.copied : t.color.copySvg} ]
               </button>
             </div>
             <div className="flex flex-col sm:flex-row -mx-4 md:-mx-6 -mb-6">
               <div className="flex-1 min-w-0 bg-white px-5 py-6 md:px-9 md:py-9">
-                <p className="text-[13px] font-medium text-black mb-4">Light</p>
+                <p className="text-[12px] font-mono uppercase tracking-[0.10em] text-black/40 mb-4">Light</p>
                 <ScaleSwatch scale={scale} />
               </div>
               <div className="flex-1 min-w-0 bg-black px-5 py-6 md:px-9 md:py-9">
-                <p className="text-[13px] font-medium text-white mb-4">Dark</p>
+                <p className="text-[12px] font-mono uppercase tracking-[0.10em] text-white/40 mb-4">Dark</p>
                 <ScaleSwatch scale={darkScale} />
               </div>
             </div>
           </section>
 
-          <Separator />
-
           {/* UI Samples */}
-          <section className="flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {t.color.uiSample}
-            </h3>
+          <section className="flex flex-col gap-3 mt-12">
+            <div className="flex items-center gap-3">
+              <div className="text-[12px] font-mono uppercase tracking-[0.2em] text-[#242424] whitespace-nowrap select-none">{t.color.uiSample}</div>
+              <div className="groove flex-1" />
+            </div>
             <div className="flex flex-col sm:flex-row -mx-4 md:-mx-6 -mb-6">
               <div className="flex-1 min-w-0 bg-white px-5 py-6 md:px-9 md:py-9">
                 <UiSample scale={scale} bg="light" />
@@ -1100,12 +1047,14 @@ export default function ColorPage() {
       </div>
 
       {/* Sidebar */}
-      <aside className="flex-1 md:flex-none w-full md:w-80 bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.15)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
-        <div className="flex items-center px-6 h-10 md:h-14 border-b border-border shrink-0">
-          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">
+      <aside className="flex-1 md:flex-none w-full md:w-80 bg-[#d2d2d2] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#242424]/8 flex flex-col overflow-hidden">
+        {/* Sidebar header */}
+        <div className="flex items-center px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
+          <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">
             {t.settings}
-          </h2>
+          </span>
         </div>
+
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
           {/* Base color input */}
           <ColorInput
@@ -1114,12 +1063,12 @@ export default function ColorPage() {
             onChangeHex={updateFromHex}
           />
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* OKLCH sliders */}
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <div className="text-[12px] font-mono uppercase tracking-[0.2em] text-[#242424] select-none">
             OKLCH
-          </p>
+          </div>
           <ParamSlider
             label={t.color.oklchL}
             value={oklch[0]}
@@ -1145,33 +1094,31 @@ export default function ColorPage() {
             onChange={(v) => updateFromOklch(2, v)}
           />
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* Scale name */}
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">{t.color.scaleName}</Label>
+            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.color.scaleName}</Label>
             <Input
               value={scaleName}
               onChange={(e) => setScaleName(e.target.value)}
               placeholder="brand"
-              className="font-mono text-xs"
+              className="font-mono text-[12px] bg-white! border-[#242424] shadow-none"
             />
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[12px] font-mono text-[#242424]">
               {t.color.scaleNameHint.replace("{name}", scaleName)}
             </p>
           </div>
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
-          <Button
-            className="w-full"
-            onClick={() => {
-              setShowCssDialog(true);
-              setCopied(false);
-            }}
+          {/* Export button */}
+          <button
+            className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
+            onClick={() => setShowCssDialog(true)}
           >
-            {t.exportCode}
-          </Button>
+            [ {t.exportCode} ]
+          </button>
         </div>
       </aside>
 
@@ -1183,7 +1130,7 @@ export default function ColorPage() {
           </DialogHeader>
           <div className="flex gap-2">
             <div className="flex flex-col gap-1.5 flex-1">
-              <Label className="text-[12px] text-muted-foreground">{t.color.outputFormat}</Label>
+              <Label className="text-[12px] text-[#242424]">{t.color.outputFormat}</Label>
               <Select value={outputFmt} onValueChange={(v) => setOutputFmt(v as OutputFmt)}>
                 <SelectTrigger className="cursor-pointer">
                   <SelectValue />
@@ -1197,7 +1144,7 @@ export default function ColorPage() {
               </Select>
             </div>
             <div className="flex flex-col gap-1.5 flex-1">
-              <Label className="text-[12px] text-muted-foreground">{t.color.colorFormat}</Label>
+              <Label className="text-[12px] text-[#242424]">{t.color.colorFormat}</Label>
               <Select value={colorFmt} onValueChange={(v) => setColorFmt(v as ColorFmt)}>
                 <SelectTrigger className="cursor-pointer">
                   <SelectValue />
@@ -1213,7 +1160,7 @@ export default function ColorPage() {
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
             <textarea
-              className="w-full h-full bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
+              className="w-full h-full bg-white text-[#242424] border border-[#242424] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none"
               value={cssOutput}
               readOnly
             />
@@ -1225,7 +1172,7 @@ export default function ColorPage() {
             >
               {t.close}
             </Button>
-            <Button onClick={handleCopyCss}>
+            <Button onClick={() => copyCss(cssOutput)}>
               {copied ? t.copied : t.copy}
             </Button>
           </div>

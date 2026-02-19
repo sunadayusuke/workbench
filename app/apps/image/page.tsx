@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -19,7 +16,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n";
+import { ParamSlider } from "@/components/ui/param-slider";
+import { SectionHeader } from "@/components/ui/section-header";
+import { downloadCanvas } from "@/lib/canvas-download";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -357,48 +358,6 @@ const DEFAULT_PARAMS: ImageParams = {
 /*  Sub-components                                                    */
 /* ------------------------------------------------------------------ */
 
-function ParamSlider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex justify-between items-baseline">
-        <Label className="text-[13px]">{label}</Label>
-        <span className="text-xs font-mono text-muted-foreground tabular-nums">
-          {value.toFixed(step < 0.01 ? 4 : 2)}
-        </span>
-      </div>
-      <Slider
-        value={[value]}
-        min={min}
-        max={max}
-        step={step}
-        onValueChange={([v]) => onChange(v)}
-      />
-    </div>
-  );
-}
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-      {children}
-    </p>
-  );
-}
-
 function DropZone({
   onFile,
   isDragging,
@@ -410,14 +369,14 @@ function DropZone({
   return (
     <label
       className={`absolute inset-0 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-        isDragging ? "bg-white/10" : "bg-black hover:bg-white/5"
+        isDragging ? "bg-white/10" : "bg-black hover:bg-[#111]"
       }`}
     >
       <div className="text-[48px] mb-4 opacity-60">🖼️</div>
-      <p className="text-[15px] text-white/70 font-medium mb-1">
+      <p className="text-[12px] font-mono uppercase tracking-[0.12em] text-white/70 mb-1">
         {t.image.dropHint}
       </p>
-      <p className="text-[13px] text-white/40">
+      <p className="text-[12px] font-mono text-white/40">
         {t.image.clickHint}
       </p>
       <input
@@ -661,19 +620,15 @@ export default function ImagePage() {
     const r = rendererRef.current;
     if (!r) return;
 
-    const THREE = await import("three");
     const { width, height } = imageSizeRef.current;
 
     // 一時的に元画像解像度でレンダリング
-    const prevWidth = r.renderer.domElement.width;
-    const prevHeight = r.renderer.domElement.height;
-
     r.renderer.setPixelRatio(1);
     r.renderer.setSize(width, height);
     r.material.uniforms.uResolution.value.set(width, height);
     r.renderer.render(r.scene, r.camera);
 
-    let mimeType = "image/png";
+    let mimeType: "image/png" | "image/jpeg" | "image/webp" = "image/png";
     let ext = "png";
     let quality: number | undefined;
 
@@ -687,34 +642,7 @@ export default function ImagePage() {
       quality = jpegQuality;
     }
 
-    const outputName = `${fileName}_edited.${ext}`;
-    const canvas = r.renderer.domElement;
-
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const canShare =
-      isMobile &&
-      typeof navigator.share === "function" &&
-      typeof navigator.canShare === "function";
-
-    if (canShare) {
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mimeType, quality));
-      if (blob) {
-        const file = new File([blob], outputName, { type: mimeType });
-        if (navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file] });
-          } catch {
-            // ユーザーがキャンセルした場合は無視
-          }
-        }
-      }
-    } else {
-      const dataUrl = canvas.toDataURL(mimeType, quality);
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = outputName;
-      a.click();
-    }
+    await downloadCanvas(r.renderer.domElement, `${fileName}_edited.${ext}`, mimeType, quality);
 
     // プレビューサイズに復帰
     const container = containerRef.current;
@@ -732,7 +660,7 @@ export default function ImagePage() {
 
   /* --- Render --- */
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-black">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d2d2d2]">
       {/* メインエリア */}
       <div
         className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0"
@@ -748,36 +676,30 @@ export default function ImagePage() {
         {/* トップバー */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-black/55! border-white/15! text-white/85! backdrop-blur-xl hover:bg-black/75! hover:border-white/30! hover:text-white!"
-            >
-              {t.back}
-            </Button>
+            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
+              [ {t.back} ]
+            </button>
           </Link>
           <button
             onClick={toggle}
-            className="text-[13px] font-medium bg-black/55! border border-white/15 text-white/85 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-black/75! select-none"
+            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.12em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
           >
-            {lang === "ja" ? "EN" : "JA"}
+            [ {lang === "ja" ? "EN" : "JA"} ]
           </button>
         </div>
       </div>
 
       {/* サイドバー */}
-      <aside className="flex-1 md:flex-none md:w-80 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.25)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
-        <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">
+      <aside className="flex-1 md:flex-none md:w-80 shrink bg-[#d2d2d2] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#242424] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
+          <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">
             {t.apps.image.name}
-          </h2>
-          <Button variant="secondary" size="sm" onClick={handleReset} disabled={!hasImage}>
-            {t.reset}
-          </Button>
+          </span>
+          <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleReset} disabled={!hasImage}>[ {t.reset} ]</button>
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
           {/* アップロード */}
-          <label className="flex items-center justify-center gap-2 min-h-10 py-2.5 rounded-lg border border-dashed border-border text-[13px] text-muted-foreground cursor-pointer transition-colors hover:border-foreground hover:text-foreground">
+          <label className="flex items-center justify-center gap-2 min-h-10 py-2.5 border border-dashed border-[#242424] text-[12px] font-mono text-[#242424] cursor-pointer bg-transparent hover:bg-[#242424]/5 transition-colors hover:border-[#242424]">
             {hasImage ? t.image.changeImage : t.image.selectImage}
             <input
               type="file"
@@ -790,7 +712,7 @@ export default function ImagePage() {
             />
           </label>
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* 基本補正 */}
           <SectionHeader>{t.image.basicAdjustments}</SectionHeader>
@@ -801,13 +723,13 @@ export default function ImagePage() {
           <ParamSlider label={t.image.highlights} value={params.highlights} min={-1} max={1} step={0.01} onChange={(v) => updateParam("highlights", v)} />
           <ParamSlider label={t.image.shadows} value={params.shadows} min={-1} max={1} step={0.01} onChange={(v) => updateParam("shadows", v)} />
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* エフェクト */}
           <SectionHeader>{t.image.effects}</SectionHeader>
           <ParamSlider label={t.image.glitch} value={params.glitchAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("glitchAmount", v)} />
           {params.glitchAmount > 0 && (
-            <div className="pl-3 border-l-2 border-border">
+            <div className="pl-3 border-l-2 border-[#242424]">
               <ParamSlider label={t.image.seed} value={params.glitchSeed} min={0} max={100} step={1} onChange={(v) => updateParam("glitchSeed", v)} />
             </div>
           )}
@@ -817,9 +739,9 @@ export default function ImagePage() {
           <ParamSlider label={t.image.pixelate} value={params.pixelate} min={0} max={1} step={0.01} onChange={(v) => updateParam("pixelate", v)} />
           <ParamSlider label={t.image.rgbShift} value={params.rgbShift} min={0} max={1} step={0.01} onChange={(v) => updateParam("rgbShift", v)} />
           {params.rgbShift > 0 && (
-            <div className="pl-3 border-l-2 border-border flex flex-col gap-3">
+            <div className="pl-3 border-l-2 border-[#242424] flex flex-col gap-3">
               <div className="flex flex-col gap-2">
-                <Label className="text-[13px]">{t.image.type}</Label>
+                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.image.type}</Label>
                 <Select
                   value={String(params.rgbShiftMode)}
                   onValueChange={(v) => updateParam("rgbShiftMode", Number(v))}
@@ -840,14 +762,14 @@ export default function ImagePage() {
           )}
           <ParamSlider label={t.image.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("waveAmount", v)} />
           {params.waveAmount > 0 && (
-            <div className="pl-3 border-l-2 border-border">
+            <div className="pl-3 border-l-2 border-[#242424]">
               <ParamSlider label={t.image.frequency} value={params.waveFrequency} min={1} max={50} step={0.5} onChange={(v) => updateParam("waveFrequency", v)} />
             </div>
           )}
           <ParamSlider label={t.image.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => updateParam("halftone", v)} />
           <ParamSlider label={t.image.scanline} value={params.scanline} min={0} max={1} step={0.01} onChange={(v) => updateParam("scanline", v)} />
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* カラーエフェクト */}
           <SectionHeader>{t.image.colorEffects}</SectionHeader>
@@ -857,34 +779,38 @@ export default function ImagePage() {
           <ParamSlider label={t.image.fade} value={params.fade} min={0} max={1} step={0.01} onChange={(v) => updateParam("fade", v)} />
           <ParamSlider label={t.image.duotone} value={params.duotone} min={0} max={1} step={0.01} onChange={(v) => updateParam("duotone", v)} />
           {params.duotone > 0 && (
-            <div className="pl-3 border-l-2 border-border flex flex-col gap-3">
+            <div className="pl-3 border-l-2 border-[#242424] flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <Label className="text-[13px] flex-1">{t.image.shadow}</Label>
+                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] flex-1">{t.image.shadow}</Label>
                 <input
                   type="color"
                   value={params.duotoneShadow}
                   onChange={(e) => updateParam("duotoneShadow", e.target.value)}
-                  className="w-8 h-8 rounded border border-border cursor-pointer bg-transparent"
+                  className="size-9 shrink-0 block border border-[#242424] cursor-pointer p-0 overflow-hidden color-swatch"
                 />
-                <span className="text-xs font-mono text-muted-foreground w-16">{params.duotoneShadow}</span>
+                <span className="text-[12px] font-mono text-[#242424] w-16">{params.duotoneShadow}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-[13px] flex-1">{t.image.highlight}</Label>
+                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] flex-1">{t.image.highlight}</Label>
                 <input
                   type="color"
                   value={params.duotoneHighlight}
                   onChange={(e) => updateParam("duotoneHighlight", e.target.value)}
-                  className="w-8 h-8 rounded border border-border cursor-pointer bg-transparent"
+                  className="size-9 shrink-0 block border border-[#242424] cursor-pointer p-0 overflow-hidden color-swatch"
                 />
-                <span className="text-xs font-mono text-muted-foreground w-16">{params.duotoneHighlight}</span>
+                <span className="text-[12px] font-mono text-[#242424] w-16">{params.duotoneHighlight}</span>
               </div>
             </div>
           )}
 
-          <Separator />
-          <Button className="w-full" onClick={() => setShowDownload(true)} disabled={!hasImage}>
+          <div className="h-px bg-[#242424] my-2" />
+          <button
+            className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
+            onClick={() => setShowDownload(true)}
+            disabled={!hasImage}
+          >
             {t.download}
-          </Button>
+          </button>
         </div>
       </aside>
 
@@ -896,7 +822,7 @@ export default function ImagePage() {
           </DialogHeader>
           <div className="flex flex-col gap-4 pt-2">
             <div className="flex flex-col gap-2">
-              <Label className="text-[13px]">{t.image.format}</Label>
+              <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.image.format}</Label>
               <Select value={downloadFormat} onValueChange={setDownloadFormat}>
                 <SelectTrigger className="cursor-pointer">
                   <SelectValue />
@@ -922,7 +848,9 @@ export default function ImagePage() {
               <Button variant="outline" onClick={() => setShowDownload(false)}>
                 {t.cancel}
               </Button>
-              <Button onClick={handleDownload}>{t.download}</Button>
+              <Button onClick={handleDownload}>
+                {t.download}
+              </Button>
             </div>
           </div>
         </DialogContent>

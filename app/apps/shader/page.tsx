@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -20,6 +17,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n";
+import { ParamSlider } from "@/components/ui/param-slider";
+import { SectionHeader } from "@/components/ui/section-header";
+import { useClipboard } from "@/hooks/use-clipboard";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -194,40 +194,6 @@ function generateExportCode(params: ShaderParams): string {
 /*  Param control row                                                 */
 /* ------------------------------------------------------------------ */
 
-function ParamSlider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex justify-between items-baseline">
-        <Label className="text-[13px]">{label}</Label>
-        <span className="text-xs font-mono text-muted-foreground tabular-nums">
-          {value.toFixed(step < 0.01 ? 4 : 2)}
-        </span>
-      </div>
-      <Slider
-        value={[value]}
-        min={min}
-        max={max}
-        step={step}
-        onValueChange={([v]) => onChange(v)}
-      />
-    </div>
-  );
-}
-
 function ColorRow({
   label,
   value,
@@ -239,15 +205,15 @@ function ColorRow({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <Label className="text-[13px]">{label}</Label>
+      <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{label}</Label>
       <div className="flex items-center gap-2">
         <input
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="size-8 border border-border rounded-xl bg-transparent cursor-pointer p-0 color-swatch"
+          className="size-8 border border-[#242424] bg-transparent cursor-pointer p-0 color-swatch"
         />
-        <span className="text-xs font-mono text-muted-foreground">{value}</span>
+        <span className="text-[12px] font-mono text-[#242424]">{value}</span>
       </div>
     </div>
   );
@@ -266,7 +232,7 @@ export default function ShaderPage() {
   const [params, setParams] = useState<ShaderParams>({ ...DEFAULT_PARAMS });
   const [showExport, setShowExport] = useState(false);
   const [exportCode, setExportCode] = useState("");
-  const [copied, setCopied] = useState(false);
+  const { copy, copied } = useClipboard();
 
   const updateParam = useCallback(<K extends keyof ShaderParams>(key: K, value: ShaderParams[K]) => {
     setParams((prev) => ({ ...prev, [key]: value }));
@@ -368,17 +334,10 @@ export default function ShaderPage() {
   const handleExport = useCallback(() => {
     setExportCode(generateExportCode(params));
     setShowExport(true);
-    setCopied(false);
   }, [params]);
 
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(exportCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [exportCode]);
-
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-black">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d2d2d2]">
       {/* Canvas area */}
       <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0">
         <div ref={containerRef} className="w-full h-full" />
@@ -386,27 +345,27 @@ export default function ShaderPage() {
         {/* Top bar */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <Button variant="outline" size="sm" className="bg-black/55! border-white/15! text-white/85! backdrop-blur-xl hover:bg-black/75! hover:border-white/30! hover:text-white!">
-              {t.back}
-            </Button>
+            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
+              [ {t.back} ]
+            </button>
           </Link>
           <button
             onClick={toggle}
-            className="text-[13px] font-medium bg-black/55! border border-white/15 text-white/85 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-black/75! select-none"
+            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.12em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
           >
-            {lang === "ja" ? "EN" : "JA"}
+            [ {lang === "ja" ? "EN" : "JA"} ]
           </button>
         </div>
       </div>
 
       {/* Sidebar */}
-      <aside className="flex-1 md:flex-none md:w-70 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.25)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
-        <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0">
-          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">{t.settings}</h2>
+      <aside className="flex-1 md:flex-none md:w-70 shrink bg-[#d2d2d2] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#242424] flex flex-col overflow-hidden">
+        <div className="flex items-center px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
+          <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">{t.settings}</span>
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">{t.shader.mode}</Label>
+            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.shader.mode}</Label>
             <Select
               value={String(params.mode)}
               onValueChange={(v) => updateParam("mode", Number(v))}
@@ -429,29 +388,29 @@ export default function ShaderPage() {
           <ParamSlider label={t.shader.noiseScale} value={params.noiseScale} min={0.1} max={4} step={0.1} onChange={(v) => updateParam("noiseScale", v)} />
           <ParamSlider label={t.shader.aberration} value={params.aberration} min={0} max={0.1} step={0.001} onChange={(v) => updateParam("aberration", v)} />
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           <ColorRow label={t.shader.bgColor} value={params.colorBg} onChange={(v) => updateParam("colorBg", v)} />
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t.shader.color1}</p>
+          <SectionHeader>{t.shader.color1}</SectionHeader>
           <ColorRow label={t.shader.colorLabel} value={params.color1} onChange={(v) => updateParam("color1", v)} />
           <ParamSlider label={t.shader.intensity} value={params.intensity1} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity1", v)} />
           <ParamSlider label={t.shader.threshold} value={params.threshold1} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold1", v)} />
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t.shader.color2}</p>
+          <SectionHeader>{t.shader.color2}</SectionHeader>
           <ColorRow label={t.shader.colorLabel} value={params.color2} onChange={(v) => updateParam("color2", v)} />
           <ParamSlider label={t.shader.intensity} value={params.intensity2} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity2", v)} />
           <ParamSlider label={t.shader.threshold} value={params.threshold2} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold2", v)} />
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
-          <Button size="sm" onClick={handleExport}>
-            {t.exportCode}
-          </Button>
+          <button className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleExport}>
+            [ {t.exportCode} ]
+          </button>
         </div>
       </aside>
 
@@ -462,17 +421,17 @@ export default function ShaderPage() {
             <DialogTitle>{t.shader.exportCodeTitle}</DialogTitle>
           </DialogHeader>
           <textarea
-            className="flex-1 min-h-[300px] bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
+            className="flex-1 min-h-[300px] bg-white text-[#242424] border border-[#242424] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none"
             value={exportCode}
             readOnly
           />
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setShowExport(false)}>
-              {t.close}
-            </Button>
-            <Button onClick={handleCopy}>
-              {copied ? t.copied : t.copy}
-            </Button>
+            <button className="px-4 py-2 bg-transparent border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#242424]/5 transition-colors select-none" onClick={() => setShowExport(false)}>
+              [ {t.close} ]
+            </button>
+            <button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={() => copy(exportCode)}>
+              [ {copied ? t.copied : t.copy} ]
+            </button>
           </div>
         </DialogContent>
       </Dialog>

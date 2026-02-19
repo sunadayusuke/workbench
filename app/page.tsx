@@ -5,57 +5,78 @@ import { useLanguage } from "@/lib/i18n";
 
 const APP_KEYS = ["color", "shader", "image", "easing", "gradient", "particle", "dotmap"] as const;
 
-const APP_META: Record<typeof APP_KEYS[number], { href: string; icon: string }> = {
-  color:    { href: "/apps/color",    icon: "🎨" },
-  shader:   { href: "/apps/shader",   icon: "🌊" },
-  image:    { href: "/apps/image",    icon: "🖼️" },
-  easing:   { href: "/apps/easing",   icon: "⏱️" },
-  gradient: { href: "/apps/gradient", icon: "🌈" },
-  particle: { href: "/apps/particle", icon: "✨" },
-  dotmap:   { href: "/apps/dotmap",   icon: "🌍" },
+const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
+  color:    "/apps/color",
+  shader:   "/apps/shader",
+  image:    "/apps/image",
+  easing:   "/apps/easing",
+  gradient: "/apps/gradient",
+  particle: "/apps/particle",
+  dotmap:   "/apps/dotmap",
 };
 
 export default function Home() {
   const { lang, toggle, t } = useLanguage();
 
   return (
-    <div className="min-h-screen px-5 py-8 md:px-12 md:py-12">
-      <div className="flex flex-col gap-[20px] mb-8 md:flex-row md:items-center md:justify-between md:gap-3 md:mb-12">
-        <h1 className="text-[28px] font-bold tracking-tight">
-          <img src="/images/workbench_logo.svg" alt="Workbench" className="w-[140px] md:w-[160px] -ml-[3px]" />
-        </h1>
-        <div className="flex items-center justify-between md:gap-8">
+    <div className="min-h-screen bg-[#d2d2d2] text-[#242424] px-6 py-10 md:px-12 md:py-12">
+
+      {/* Header */}
+      <header className="flex items-center justify-between mb-12 md:mb-16">
+        <img
+          src="/images/workbench_logo.svg"
+          alt="Workbench"
+          className="w-[110px] md:w-[130px]"
+          style={{ filter: "brightness(0)" }}
+        />
+        <div className="flex items-center gap-4">
+          <p className="text-[12px] font-mono uppercase tracking-[0.18em] text-[#242424] select-none hidden md:block">
+            {t.homeSubtitle}
+          </p>
           <button
             onClick={toggle}
-            className="text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-accent select-none"
+            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.12em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
           >
-            {lang === "ja" ? "EN" : "JA"}
+            [ {lang === "ja" ? "EN" : "JA"} ]
           </button>
-          <div className="flex items-center gap-3">
-            <p className="text-[13px] md:text-[15px] text-muted-foreground">{t.homeSubtitle}</p>
-            <a href="https://x.com/YusukeSunada" target="_blank" rel="noopener noreferrer" className="opacity-50 hover:opacity-100 transition-opacity">
-              <img src="/images/x_logo.svg" alt="X" className="w-[18px]" />
-            </a>
-          </div>
+          <a
+            href="https://x.com/YusukeSunada"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <img src="/images/x_logo.svg" alt="X" className="w-[14px]" style={{ filter: "brightness(0)" }} />
+          </a>
         </div>
-      </div>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+      </header>
+
+      {/* Label */}
+      <p className="text-[12px] font-mono uppercase tracking-[0.28em] text-[#242424] mb-5 select-none">
+        Applications
+      </p>
+
+      {/* Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-14 border-t border-l border-[#242424]">
         {APP_KEYS.map((key) => {
-          const meta = APP_META[key];
+          const href = APP_HREFS[key];
           const app = t.apps[key];
           return (
             <Link
-              key={meta.href}
-              href={meta.href}
-              className="bg-card border border-border rounded-2xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_2px_8px_rgba(0,0,0,0.04)] transition-all select-none hover:border-foreground hover:bg-accent hover:shadow-[0_2px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.07)] active:scale-[0.98]"
+              key={href}
+              href={href}
+              className="group bg-[#d2d2d2] hover:bg-[#d8d8d8] active:bg-[#cccccc] p-6 flex flex-col justify-center border-r border-b border-[#242424] transition-colors duration-100 select-none"
             >
-              <div className="text-[28px] mb-3">{meta.icon}</div>
-              <div className="text-[15px] font-semibold mb-1">{app.name}</div>
-              <div className="text-[13px] text-muted-foreground leading-relaxed">{app.description}</div>
+              <p className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] font-medium mb-2 group-hover:text-black transition-colors">
+                {app.name}
+              </p>
+              <p className="text-[12px] font-mono text-[#242424] leading-relaxed group-hover:text-[#242424] transition-colors">
+                {app.description}
+              </p>
             </Link>
           );
         })}
       </div>
+
     </div>
   );
 }

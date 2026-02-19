@@ -1,6 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@100;400;700&display=swap");
 @import "tailwindcss";
-@import "tw-animate-css";
 
 /* ============================================================
    Tailwind Spacing / Sizing 早見表
@@ -145,7 +143,7 @@
   --info-foreground:    var(--gray-50);
 
   /* ---- Typography ---- */
-  --font-sans: "LINE Seed JP", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "SF Mono", "Fira Code", monospace;
   --font-mono: "SF Mono", "Fira Code", monospace;
 
   /* ---- Legacy aliases (existing CSS Modules compatibility) ---- */
@@ -311,5 +309,75 @@
   }
   .ui-list-item:hover {
     background-color: var(--item-bg-hover) !important;
+  }
+}
+
+/* ============================================================
+   Workbench UI — Industrial product aesthetic
+   Clean, functional, Teenage Engineering inspired
+   ============================================================ */
+@layer utilities {
+
+  /* ---- Groove separator (light-source: top-left) ---- */
+  .groove {
+    height: 1px;
+    background: #242424;
+  }
+
+  /* ---- Form field: white well, gradient highlight border ---- */
+  .shadow-field {
+    box-shadow:
+      inset 0 1px 3px rgba(0, 0, 0, 0.12),
+      inset 0 1px 1px rgba(0, 0, 0, 0.06);
+  }
+  /* Gradient border wrapper — 1px padding, gradient from top-left white → transparent */
+  .field-wrap {
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.85) 0%,
+      rgba(255, 255, 255, 0.25) 40%,
+      rgba(255, 255, 255, 0.04) 100%
+    );
+    padding: 1px;
+    border-radius: 13px;
+  }
+
+  /* ---- EP-133 key card (home page app cards) ---- */
+  .key-card {
+    border-radius: 20px;
+    border: 1px solid transparent;
+    background:
+      linear-gradient(#B1AEAD, #B1AEAD) padding-box,
+      linear-gradient(145deg, rgba(255,255,255,0.85) 0%, rgba(0,0,0,0.16) 100%) border-box;
+    box-shadow:
+      2px 2px 32px 0px rgba(0, 0, 0, 0.10) inset,
+      6px 6px 20px 0px rgba(0, 0, 0, 0.18);
+    padding: 20px;
+    transition: transform 80ms ease, box-shadow 80ms ease;
+  }
+  .key-card:active {
+    transform: translateY(2px);
+    box-shadow:
+      2px 2px 32px 0px rgba(0, 0, 0, 0.10) inset,
+      2px 2px 8px 0px rgba(0, 0, 0, 0.14);
+  }
+
+  /* ---- EP-133 dark key (export button etc.) ---- */
+  .key-dark {
+    border-radius: 20px;
+    border: 1px solid transparent;
+    background:
+      linear-gradient(#242323, #242323) padding-box,
+      linear-gradient(145deg, rgba(255,255,255,0.85) 0%, rgba(0,0,0,0.19) 100%) border-box;
+    box-shadow:
+      2px 2px 32px 0px rgba(0, 0, 0, 0.10) inset,
+      8px 8px 24px 0px rgba(0, 0, 0, 0.55);
+    transition: transform 80ms ease, box-shadow 80ms ease;
+  }
+  .key-dark:active {
+    transform: translateY(2px);
+    box-shadow:
+      2px 2px 32px 0px rgba(0, 0, 0, 0.10) inset,
+      2px 2px 8px 0px rgba(0, 0, 0, 0.40);
   }
 }

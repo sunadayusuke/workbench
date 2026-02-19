@@ -36,15 +36,23 @@ app/
     particle/page.tsx — パーティクルアニメーションツール（Three.js + Points + ShaderMaterial）
     dotmap/page.tsx   — ドット世界地図SVGジェネレーター（d3-geo + topojson-client、Canvas raster方式）
 components/
-  ui/                 — shadcn/ui コンポーネント（button, slider, select, dialog, label, separator, sheet）
+  ui/                 — shadcn/ui コンポーネント（button, slider, select, dialog, label, separator）
+  ui/param-slider.tsx — 共通スライダーコンポーネント（label + 値表示 + Slider）
+  ui/section-header.tsx — 共通セクション見出し（12px mono uppercase）
 lib/
   utils.ts            — cn() ユーティリティ
+  color-utils.ts      — hexToRGB()（Three.js ShaderMaterial 向け色変換）
+  canvas-download.ts  — downloadCanvas() / downloadBlob()（モバイル/デスクトップ分岐）
+hooks/
+  use-clipboard.ts    — useClipboard()（copied state + navigator.clipboard + 自動リセット）
 ```
 
 ## アプリ追加の手順
 1. `app/apps/<app-name>/page.tsx` を作成
 2. `app/page.tsx` の `apps` 配列にエントリ追加
 3. 必要に応じて `npx shadcn@latest add <component>` でUIコンポーネント追加
+4. スライダーは `ParamSlider`、セクション見出しは `SectionHeader` を再利用
+5. ダウンロードは `downloadCanvas` / `downloadBlob`、クリップボードは `useClipboard` を使用
 
 ## スタイリングルール
 - **Tailwind CSS のみ使用**（CSS Modules は使わない — 統一済み）
@@ -72,7 +80,9 @@ lib/
 - Three.js v0.182 の色空間: `ColorManagement` がデフォルト有効。ShaderMaterial では `renderer.outputColorSpace = THREE.LinearSRGBColorSpace` を設定し、色は `hexToRGB()` で手動パースして `Float32Array` で渡す（`THREE.Color` の自動sRGB→リニア変換をバイパス）
 - ShaderMaterial でカスタムシェーダーを書く場合、`THREE.Color` のuniformは色空間変換が入るため、`float[]` 配列で直接渡す方が安全
 - キャンバス上のドラッグ操作: パフォーマンスのため、ドラッグ中は React state をバイパスして uniform + DOM を直接更新し、ドラッグ終了時に state に反映するパターンを使用
-- ダウンロード: デスクトップは `canvas.toDataURL()` + `<a>` で直接ダウンロード、スマホ（`/iPhone|iPad|iPod|Android/i`）のみ Web Share API でシェアシート表示
+- ダウンロード: `lib/canvas-download.ts` の `downloadCanvas`（canvas）/ `downloadBlob`（SVG等blob）を使用。デスクトップは `<a>` リンク、スマホ（`/iPhone|iPad|iPod|Android/i`）は Web Share API でシェアシート表示
+- クリップボードコピー: `hooks/use-clipboard.ts` の `useClipboard(delay?)` を使用。`{ copy, copied }` を返す
+- `hexToRGB`: `lib/color-utils.ts` から import。Three.js ShaderMaterial で色をfloat[]として渡す際に使用
 - `next build` 中に `.next` キャッシュが壊れることがある → `rm -rf .next` で解消
 - Tailwind v4 の important 修飾子は `!` サフィックス（例: `bg-black/55!`）
 - ドメイン: ムームードメインで `suna.design` を管理、`workbench` サブドメインを CNAME で Vercel に向けている

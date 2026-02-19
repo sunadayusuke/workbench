@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -14,6 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
+import { ParamSlider } from "@/components/ui/param-slider";
+import { SectionHeader } from "@/components/ui/section-header";
+import { hexToRGB } from "@/lib/color-utils";
+import { downloadCanvas } from "@/lib/canvas-download";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -406,14 +407,6 @@ function generateHarmoniousColors(count: number): ColorSpot[] {
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
 
-function hexToRGB(hex: string): [number, number, number] {
-  return [
-    parseInt(hex.slice(1, 3), 16) / 255,
-    parseInt(hex.slice(3, 5), 16) / 255,
-    parseInt(hex.slice(5, 7), 16) / 255,
-  ];
-}
-
 function getOutputSize(p: GradientParams): { width: number; height: number } {
   if (p.aspectPreset === "custom") {
     return { width: p.customWidth, height: p.customHeight };
@@ -444,48 +437,6 @@ function getContentRect(
 /* ------------------------------------------------------------------ */
 /*  Sub-components                                                    */
 /* ------------------------------------------------------------------ */
-
-function ParamSlider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex justify-between items-baseline">
-        <Label className="text-[13px]">{label}</Label>
-        <span className="text-xs font-mono text-muted-foreground tabular-nums">
-          {value.toFixed(step < 0.01 ? 4 : 2)}
-        </span>
-      </div>
-      <Slider
-        value={[value]}
-        min={min}
-        max={max}
-        step={step}
-        onValueChange={([v]) => onChange(v)}
-      />
-    </div>
-  );
-}
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-      {children}
-    </p>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /*  Page component                                                    */
@@ -756,35 +707,7 @@ export default function GradientPage() {
     r.renderer.render(r.scene, r.camera);
 
     const canvas = r.renderer.domElement;
-    const outputName = `gradient_${width}x${height}.png`;
-
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const canShare =
-      isMobile &&
-      typeof navigator.share === "function" &&
-      typeof navigator.canShare === "function";
-
-    if (canShare) {
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/png")
-      );
-      if (blob) {
-        const file = new File([blob], outputName, { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file] });
-          } catch {
-            /* user cancelled */
-          }
-        }
-      }
-    } else {
-      const dataUrl = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = outputName;
-      a.click();
-    }
+    await downloadCanvas(canvas, `gradient_${width}x${height}.png`);
 
     const container = containerRef.current;
     if (container) {
@@ -805,9 +728,9 @@ export default function GradientPage() {
 
   /* --- Render --- */
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-black">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d2d2d2]">
       {/* Canvas area */}
-      <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0">
+      <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0 bg-black">
         <div className="w-full h-full p-6">
           <div className="relative w-full h-full">
             <div ref={containerRef} className="w-full h-full" />
@@ -844,32 +767,26 @@ export default function GradientPage() {
         {/* Top bar */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-black/55! border-white/15! text-white/85! backdrop-blur-xl hover:bg-black/75! hover:border-white/30! hover:text-white!"
-            >
-              {t.back}
-            </Button>
+            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
+              [ {t.back} ]
+            </button>
           </Link>
           <button
             onClick={toggle}
-            className="text-[13px] font-medium bg-black/55! border border-white/15 text-white/85 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-black/75! select-none"
+            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.12em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
           >
-            {lang === "ja" ? "EN" : "JA"}
+            [ {lang === "ja" ? "EN" : "JA"} ]
           </button>
         </div>
       </div>
 
       {/* Sidebar */}
-      <aside className="flex-1 md:flex-none md:w-80 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.25)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
-        <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">
+      <aside className="flex-1 md:flex-none md:w-80 shrink bg-[#d2d2d2] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#242424] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
+          <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">
             {t.apps.gradient.name}
-          </h2>
-          <Button variant="secondary" size="sm" onClick={handleReset}>
-            {t.reset}
-          </Button>
+          </span>
+          <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleReset}>[ {t.reset} ]</button>
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
           {/* Aspect ratio */}
@@ -895,34 +812,34 @@ export default function GradientPage() {
             </Select>
           </div>
           {params.aspectPreset === "custom" && (
-            <div className="pl-3 border-l-2 border-border flex flex-col gap-3">
+            <div className="pl-3 border-l-2 border-[#242424] flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <Label className="text-[13px] w-8">{t.gradient.width}</Label>
+                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] w-8">{t.gradient.width}</Label>
                 <input
                   type="number"
                   value={params.customWidth}
                   onChange={(e) => setParams((prev) => ({ ...prev, customWidth: Math.max(1, Number(e.target.value) || 1) }))}
-                  className="flex-1 h-9 rounded-md border border-border bg-transparent px-3 text-sm"
+                  className="flex-1 h-9 border border-[#242424] bg-white px-3 font-mono text-[12px]"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-[13px] w-8">{t.gradient.height}</Label>
+                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] w-8">{t.gradient.height}</Label>
                 <input
                   type="number"
                   value={params.customHeight}
                   onChange={(e) => setParams((prev) => ({ ...prev, customHeight: Math.max(1, Number(e.target.value) || 1) }))}
-                  className="flex-1 h-9 rounded-md border border-border bg-transparent px-3 text-sm"
+                  className="flex-1 h-9 border border-[#242424] bg-white px-3 font-mono text-[12px]"
                 />
               </div>
             </div>
           )}
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* Gradient type & params */}
           <SectionHeader>{t.gradient.gradientType}</SectionHeader>
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">{t.gradient.type}</Label>
+            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.gradient.type}</Label>
             <Select
               value={String(params.gradientType)}
               onValueChange={(v) => setParams((prev) => ({ ...prev, gradientType: Number(v) }))}
@@ -941,20 +858,20 @@ export default function GradientPage() {
           </div>
           <ParamSlider label={t.gradient.spread} value={params.spread} min={0.1} max={1.0} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, spread: v }))} />
           {params.gradientType === 1 && (
-            <div className="pl-3 border-l-2 border-border">
+            <div className="pl-3 border-l-2 border-[#242424]">
               <ParamSlider label={t.gradient.angle} value={params.angle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, angle: v }))} />
             </div>
           )}
           <ParamSlider label={t.gradient.scale} value={params.scale} min={0.5} max={3.0} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, scale: v }))} />
           <ParamSlider label={t.gradient.noise} value={params.noise} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, noise: v }))} />
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* Colors */}
           <SectionHeader>{t.gradient.color}</SectionHeader>
-          <Button variant="secondary" size="sm" className="w-full" onClick={handleShuffle}>
-            {t.gradient.shuffle}
-          </Button>
+          <button className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleShuffle}>
+            [ {t.gradient.shuffle} ]
+          </button>
           <div className="flex flex-col gap-2">
             {params.colors.map((spot, i) => (
               <div key={i} className="flex items-center gap-2">
@@ -962,9 +879,9 @@ export default function GradientPage() {
                   type="color"
                   value={spot.color}
                   onChange={(e) => handleColorChange(i, e.target.value)}
-                  className="w-8 h-8 rounded border border-border cursor-pointer bg-transparent p-0"
+                  className="size-9 shrink-0 block border border-[#242424] cursor-pointer p-0 overflow-hidden color-swatch"
                 />
-                <span className="text-xs font-mono text-muted-foreground flex-1">
+                <span className="text-[12px] font-mono text-[#242424] flex-1">
                   {spot.color}
                 </span>
                 {params.colors.length > 2 && (
@@ -979,26 +896,26 @@ export default function GradientPage() {
             ))}
           </div>
           {params.colors.length < 8 && (
-            <Button variant="outline" size="sm" className="w-full" onClick={handleAddColor}>
-              {t.gradient.addColor}
-            </Button>
+            <button className="w-full py-3 px-4 border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#242424]/10 active:bg-[#242424]/20 transition-colors select-none" onClick={handleAddColor}>
+              [ {t.gradient.addColor} ]
+            </button>
           )}
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* Effects */}
           <SectionHeader>{t.gradient.effects}</SectionHeader>
           <ParamSlider label={t.gradient.grain} value={params.grain} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, grain: v }))} />
           <ParamSlider label={t.gradient.particle} value={params.stipple} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stipple: v }))} />
           {params.stipple > 0 && (
-            <div className="pl-3 border-l-2 border-border">
+            <div className="pl-3 border-l-2 border-[#242424]">
               <ParamSlider label={t.gradient.granularity} value={params.stippleSize} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stippleSize: v }))} />
             </div>
           )}
           <ParamSlider label={t.gradient.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, halftone: v }))} />
           <ParamSlider label={t.gradient.rib} value={params.glassAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassAmount: v }))} />
           {params.glassAmount > 0 && (
-            <div className="pl-3 border-l-2 border-border flex flex-col gap-2">
+            <div className="pl-3 border-l-2 border-[#242424] flex flex-col gap-2">
               <ParamSlider label={t.gradient.density} value={params.glassFreq} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassFreq: v }))} />
               <ParamSlider label={t.gradient.shift} value={params.glassShift} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassShift: v }))} />
             </div>
@@ -1006,18 +923,18 @@ export default function GradientPage() {
           <ParamSlider label={t.gradient.chromaticAberration} value={params.chromatic} min={0} max={2} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, chromatic: v }))} />
           <ParamSlider label={t.gradient.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveAmount: v }))} />
           {params.waveAmount > 0 && (
-            <div className="pl-3 border-l-2 border-border flex flex-col gap-2">
+            <div className="pl-3 border-l-2 border-[#242424] flex flex-col gap-2">
               <ParamSlider label={t.gradient.frequency} value={params.waveFrequency} min={1} max={30} step={0.5} onChange={(v) => setParams((prev) => ({ ...prev, waveFrequency: v }))} />
               <ParamSlider label={t.gradient.direction} value={params.waveAngle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, waveAngle: v }))} />
               <ParamSlider label={t.gradient.random} value={params.waveRandom} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveRandom: v }))} />
             </div>
           )}
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
-          <Button className="w-full" onClick={handleDownload}>
-            {t.download}
-          </Button>
+          <button className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleDownload}>
+            [ {t.download} ]
+          </button>
         </div>
       </aside>
     </div>

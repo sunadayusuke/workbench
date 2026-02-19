@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -20,6 +17,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n";
+import { ParamSlider } from "@/components/ui/param-slider";
+import { SectionHeader } from "@/components/ui/section-header";
+import { hexToRGB } from "@/lib/color-utils";
+import { downloadCanvas } from "@/lib/canvas-download";
+import { useClipboard } from "@/hooks/use-clipboard";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -296,14 +298,6 @@ const FORMATION_MODE_VALUES = [
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
 
-function hexToRGB(hex: string): [number, number, number] {
-  return [
-    parseInt(hex.slice(1, 3), 16) / 255,
-    parseInt(hex.slice(3, 5), 16) / 255,
-    parseInt(hex.slice(5, 7), 16) / 255,
-  ];
-}
-
 /** Render content to offscreen canvas and sample pixel positions */
 function sampleCanvasPixels(
   count: number,
@@ -409,10 +403,10 @@ function generateFormation(
       const displayText = text || "A";
       let fontSize = displayText.length <= 2 ? 280 : displayText.length <= 4 ? 180 : 120;
       const maxWidth = size * 0.9;
-      ctx.font = `bold ${fontSize}px "LINE Seed JP", sans-serif`;
+      ctx.font = `bold ${fontSize}px "SF Mono", "Fira Code", monospace`;
       while (ctx.measureText(displayText).width > maxWidth && fontSize > 40) {
         fontSize -= 10;
-        ctx.font = `bold ${fontSize}px "LINE Seed JP", sans-serif`;
+        ctx.font = `bold ${fontSize}px "SF Mono", "Fira Code", monospace`;
       }
       ctx.fillText(displayText, size / 2, size / 2, maxWidth);
     });
@@ -570,40 +564,6 @@ function generateExportCode(params: ParticleParams): string {
 /*  Sub-components                                                    */
 /* ------------------------------------------------------------------ */
 
-function ParamSlider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex justify-between items-baseline">
-        <Label className="text-[13px]">{label}</Label>
-        <span className="text-xs font-mono text-muted-foreground tabular-nums">
-          {value.toFixed(step < 0.01 ? 4 : 2)}
-        </span>
-      </div>
-      <Slider
-        value={[value]}
-        min={min}
-        max={max}
-        step={step}
-        onValueChange={([v]) => onChange(v)}
-      />
-    </div>
-  );
-}
-
 function ColorRow({
   label,
   value,
@@ -615,27 +575,19 @@ function ColorRow({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <Label className="text-[13px]">{label}</Label>
+      <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{label}</Label>
       <div className="flex items-center gap-2">
         <input
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="size-8 border border-border rounded-xl bg-transparent cursor-pointer p-0 color-swatch"
+          className="size-8 border border-[#242424] bg-transparent cursor-pointer p-0 color-swatch"
         />
-        <span className="text-xs font-mono text-muted-foreground">
+        <span className="text-[12px] font-mono text-[#242424]">
           {value}
         </span>
       </div>
     </div>
-  );
-}
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-      {children}
-    </p>
   );
 }
 
@@ -668,7 +620,7 @@ export default function ParticlePage() {
   const [debouncedText, setDebouncedText] = useState("");
   const [showExport, setShowExport] = useState(false);
   const [exportCode, setExportCode] = useState("");
-  const [copied, setCopied] = useState(false);
+  const { copy, copied } = useClipboard();
   const [svgFileName, setSvgFileName] = useState("");
   const svgInputRef = useRef<HTMLInputElement>(null);
   const svgImageRef = useRef<HTMLImageElement | null>(null);
@@ -998,51 +950,17 @@ export default function ParticlePage() {
   const handleDownload = useCallback(async () => {
     const t = threeRef.current;
     if (!t) return;
-    const canvas = t.renderer.domElement;
-    const outputName = "particle.png";
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const canShare =
-      isMobile &&
-      typeof navigator.share === "function" &&
-      typeof navigator.canShare === "function";
-    if (canShare) {
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/png")
-      );
-      if (blob) {
-        const file = new File([blob], outputName, { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file] });
-          } catch {
-            /* user cancelled */
-          }
-        }
-      }
-    } else {
-      const dataUrl = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = outputName;
-      a.click();
-    }
+    await downloadCanvas(t.renderer.domElement, "particle.png");
   }, []);
 
   /* --- Export code --- */
   const handleExport = useCallback(() => {
     setExportCode(generateExportCode(params));
     setShowExport(true);
-    setCopied(false);
   }, [params]);
 
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(exportCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [exportCode]);
-
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-black">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d2d2d2]">
       {/* Canvas area */}
       <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0">
         <div ref={containerRef} className="w-full h-full" />
@@ -1050,36 +968,30 @@ export default function ParticlePage() {
         {/* Top bar */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-black/55! border-white/15! text-white/85! backdrop-blur-xl hover:bg-black/75! hover:border-white/30! hover:text-white!"
-            >
-              {t.back}
-            </Button>
+            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
+              [ {t.back} ]
+            </button>
           </Link>
           <button
             onClick={toggle}
-            className="text-[13px] font-medium bg-black/55! border border-white/15 text-white/85 backdrop-blur-xl px-3 py-1.5 rounded-lg hover:bg-black/75! select-none"
+            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.12em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
           >
-            {lang === "ja" ? "EN" : "JA"}
+            [ {lang === "ja" ? "EN" : "JA"} ]
           </button>
         </div>
       </div>
 
       {/* Sidebar */}
-      <aside className="flex-1 md:flex-none md:w-75 shrink bg-background shadow-[0_-8px_24px_rgba(0,0,0,0.25)] md:shadow-none border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
-        <div className="px-6 py-3 md:pt-5 md:pb-4 border-b border-border shrink-0 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold -tracking-[0.01em]">{t.apps.particle.name}</h2>
-          <Button variant="secondary" size="sm" onClick={handleReset}>
-            {t.reset}
-          </Button>
+      <aside className="flex-1 md:flex-none md:w-75 shrink bg-[#d2d2d2] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#242424] flex flex-col overflow-hidden">
+        <div className="px-6 flex items-center h-10 md:h-14 border-b border-[#242424] shrink-0 justify-between">
+          <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">{t.apps.particle.name}</span>
+          <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleReset}>[ {t.reset} ]</button>
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
           {/* Formation */}
           <SectionHeader>{t.particle.formation}</SectionHeader>
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">{t.particle.mode}</Label>
+            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.particle.mode}</Label>
             <Select
               value={String(params.formationMode)}
               onValueChange={(v) => updateParam("formationMode", Number(v))}
@@ -1100,22 +1012,22 @@ export default function ParticlePage() {
           </div>
 
           {params.formationMode === 5 && (
-            <div className="pl-3 border-l-2 border-border">
+            <div className="pl-3 border-l-2 border-[#242424]">
               <div className="flex flex-col gap-2">
-                <Label className="text-[13px]">{t.particle.text}</Label>
+                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.particle.text}</Label>
                 <input
                   type="text"
                   value={params.inputText}
                   onChange={(e) => updateParam("inputText", e.target.value)}
                   placeholder={t.particle.enterText}
-                  className="h-9 rounded-md border border-border bg-transparent px-3 text-sm outline-none focus:border-ring"
+                  className="h-9 border border-[#242424] bg-white px-3 font-mono text-[12px] outline-none"
                 />
               </div>
             </div>
           )}
 
           {params.formationMode === 6 && (
-            <div className="pl-3 border-l-2 border-border">
+            <div className="pl-3 border-l-2 border-[#242424]">
               <div className="flex flex-col gap-2">
                 <input
                   ref={svgInputRef}
@@ -1124,16 +1036,14 @@ export default function ParticlePage() {
                   onChange={handleSvgUpload}
                   className="hidden"
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
+                <button
+                  className="w-full py-2 px-4 bg-transparent border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#242424]/5 transition-colors select-none"
                   onClick={() => svgInputRef.current?.click()}
                 >
                   {t.particle.selectSvg}
-                </Button>
+                </button>
                 {svgFileName && (
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-[12px] font-mono text-[#242424] truncate">
                     {svgFileName}
                   </p>
                 )}
@@ -1166,7 +1076,7 @@ export default function ParticlePage() {
             onChange={(v) => updateParam("scatter", v)}
           />
           {params.scatter > 0 && (
-            <div className="pl-3 border-l-2 border-border">
+            <div className="pl-3 border-l-2 border-[#242424]">
               <ParamSlider
                 label={t.particle.scatterDistance}
                 value={params.scatterDistance}
@@ -1178,12 +1088,12 @@ export default function ParticlePage() {
             </div>
           )}
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* Particles */}
           <SectionHeader>{t.apps.particle.name}</SectionHeader>
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">{t.particle.particleCount}</Label>
+            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.particle.particleCount}</Label>
             <Select
               value={String(params.particleCount)}
               onValueChange={(v) => updateParam("particleCount", Number(v))}
@@ -1225,20 +1135,20 @@ export default function ParticlePage() {
             onChange={(v) => updateParam("opacity", v)}
           />
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* Color */}
           <SectionHeader>{t.particle.colorSection}</SectionHeader>
           <div className="flex items-center justify-between">
-            <Label className="text-[13px]">{t.particle.transparentBg}</Label>
+            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.particle.transparentBg}</Label>
             <button
               type="button"
               role="switch"
               aria-checked={params.colorBgTransparent}
               onClick={() => updateParam("colorBgTransparent", !params.colorBgTransparent)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${params.colorBgTransparent ? "bg-primary" : "bg-muted"}`}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer border border-[#242424] transition-colors items-center px-[2px] ${params.colorBgTransparent ? "bg-primary" : "bg-muted"}`}
             >
-              <span className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-sm transition-transform ${params.colorBgTransparent ? "translate-x-4" : "translate-x-0"}`} />
+              <span className={`pointer-events-none block h-3 w-3 transition-transform ${params.colorBgTransparent ? "translate-x-[18px] bg-white" : "bg-[#242424]"}`} />
             </button>
           </div>
           {!params.colorBgTransparent && (
@@ -1250,12 +1160,12 @@ export default function ParticlePage() {
           )}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <Label className="text-[13px]">{t.particle.particleColor}</Label>
+              <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.particle.particleColor}</Label>
               {(params.colors || []).length < 5 && (
                 <button
                   type="button"
                   onClick={() => updateParam("colors", [...(params.colors || ["#7b68ee"]), "#ffffff"])}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-[12px] font-mono text-[#242424] hover:text-foreground transition-colors"
                 >
                   {t.particle.addColor}
                 </button>
@@ -1272,9 +1182,9 @@ export default function ParticlePage() {
                       newColors[i] = e.target.value;
                       updateParam("colors", newColors);
                     }}
-                    className="size-7 border border-border rounded-lg bg-transparent cursor-pointer p-0 color-swatch"
+                    className="size-7 border border-[#242424] bg-transparent cursor-pointer p-0 color-swatch"
                   />
-                  <span className="text-xs font-mono text-muted-foreground flex-1">
+                  <span className="text-[12px] font-mono text-[#242424] flex-1">
                     {color}
                   </span>
                   {(params.colors || []).length > 1 && (
@@ -1284,7 +1194,7 @@ export default function ParticlePage() {
                         const newColors = (params.colors || ["#7b68ee"]).filter((_, j) => j !== i);
                         updateParam("colors", newColors);
                       }}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors px-1"
+                      className="text-[12px] font-mono text-[#242424] hover:text-foreground transition-colors px-1"
                     >
                       ×
                     </button>
@@ -1310,12 +1220,12 @@ export default function ParticlePage() {
             onChange={(v) => updateParam("colorFreq", v)}
           />
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* Animation */}
           <SectionHeader>{t.particle.animation}</SectionHeader>
           <div className="flex flex-col gap-2">
-            <Label className="text-[13px]">{t.particle.animationType}</Label>
+            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.particle.animationType}</Label>
             <Select
               value={String(params.animMode)}
               onValueChange={(v) => updateParam("animMode", Number(v))}
@@ -1357,7 +1267,7 @@ export default function ParticlePage() {
             onChange={(v) => updateParam("turbulence", v)}
           />
           {params.animMode === 1 && (
-            <div className="pl-3 border-l-2 border-border flex flex-col gap-2">
+            <div className="pl-3 border-l-2 border-[#242424] flex flex-col gap-2">
               <ParamSlider
                 label={t.particle.frequency}
                 value={params.waveFrequency}
@@ -1377,24 +1287,24 @@ export default function ParticlePage() {
             </div>
           )}
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           {/* Interaction */}
           <SectionHeader>{t.particle.interaction}</SectionHeader>
           <div className="flex items-center justify-between">
-            <Label className="text-[13px]">{t.particle.mouseHover}</Label>
+            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.particle.mouseHover}</Label>
             <button
               type="button"
               role="switch"
               aria-checked={params.mouseInteraction}
               onClick={() => updateParam("mouseInteraction", !params.mouseInteraction)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${params.mouseInteraction ? "bg-primary" : "bg-muted"}`}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer border border-[#242424] transition-colors items-center px-[2px] ${params.mouseInteraction ? "bg-primary" : "bg-muted"}`}
             >
-              <span className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-sm transition-transform ${params.mouseInteraction ? "translate-x-4" : "translate-x-0"}`} />
+              <span className={`pointer-events-none block h-3 w-3 transition-transform ${params.mouseInteraction ? "translate-x-[18px] bg-white" : "bg-[#242424]"}`} />
             </button>
           </div>
           {params.mouseInteraction && (
-            <div className="pl-3 border-l-2 border-border">
+            <div className="pl-3 border-l-2 border-[#242424]">
               <ParamSlider
                 label={t.particle.attraction}
                 value={params.mouseGravity}
@@ -1406,15 +1316,15 @@ export default function ParticlePage() {
             </div>
           )}
 
-          <Separator />
+          <div className="h-px bg-[#242424] my-2" />
 
           <div className="flex flex-col gap-2">
-            <Button className="w-full" onClick={handleExport}>
-              {t.particle.exportCode}
-            </Button>
-            <Button variant="outline" className="w-full" onClick={handleDownload}>
-              {t.particle.exportImage}
-            </Button>
+            <button className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleExport}>
+              [ {t.particle.exportCode} ]
+            </button>
+            <button className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleDownload}>
+              [ {t.particle.exportImage} ]
+            </button>
           </div>
         </div>
       </aside>
@@ -1426,17 +1336,17 @@ export default function ParticlePage() {
             <DialogTitle>{t.particle.exportCodeTitle}</DialogTitle>
           </DialogHeader>
           <textarea
-            className="flex-1 min-h-[300px] bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
+            className="flex-1 min-h-[300px] bg-white text-[#242424] border border-[#242424] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none"
             value={exportCode}
             readOnly
           />
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setShowExport(false)}>
+            <button className="px-4 py-2 bg-transparent border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#242424]/5 transition-colors select-none" onClick={() => setShowExport(false)}>
               {t.close}
-            </Button>
-            <Button onClick={handleCopy}>
+            </button>
+            <button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={() => copy(exportCode)}>
               {copied ? t.copied : t.copy}
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>

@@ -40,6 +40,9 @@ export interface Translations {
     oklchH: string;
     outOfGamut: string;
     exportCssTitle: string;
+    copySvg: string;
+    colorFormat: string;
+    outputFormat: string;
     sampleText: string;
     // UI sample strings
     monthlyReport: string;
@@ -294,6 +297,9 @@ const ja: Translations = {
     oklchH: "H（色相）",
     outOfGamut: "sRGBガマット外（クランプ表示）",
     exportCssTitle: "CSS出力 — OKLCHカラースケール",
+    copySvg: "SVGコピー",
+    colorFormat: "カラー形式",
+    outputFormat: "出力形式",
     sampleText: "サンプルテキスト",
     monthlyReport: "月間レポート",
     published: "公開中",
@@ -541,6 +547,9 @@ const en: Translations = {
     oklchH: "H (Hue)",
     outOfGamut: "Out of sRGB gamut (clamped)",
     exportCssTitle: "CSS Export — OKLCH Color Scale",
+    copySvg: "Copy SVG",
+    colorFormat: "Color Format",
+    outputFormat: "Output Format",
     sampleText: "Sample text",
     monthlyReport: "Monthly Report",
     published: "Live",

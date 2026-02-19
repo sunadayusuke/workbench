@@ -14,6 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
 
 /* ================================================================== */
@@ -159,6 +166,25 @@ function parseOklchString(str: string): string | null {
   if (L > 1) L = L / 100;
   if (isNaN(L) || isNaN(C) || isNaN(H)) return null;
   return oklchToHex(L, C, H);
+}
+
+// sRGB [0,1] → HSL [h:0-360, s:0-100, l:0-100]
+function hexToHsl(hex: string): [number, number, number] {
+  const [r, g, b] = hexToSrgb(hex);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let s = 0;
+  if (max !== min) {
+    s = l > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min);
+  }
+  let h = 0;
+  if (max !== min) {
+    if (max === r) h = ((g - b) / (max - min) + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / (max - min) + 2) / 6;
+    else h = ((r - g) / (max - min) + 4) / 6;
+  }
+  return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
 }
 
 // sRGB → HSL hue (0-360, or -1 if achromatic)
@@ -394,20 +420,93 @@ function generateScale(
   });
 }
 
-function generateCssOutput(
-  scaleName: string,
-  scale: ReturnType<typeof generateScale>
+/* ================================================================== */
+/*  Export utilities                                                   */
+/* ================================================================== */
+
+type ColorFmt = "hex" | "rgba" | "hsl" | "oklch";
+type OutputFmt = "css" | "tailwind" | "tailwind4" | "tokens";
+
+function formatColorValue(
+  s: { L: number; C: number; H: number; hex: string },
+  fmt: ColorFmt
 ): string {
-  const lightLines = scale.map(
-    (s) =>
-      `  --${scaleName}-${s.step}: oklch(${s.L.toFixed(3)} ${s.C.toFixed(3)} ${s.H.toFixed(1)}); /* ${s.hex} */`
-  );
-  const reversed = [...scale].reverse();
-  const darkLines = scale.map(
-    (s, i) =>
-      `  --${scaleName}-${s.step}: oklch(${reversed[i].L.toFixed(3)} ${reversed[i].C.toFixed(3)} ${reversed[i].H.toFixed(1)}); /* ${reversed[i].hex} */`
-  );
-  return `/* Light */\n:root, .light {\n${lightLines.join("\n")}\n}\n\n/* Dark */\n.dark {\n${darkLines.join("\n")}\n}`;
+  switch (fmt) {
+    case "hex":
+      return s.hex.toUpperCase();
+    case "rgba": {
+      const [r, g, b] = hexToSrgb(s.hex);
+      return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, 1)`;
+    }
+    case "hsl": {
+      const [h, sat, l] = hexToHsl(s.hex);
+      return `hsl(${h}, ${sat}%, ${l}%)`;
+    }
+    case "oklch":
+      return `oklch(${s.L.toFixed(3)} ${s.C.toFixed(3)} ${s.H.toFixed(1)})`;
+  }
+}
+
+function generateOutput(
+  scaleName: string,
+  scale: ReturnType<typeof generateScale>,
+  colorFmt: ColorFmt,
+  outputFmt: OutputFmt
+): string {
+  const dark = [...scale].reverse();
+
+  switch (outputFmt) {
+    case "css": {
+      const lightLines = scale.map(
+        (s) => `  --${scaleName}-${s.step}: ${formatColorValue(s, colorFmt)};`
+      );
+      const darkLines = scale.map(
+        (s, i) => `  --${scaleName}-${s.step}: ${formatColorValue(dark[i], colorFmt)};`
+      );
+      return `/* Light */\n:root, .light {\n${lightLines.join("\n")}\n}\n\n/* Dark */\n.dark {\n${darkLines.join("\n")}\n}`;
+    }
+    case "tailwind": {
+      const entries = scale
+        .map((s) => `        ${s.step}: "${formatColorValue(s, colorFmt)}",`)
+        .join("\n");
+      return `// tailwind.config.js\nmodule.exports = {\n  theme: {\n    extend: {\n      colors: {\n        ${scaleName}: {\n${entries}\n        },\n      },\n    },\n  },\n};`;
+    }
+    case "tailwind4": {
+      const entries = scale
+        .map((s) => `  --color-${scaleName}-${s.step}: ${formatColorValue(s, colorFmt)};`)
+        .join("\n");
+      return `@theme {\n${entries}\n}`;
+    }
+    case "tokens": {
+      const tokens: Record<string, unknown> = {};
+      scale.forEach((s) => {
+        tokens[String(s.step)] = {
+          $type: "color",
+          $value: formatColorValue(s, colorFmt),
+        };
+      });
+      return JSON.stringify({ [scaleName]: tokens }, null, 2);
+    }
+  }
+}
+
+function generateSvgScale(scale: ReturnType<typeof generateScale>): string {
+  const W = 80;
+  const H = 80;
+  const svgWidth = scale.length * W;
+  const swatches = scale
+    .map((s, i) => {
+      const x = i * W;
+      const cx = x + W / 2;
+      const textFill = relativeLuminance(s.hex) > 0.179 ? "#000000" : "#ffffff";
+      return `  <g>
+    <rect x="${x}" y="0" width="${W}" height="${H}" fill="${s.hex}" />
+    <text x="${cx}" y="34" text-anchor="middle" fill="${textFill}" font-family="sans-serif" font-size="13">${s.step}</text>
+    <text x="${cx}" y="52" text-anchor="middle" fill="${textFill}" font-family="monospace" font-size="10">${s.hex.toUpperCase()}</text>
+  </g>`;
+    })
+    .join("\n");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${H}" viewBox="0 0 ${svgWidth} ${H}">\n${swatches}\n</svg>`;
 }
 
 /* ================================================================== */
@@ -821,9 +920,12 @@ export default function ColorPage() {
   // Scale CSS variable name
   const [scaleName, setScaleName] = useState("brand");
 
-  // CSS output dialog
+  // Export dialog
   const [showCssDialog, setShowCssDialog] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedSvg, setCopiedSvg] = useState(false);
+  const [colorFmt, setColorFmt] = useState<ColorFmt>("oklch");
+  const [outputFmt, setOutputFmt] = useState<OutputFmt>("css");
 
   // Sync hex → oklch
   const updateFromHex = useCallback((newHex: string) => {
@@ -866,8 +968,8 @@ export default function ColorPage() {
   }, [scale]);
 
   const cssOutput = useMemo(
-    () => generateCssOutput(scaleName, scale),
-    [scaleName, scale]
+    () => generateOutput(scaleName, scale, colorFmt, outputFmt),
+    [scaleName, scale, colorFmt, outputFmt]
   );
 
   const handleCopyCss = useCallback(() => {
@@ -875,6 +977,12 @@ export default function ColorPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [cssOutput]);
+
+  const handleCopySvg = useCallback(() => {
+    navigator.clipboard.writeText(generateSvgScale(scale));
+    setCopiedSvg(true);
+    setTimeout(() => setCopiedSvg(false), 2000);
+  }, [scale]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-background">
@@ -949,9 +1057,17 @@ export default function ColorPage() {
 
           {/* Scale */}
           <section className="flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {t.color.colorScale}
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                {t.color.colorScale}
+              </h3>
+              <button
+                onClick={handleCopySvg}
+                className="text-[12px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-accent select-none"
+              >
+                {copiedSvg ? t.copied : t.color.copySvg}
+              </button>
+            </div>
             <div className="flex flex-col sm:flex-row -mx-4 md:-mx-6 -mb-6">
               <div className="flex-1 min-w-0 bg-white px-5 py-6 md:px-9 md:py-9">
                 <p className="text-[13px] font-medium text-black mb-4">Light</p>
@@ -1054,19 +1170,49 @@ export default function ColorPage() {
               setCopied(false);
             }}
           >
-            {t.exportCss}
+            {t.exportCode}
           </Button>
         </div>
       </aside>
 
-      {/* CSS output dialog */}
+      {/* Export dialog */}
       <Dialog open={showCssDialog} onOpenChange={setShowCssDialog}>
         <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
           <DialogHeader>
-            <DialogTitle>{t.color.exportCssTitle}</DialogTitle>
+            <DialogTitle>{t.exportCode}</DialogTitle>
           </DialogHeader>
+          <div className="flex gap-2">
+            <div className="flex flex-col gap-1.5 flex-1">
+              <Label className="text-[12px] text-muted-foreground">{t.color.outputFormat}</Label>
+              <Select value={outputFmt} onValueChange={(v) => setOutputFmt(v as OutputFmt)}>
+                <SelectTrigger className="cursor-pointer">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="css">CSS Custom Properties</SelectItem>
+                  <SelectItem value="tailwind">Tailwind CSS (v3)</SelectItem>
+                  <SelectItem value="tailwind4">Tailwind CSS v4</SelectItem>
+                  <SelectItem value="tokens">Design Tokens (JSON)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5 flex-1">
+              <Label className="text-[12px] text-muted-foreground">{t.color.colorFormat}</Label>
+              <Select value={colorFmt} onValueChange={(v) => setColorFmt(v as ColorFmt)}>
+                <SelectTrigger className="cursor-pointer">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="oklch">OKLCH</SelectItem>
+                  <SelectItem value="hex">HEX</SelectItem>
+                  <SelectItem value="rgba">RGBA</SelectItem>
+                  <SelectItem value="hsl">HSL</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <textarea
-            className="flex-1 min-h-[300px] bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
+            className="flex-1 min-h-[260px] bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
             value={cssOutput}
             readOnly
           />

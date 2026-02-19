@@ -1177,7 +1177,7 @@ export default function ColorPage() {
 
       {/* Export dialog */}
       <Dialog open={showCssDialog} onOpenChange={setShowCssDialog}>
-        <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
+        <DialogContent className="max-w-[720px]! h-[80vh] flex! flex-col">
           <DialogHeader>
             <DialogTitle>{t.exportCode}</DialogTitle>
           </DialogHeader>
@@ -1212,7 +1212,7 @@ export default function ColorPage() {
             </div>
           </div>
           <textarea
-            className="flex-1 min-h-[260px] bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
+            className="flex-1 min-h-0 bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
             value={cssOutput}
             readOnly
           />

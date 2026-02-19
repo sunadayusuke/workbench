@@ -1177,7 +1177,7 @@ export default function ColorPage() {
 
       {/* Export dialog */}
       <Dialog open={showCssDialog} onOpenChange={setShowCssDialog}>
-        <DialogContent className="max-w-[720px]! h-[80vh] flex! flex-col">
+        <DialogContent className="max-w-[720px]! overflow-hidden flex! flex-col" style={{ height: "80vh" }}>
           <DialogHeader>
             <DialogTitle>{t.exportCode}</DialogTitle>
           </DialogHeader>
@@ -1211,11 +1211,13 @@ export default function ColorPage() {
               </Select>
             </div>
           </div>
-          <textarea
-            className="flex-1 min-h-0 bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
-            value={cssOutput}
-            readOnly
-          />
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <textarea
+              className="w-full h-full bg-muted text-foreground border border-border rounded-lg font-mono text-[11px] leading-relaxed p-4 resize-none outline-none focus:border-ring"
+              value={cssOutput}
+              readOnly
+            />
+          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button
               variant="outline"

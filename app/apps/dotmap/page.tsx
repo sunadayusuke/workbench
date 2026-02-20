@@ -460,7 +460,7 @@ export default function DotMapPage() {
   }, [countryList, params.highlightedCountries]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d2d2d2]">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d8d8da]">
       {/* Preview area */}
       <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0">
         <div
@@ -500,14 +500,12 @@ export default function DotMapPage() {
       </div>
 
       {/* Sidebar */}
-      <aside className="flex-1 md:flex-none md:w-75 shrink bg-[#d2d2d2] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#242424] flex flex-col overflow-hidden">
+      <aside className="flex-1 md:flex-none md:w-75 shrink bg-[linear-gradient(180deg,_#e8e8e9,_#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#bbbbbe] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
           <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">
             {t.apps.dotmap.name}
           </span>
-          <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleReset}>
-            [ {t.reset} ]
-          </button>
+          <button onClick={() => setParams({ ...DEFAULT_PARAMS })} className="bg-[#242424] text-white font-mono text-[11px] uppercase tracking-[0.10em] px-2.5 py-1 active:translate-y-[2px] transition-[transform] select-none">[ RESET ]</button>
         </div>
 
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">

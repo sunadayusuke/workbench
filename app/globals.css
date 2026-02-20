@@ -313,6 +313,28 @@
 }
 
 /* ============================================================
+   Physical UI — Hardware aesthetic color palette
+   Teenage Engineering TE-DMX inspired
+   ============================================================ */
+:root {
+  --aluminum-light:  #e8e8e9;
+  --aluminum-mid:    #d8d8da;
+  --aluminum-dark:   #c8c8ca;
+  --aluminum-border: #bbbbbe;
+  --screen-bg:       #080808;
+  --cap-blue:        #1e3246;
+  --cap-ochre:       #b59257;
+  --cap-grey:        #858585;
+  --cap-orange:      #e84a1b;
+  --cap-white:       #f0f0f2;
+  --ink-dark:        #333333;
+  --ink-subtle:      #777777;
+  --socket-bg:       #d0d0d2;
+  --led-green:       #4af626;
+  --led-off:         #333;
+}
+
+/* ============================================================
    Workbench UI — Industrial product aesthetic
    Clean, functional, Teenage Engineering inspired
    ============================================================ */

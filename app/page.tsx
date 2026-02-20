@@ -15,11 +15,21 @@ const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
   dotmap:   "/apps/dotmap",
 };
 
+const ACCENT_COLORS: Record<typeof APP_KEYS[number], string> = {
+  color:    "#1e3246",
+  shader:   "#e84a1b",
+  image:    "#b59257",
+  easing:   "#858585",
+  gradient: "#4af626",
+  particle: "#2a6db6",
+  dotmap:   "#8a6a3a",
+};
+
 export default function Home() {
   const { lang, toggle, t } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-[#d2d2d2] text-[#242424] px-6 py-10 md:px-12 md:py-12">
+    <div className="min-h-screen bg-[#d8d8da] text-[#242424] px-6 py-10 md:px-12 md:py-12">
 
       {/* Header */}
       <header className="flex items-center justify-between mb-12 md:mb-16">
@@ -56,22 +66,32 @@ export default function Home() {
       </p>
 
       {/* Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-14 border-t border-l border-[#242424]">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5 mb-14">
         {APP_KEYS.map((key) => {
           const href = APP_HREFS[key];
           const app = t.apps[key];
+          const accent = ACCENT_COLORS[key];
           return (
             <Link
               key={href}
               href={href}
-              className="group bg-[#d2d2d2] hover:bg-[#d8d8d8] active:bg-[#cccccc] p-6 flex flex-col justify-center border-r border-b border-[#242424] transition-colors duration-100 select-none"
+              className="no-underline text-inherit"
             >
-              <p className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] font-medium mb-2 group-hover:text-black transition-colors">
-                {app.name}
-              </p>
-              <p className="text-[12px] font-mono text-[#242424] leading-relaxed group-hover:text-[#242424] transition-colors">
-                {app.description}
-              </p>
+              <div className="key-card relative overflow-hidden h-28 md:h-32 flex flex-col justify-between select-none">
+                {/* Left accent bar */}
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-1 rounded-l-[20px]"
+                  style={{ backgroundColor: accent }}
+                />
+                <div>
+                  <p className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] font-bold mb-2">
+                    {app.name}
+                  </p>
+                  <p className="text-[10px] font-mono text-[#555] leading-relaxed">
+                    {app.description}
+                  </p>
+                </div>
+              </div>
             </Link>
           );
         })}

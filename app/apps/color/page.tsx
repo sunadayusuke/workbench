@@ -940,7 +940,7 @@ export default function ColorPage() {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d2d2d2]">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d8d8da]">
       {/* Main area */}
       <div className="h-[55vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0 relative bg-white">
         {/* Back button */}
@@ -1047,12 +1047,18 @@ export default function ColorPage() {
       </div>
 
       {/* Sidebar */}
-      <aside className="flex-1 md:flex-none w-full md:w-80 bg-[#d2d2d2] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#242424]/8 flex flex-col overflow-hidden">
+      <aside className="flex-1 md:flex-none w-full md:w-80 bg-[linear-gradient(180deg,_#e8e8e9,_#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#bbbbbe] flex flex-col overflow-hidden">
         {/* Sidebar header */}
-        <div className="flex items-center px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
+        <div className="flex items-center justify-between px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
           <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">
-            {t.settings}
+            COLOR
           </span>
+          <button
+            onClick={() => { setHex('#2a6db6'); setOklch(hexToOklch('#2a6db6')); }}
+            className="bg-[#242424] text-white font-mono text-[11px] uppercase tracking-[0.10em] px-2.5 py-1 hover:bg-[#333] active:translate-y-[2px] transition-[transform] select-none"
+          >
+            RESET
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">

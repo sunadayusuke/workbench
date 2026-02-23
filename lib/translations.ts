@@ -11,6 +11,7 @@ export interface Translations {
   exportCodeTitle: string;
   exportCss: string;
   cancel: string;
+  colors: string;
 
   // Home
   homeSubtitle: string;
@@ -111,6 +112,7 @@ export interface Translations {
     random: string;
     width: string;
     height: string;
+    output: string;
   };
 
   // Particle page
@@ -156,6 +158,7 @@ export interface Translations {
     ring: string;
     text: string;
     svg: string;
+    mouse: string;
   };
 
   // Dotmap page
@@ -179,6 +182,8 @@ export interface Translations {
     selectCountry: string;
     svgDownload: string;
     loading: string;
+    countries: string;
+    solid: string;
   };
 
   // Image page
@@ -220,6 +225,8 @@ export interface Translations {
     highlight: string;
     format: string;
     quality: string;
+    tone: string;
+    fx: string;
   };
 
   // Easing page
@@ -270,6 +277,7 @@ const ja: Translations = {
   exportCodeTitle: "コード出力 — 軽量版HTML",
   exportCss: "CSS出力",
   cancel: "キャンセル",
+  colors: "カラー",
 
   homeSubtitle: "sunaのデザイン作業台",
   apps: {
@@ -365,6 +373,7 @@ const ja: Translations = {
     random: "ランダム",
     width: "幅",
     height: "高さ",
+    output: "出力",
   },
 
   particle: {
@@ -409,6 +418,7 @@ const ja: Translations = {
     ring: "リング",
     text: "テキスト",
     svg: "SVG",
+    mouse: "マウス",
   },
 
   dotmap: {
@@ -431,6 +441,8 @@ const ja: Translations = {
     selectCountry: "国を選択...",
     svgDownload: "SVGダウンロード",
     loading: "読み込み中...",
+    countries: "国",
+    solid: "ソリッド",
   },
 
   image: {
@@ -471,6 +483,8 @@ const ja: Translations = {
     highlight: "ハイライト",
     format: "形式",
     quality: "品質",
+    tone: "トーン",
+    fx: "エフェクト",
   },
 
   easing: {
@@ -520,6 +534,7 @@ const en: Translations = {
   exportCodeTitle: "Code Export — Standalone HTML",
   exportCss: "Export CSS",
   cancel: "Cancel",
+  colors: "Colors",
 
   homeSubtitle: "suna's design workbench",
   apps: {
@@ -615,6 +630,7 @@ const en: Translations = {
     random: "Random",
     width: "Width",
     height: "Height",
+    output: "Output",
   },
 
   particle: {
@@ -659,6 +675,7 @@ const en: Translations = {
     ring: "Ring",
     text: "Text",
     svg: "SVG",
+    mouse: "Mouse",
   },
 
   dotmap: {
@@ -681,6 +698,8 @@ const en: Translations = {
     selectCountry: "Select country...",
     svgDownload: "Download SVG",
     loading: "Loading...",
+    countries: "Countries",
+    solid: "Solid",
   },
 
   image: {
@@ -721,6 +740,8 @@ const en: Translations = {
     highlight: "Highlight",
     format: "Format",
     quality: "Quality",
+    tone: "Tone",
+    fx: "Effects",
   },
 
   easing: {

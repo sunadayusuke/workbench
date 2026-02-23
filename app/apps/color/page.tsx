@@ -21,8 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
-import { ParamSlider } from "@/components/ui/param-slider";
 import { useClipboard } from "@/hooks/use-clipboard";
+import { DragParam } from "@/components/ui/drag-param";
+import { PushButton } from "@/components/ui/push-button";
 
 /* ================================================================== */
 /*  Color conversion utilities (no external library)                   */
@@ -582,7 +583,7 @@ function ColorInput({
           onKeyDown={(e) => {
             if (e.key === "Enter") commitDraft(draft);
           }}
-          className={`font-mono text-[12px] bg-white! border-[#242424] shadow-none ${inputClassName ?? ""}`}
+          className={`font-mono text-[12px] ${inputClassName ?? ""}`}
         />
       </div>
     </div>
@@ -940,22 +941,17 @@ export default function ColorPage() {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d2d2d2]">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d8d8da]">
       {/* Main area */}
       <div className="h-[55vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0 relative bg-white">
         {/* Back button */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
-              [ {t.back} ]
-            </button>
+            <PushButton variant="dark" size="sm">[ {t.back} ]</PushButton>
           </Link>
-          <button
-            onClick={toggle}
-            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
-          >
+          <PushButton onClick={toggle} variant="dark" size="sm">
             [ {lang === "ja" ? "EN" : "JA"} ]
-          </button>
+          </PushButton>
         </div>
 
         {/* Content */}
@@ -1046,79 +1042,76 @@ export default function ColorPage() {
         </div>
       </div>
 
-      {/* Sidebar */}
-      <aside className="flex-1 md:flex-none w-full md:w-80 bg-[#d2d2d2] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#242424]/8 flex flex-col overflow-hidden">
-        {/* Sidebar header */}
-        <div className="flex items-center px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
-          <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">
-            {t.settings}
-          </span>
+      {/* Control surface */}
+      <aside className="flex-1 md:flex-none w-full md:w-[320px] shrink-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
+          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.color.name}</span>
+          <PushButton size="sm" variant="dark" onClick={() => { setHex('#2a6db6'); setOklch(hexToOklch('#2a6db6')); }}>[ {t.reset} ]</PushButton>
         </div>
 
-        <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
+        {/* Scrollable interior */}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+
           {/* Base color input */}
-          <ColorInput
-            label={t.color.baseColor}
-            hex={hex}
-            onChangeHex={updateFromHex}
-          />
-
-          <div className="h-px bg-[#242424] my-2" />
-
-          {/* OKLCH sliders */}
-          <div className="text-[12px] font-mono uppercase tracking-[0.2em] text-[#242424] select-none">
-            OKLCH
+          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)]">
+            <ColorInput
+              label={t.color.baseColor}
+              hex={hex}
+              onChangeHex={updateFromHex}
+            />
           </div>
-          <ParamSlider
-            label={t.color.oklchL}
-            value={oklch[0]}
-            min={0}
-            max={1}
-            step={0.001}
-            onChange={(v) => updateFromOklch(0, v)}
-          />
-          <ParamSlider
-            label={t.color.oklchC}
-            value={oklch[1]}
-            min={0}
-            max={0.4}
-            step={0.001}
-            onChange={(v) => updateFromOklch(1, v)}
-          />
-          <ParamSlider
-            label={t.color.oklchH}
-            value={oklch[2]}
-            min={0}
-            max={360}
-            step={0.1}
-            onChange={(v) => updateFromOklch(2, v)}
-          />
 
-          <div className="h-px bg-[#242424] my-2" />
+          {/* OKLCH knobs: L / C / H */}
+          <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
+            <DragParam
+              label={t.color.oklchL}
+              value={oklch[0]}
+              min={0} max={1} step={0.001}
+              onChange={(v) => updateFromOklch(0, v)}
+              accent="white"
+              defaultValue={0.5}
+            />
+            <DragParam
+              label={t.color.oklchC}
+              value={oklch[1]}
+              min={0} max={0.4} step={0.001}
+              onChange={(v) => updateFromOklch(1, v)}
+              accent="blue"
+              defaultValue={0.1}
+            />
+            <DragParam
+              label={t.color.oklchH}
+              value={oklch[2]}
+              min={0} max={360} step={0.1}
+              onChange={(v) => updateFromOklch(2, v)}
+              accent="ochre"
+              defaultValue={220}
+            />
+          </div>
 
           {/* Scale name */}
-          <div className="flex flex-col gap-2">
-            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.color.scaleName}</Label>
+          <div className="px-5 py-4 flex flex-col gap-2">
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.color.scaleName}</span>
             <Input
               value={scaleName}
               onChange={(e) => setScaleName(e.target.value)}
               placeholder="brand"
-              className="font-mono text-[12px] bg-white! border-[#242424] shadow-none"
+              className="font-mono text-[12px]"
             />
-            <p className="text-[12px] font-mono text-[#242424]">
+            <p className="text-[11px] font-mono text-[#777]">
               {t.color.scaleNameHint.replace("{name}", scaleName)}
             </p>
           </div>
 
-          <div className="h-px bg-[#242424] my-2" />
+        </div>
 
-          {/* Export button */}
-          <button
-            className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
-            onClick={() => setShowCssDialog(true)}
-          >
+        {/* Export button */}
+        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
+          <PushButton variant="dark" className="w-full text-center" onClick={() => setShowCssDialog(true)}>
             [ {t.exportCode} ]
-          </button>
+          </PushButton>
         </div>
       </aside>
 
@@ -1160,7 +1153,7 @@ export default function ColorPage() {
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
             <textarea
-              className="w-full h-full bg-white text-[#242424] border border-[#242424] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none"
+              className="w-full h-full rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)]"
               value={cssOutput}
               readOnly
             />

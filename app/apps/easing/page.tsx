@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
-import { Slider } from "@/components/ui/slider";
 import { useClipboard } from "@/hooks/use-clipboard";
+import { Knob } from "@/components/ui/knob";
+import { PushButton } from "@/components/ui/push-button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -946,10 +947,6 @@ export default function EasingPage() {
     setActivePreset(name);
   };
 
-  const handleDurationChange = (val: number[]) => {
-    setDuration(val[0]);
-  };
-
   const handleReset = () => {
     setControlPoints(DEFAULT_POINTS);
     setDuration(DEFAULT_DURATION);
@@ -1016,76 +1013,73 @@ export default function EasingPage() {
         </div>
       </div>
 
-      {/* Sidebar */}
-      <aside className="flex-1 md:flex-none md:w-80 shrink bg-[linear-gradient(180deg,_#e8e8e9,_#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#bbbbbe] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
-          <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">
-            EASING
-          </span>
-          <button onClick={handleReset} className="bg-[#242424] text-white font-mono text-[11px] uppercase tracking-[0.10em] px-2.5 py-1 active:translate-y-[2px] transition-[transform] select-none">[ RESET ]</button>
+      {/* Control surface */}
+      <aside className="flex-1 md:flex-none md:w-[320px] shrink-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
+          <span className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">EASING</span>
+          <PushButton size="sm" variant="dark" onClick={handleReset}>RESET</PushButton>
         </div>
-        <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
-          {/* Bezier editor */}
-          <div className="text-[12px] text-[#242424] font-mono">{easingCSS}</div>
-          <BezierEditor points={controlPoints} onChange={handlePointsChange} />
 
-          {/* Numeric inputs */}
-          <div className="grid grid-cols-4 gap-2">
-            {(["P1x", "P1y", "P2x", "P2y"] as const).map((label, i) => (
-              <div key={label} className="flex flex-col gap-1">
-                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{label}</Label>
-                <Input
-                  type="number"
-                  step={0.01}
-                  min={i % 2 === 0 ? 0 : -0.5}
-                  max={i % 2 === 0 ? 1 : 1.5}
-                  value={controlPoints[i]}
-                  onChange={(e) => handlePointInput(i, e.target.value)}
-                  className="h-8"
-                />
-              </div>
-            ))}
-          </div>
+        {/* Scrollable interior */}
+        <div className="flex-1 overflow-y-auto flex flex-col">
 
-          <div className="h-px bg-[#242424] my-2" />
-
-          {/* Duration */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.easing.duration}</Label>
-              <span className="text-[12px] text-[#242424] font-mono">
-                {duration}ms
-              </span>
-            </div>
-            <Slider
-              value={[duration]}
-              onValueChange={handleDurationChange}
+          {/* Duration knob */}
+          <div className="flex items-center justify-center gap-8 px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
+            <Knob
+              label="DURTN"
+              value={duration}
               min={10}
               max={2000}
               step={10}
+              onChange={(v) => setDuration(v)}
+              color="blue"
+              defaultValue={DEFAULT_DURATION}
             />
+            <span className="text-[11px] font-mono text-[#555] select-none">{duration}ms</span>
           </div>
 
-          <div className="h-px bg-[#242424] my-2" />
+          {/* Bezier editor */}
+          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
+            <div className="text-[11px] text-[#555] font-mono select-none">{easingCSS}</div>
+            <BezierEditor points={controlPoints} onChange={handlePointsChange} />
+
+            {/* Numeric inputs */}
+            <div className="grid grid-cols-4 gap-2 pt-1">
+              {(["P1x", "P1y", "P2x", "P2y"] as const).map((label, i) => (
+                <div key={label} className="flex flex-col gap-1">
+                  <Label className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#555]">{label}</Label>
+                  <Input
+                    type="number"
+                    step={0.01}
+                    min={i % 2 === 0 ? 0 : -0.5}
+                    max={i % 2 === 0 ? 1 : 1.5}
+                    value={controlPoints[i]}
+                    onChange={(e) => handlePointInput(i, e.target.value)}
+                    className="h-8 font-mono text-[12px]"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Presets */}
-          <div className="flex flex-col gap-2">
-            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.easing.presets}</Label>
+          <div className="flex-1 px-5 py-4 flex flex-col gap-2">
+            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">PRESETS</span>
             <PresetGrid
               activePreset={activePreset}
               onSelect={handlePresetSelect}
             />
           </div>
 
-          <div className="h-px bg-[#242424] my-2" />
+        </div>
 
-          {/* Export button */}
-          <button
-            onClick={() => setShowExport(true)}
-            className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
-          >
-            {t.easing.exportCode}
-          </button>
+        {/* Export button */}
+        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
+          <PushButton variant="dark" className="w-full text-center" onClick={() => setShowExport(true)}>
+            [ EXPORT CODE ]
+          </PushButton>
         </div>
       </aside>
 

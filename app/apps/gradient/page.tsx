@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
 import { ParamSlider } from "@/components/ui/param-slider";
-import { SectionHeader } from "@/components/ui/section-header";
+import { Knob } from "@/components/ui/knob";
+import { PushButton } from "@/components/ui/push-button";
 import { hexToRGB } from "@/lib/color-utils";
 import { downloadCanvas } from "@/lib/canvas-download";
 
@@ -780,161 +781,194 @@ export default function GradientPage() {
         </div>
       </div>
 
-      {/* Sidebar */}
-      <aside className="flex-1 md:flex-none md:w-80 shrink bg-[linear-gradient(180deg,_#e8e8e9,_#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#bbbbbe] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
-          <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">
-            {t.apps.gradient.name}
-          </span>
-          <button className="bg-[#242424] text-white font-mono text-[11px] uppercase tracking-[0.10em] px-2.5 py-1 active:translate-y-[2px] transition-[transform] select-none" onClick={handleReset}>[ {t.reset} ]</button>
+      {/* Control surface */}
+      <aside className="flex-1 md:flex-none md:w-[320px] shrink-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
+          <span className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">GRADIENT</span>
+          <PushButton size="sm" variant="dark" onClick={handleReset}>RESET</PushButton>
         </div>
-        <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
-          {/* Aspect ratio */}
-          <SectionHeader>{t.gradient.aspectRatio}</SectionHeader>
-          <div className="flex flex-col gap-2">
-            <Select
-              value={params.aspectPreset}
-              onValueChange={(v) => setParams((prev) => ({ ...prev, aspectPreset: v }))}
-            >
-              <SelectTrigger className="cursor-pointer">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ASPECT_PRESET_KEYS.map((p) => {
-                  const labels: Record<string, string> = {
-                    "9:16": t.gradient.phone, "16:9": t.gradient.desktop,
-                    "1:1": t.gradient.square, "4:3": "4:3", "3:2": "3:2",
-                    "custom": t.gradient.custom,
-                  };
-                  return <SelectItem key={p.key} value={p.key}>{labels[p.key]}</SelectItem>;
-                })}
-              </SelectContent>
-            </Select>
+
+        {/* Scrollable interior */}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+
+          {/* Knob row: SPREAD / SCALE / NOISE / GRAIN */}
+          <div className="flex items-start justify-evenly px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
+            <Knob
+              label="SPREAD"
+              value={params.spread}
+              min={0.1} max={1.0} step={0.01}
+              onChange={(v) => setParams((prev) => ({ ...prev, spread: v }))}
+              color="blue"
+              defaultValue={0.8}
+            />
+            <Knob
+              label="SCALE"
+              value={params.scale}
+              min={0.5} max={3.0} step={0.01}
+              onChange={(v) => setParams((prev) => ({ ...prev, scale: v }))}
+              color="ochre"
+              defaultValue={1.0}
+            />
+            <Knob
+              label="NOISE"
+              value={params.noise}
+              min={0} max={1} step={0.01}
+              onChange={(v) => setParams((prev) => ({ ...prev, noise: v }))}
+              color="grey"
+              defaultValue={0}
+            />
+            <Knob
+              label="GRAIN"
+              value={params.grain}
+              min={0} max={1} step={0.01}
+              onChange={(v) => setParams((prev) => ({ ...prev, grain: v }))}
+              color="orange"
+              defaultValue={0}
+            />
           </div>
-          {params.aspectPreset === "custom" && (
-            <div className="pl-3 border-l-2 border-[#242424] flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] w-8">{t.gradient.width}</Label>
-                <input
-                  type="number"
-                  value={params.customWidth}
-                  onChange={(e) => setParams((prev) => ({ ...prev, customWidth: Math.max(1, Number(e.target.value) || 1) }))}
-                  className="flex-1 h-9 border border-[#242424] bg-white px-3 font-mono text-[12px]"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] w-8">{t.gradient.height}</Label>
-                <input
-                  type="number"
-                  value={params.customHeight}
-                  onChange={(e) => setParams((prev) => ({ ...prev, customHeight: Math.max(1, Number(e.target.value) || 1) }))}
-                  className="flex-1 h-9 border border-[#242424] bg-white px-3 font-mono text-[12px]"
-                />
-              </div>
+
+          {/* Aspect ratio + Gradient type selects */}
+          <div className="px-5 py-4 flex flex-col gap-3 border-b border-[rgba(0,0,0,0.08)]">
+            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">OUTPUT</span>
+            <div className="flex flex-col gap-2">
+              <Select
+                value={params.aspectPreset}
+                onValueChange={(v) => setParams((prev) => ({ ...prev, aspectPreset: v }))}
+              >
+                <SelectTrigger className="cursor-pointer">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ASPECT_PRESET_KEYS.map((p) => {
+                    const labels: Record<string, string> = {
+                      "9:16": t.gradient.phone, "16:9": t.gradient.desktop,
+                      "1:1": t.gradient.square, "4:3": "4:3", "3:2": "3:2",
+                      "custom": t.gradient.custom,
+                    };
+                    return <SelectItem key={p.key} value={p.key}>{labels[p.key]}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-
-          <div className="h-px bg-[#242424] my-2" />
-
-          {/* Gradient type & params */}
-          <SectionHeader>{t.gradient.gradientType}</SectionHeader>
-          <div className="flex flex-col gap-2">
-            <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.gradient.type}</Label>
-            <Select
-              value={String(params.gradientType)}
-              onValueChange={(v) => setParams((prev) => ({ ...prev, gradientType: Number(v) }))}
-            >
-              <SelectTrigger className="cursor-pointer">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {GRADIENT_TYPE_VALUES.map((v, i) => (
-                  <SelectItem key={v} value={v}>
-                    {[t.gradient.mesh, t.gradient.linear, t.gradient.radial][i]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {params.aspectPreset === "custom" && (
+              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#555] w-8">{t.gradient.width}</Label>
+                  <input
+                    type="number"
+                    value={params.customWidth}
+                    onChange={(e) => setParams((prev) => ({ ...prev, customWidth: Math.max(1, Number(e.target.value) || 1) }))}
+                    className="flex-1 h-9 border border-[#bbbbbe] bg-white px-3 font-mono text-[12px]"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#555] w-8">{t.gradient.height}</Label>
+                  <input
+                    type="number"
+                    value={params.customHeight}
+                    onChange={(e) => setParams((prev) => ({ ...prev, customHeight: Math.max(1, Number(e.target.value) || 1) }))}
+                    className="flex-1 h-9 border border-[#bbbbbe] bg-white px-3 font-mono text-[12px]"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="flex flex-col gap-2">
+              <Select
+                value={String(params.gradientType)}
+                onValueChange={(v) => setParams((prev) => ({ ...prev, gradientType: Number(v) }))}
+              >
+                <SelectTrigger className="cursor-pointer">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {GRADIENT_TYPE_VALUES.map((v, i) => (
+                    <SelectItem key={v} value={v}>
+                      {[t.gradient.mesh, t.gradient.linear, t.gradient.radial][i]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {params.gradientType === 1 && (
+              <div className="pl-3 border-l-2 border-[#bbbbbe]">
+                <ParamSlider label={t.gradient.angle} value={params.angle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, angle: v }))} />
+              </div>
+            )}
           </div>
-          <ParamSlider label={t.gradient.spread} value={params.spread} min={0.1} max={1.0} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, spread: v }))} />
-          {params.gradientType === 1 && (
-            <div className="pl-3 border-l-2 border-[#242424]">
-              <ParamSlider label={t.gradient.angle} value={params.angle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, angle: v }))} />
-            </div>
-          )}
-          <ParamSlider label={t.gradient.scale} value={params.scale} min={0.5} max={3.0} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, scale: v }))} />
-          <ParamSlider label={t.gradient.noise} value={params.noise} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, noise: v }))} />
-
-          <div className="h-px bg-[#242424] my-2" />
 
           {/* Colors */}
-          <SectionHeader>{t.gradient.color}</SectionHeader>
-          <button className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleShuffle}>
-            [ {t.gradient.shuffle} ]
-          </button>
-          <div className="flex flex-col gap-2">
-            {params.colors.map((spot, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={spot.color}
-                  onChange={(e) => handleColorChange(i, e.target.value)}
-                  className="size-9 shrink-0 block border border-[#242424] cursor-pointer p-0 overflow-hidden color-swatch"
-                />
-                <span className="text-[12px] font-mono text-[#242424] flex-1">
-                  {spot.color}
-                </span>
-                {params.colors.length > 2 && (
-                  <button
-                    onClick={() => handleRemoveColor(i)}
-                    className="text-muted-foreground hover:text-foreground text-sm w-6 h-6 flex items-center justify-center rounded transition-colors"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-          {params.colors.length < 8 && (
-            <button className="w-full py-3 px-4 border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#242424]/10 active:bg-[#242424]/20 transition-colors select-none" onClick={handleAddColor}>
-              [ {t.gradient.addColor} ]
+          <div className="px-5 py-4 flex flex-col gap-3 border-b border-[rgba(0,0,0,0.08)]">
+            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">COLORS</span>
+            <button className="w-full py-2.5 px-4 bg-[#242424] text-white font-mono text-[11px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleShuffle}>
+              [ {t.gradient.shuffle} ]
             </button>
-          )}
-
-          <div className="h-px bg-[#242424] my-2" />
-
-          {/* Effects */}
-          <SectionHeader>{t.gradient.effects}</SectionHeader>
-          <ParamSlider label={t.gradient.grain} value={params.grain} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, grain: v }))} />
-          <ParamSlider label={t.gradient.particle} value={params.stipple} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stipple: v }))} />
-          {params.stipple > 0 && (
-            <div className="pl-3 border-l-2 border-[#242424]">
-              <ParamSlider label={t.gradient.granularity} value={params.stippleSize} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stippleSize: v }))} />
+            <div className="flex flex-col gap-2">
+              {params.colors.map((spot, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={spot.color}
+                    onChange={(e) => handleColorChange(i, e.target.value)}
+                    className="size-9 shrink-0 block border border-[#bbbbbe] cursor-pointer p-0 overflow-hidden color-swatch"
+                  />
+                  <span className="text-[12px] font-mono text-[#333] flex-1">
+                    {spot.color}
+                  </span>
+                  {params.colors.length > 2 && (
+                    <button
+                      onClick={() => handleRemoveColor(i)}
+                      className="text-[#777] hover:text-[#333] text-sm w-6 h-6 flex items-center justify-center rounded transition-colors"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
-          )}
-          <ParamSlider label={t.gradient.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, halftone: v }))} />
-          <ParamSlider label={t.gradient.rib} value={params.glassAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassAmount: v }))} />
-          {params.glassAmount > 0 && (
-            <div className="pl-3 border-l-2 border-[#242424] flex flex-col gap-2">
-              <ParamSlider label={t.gradient.density} value={params.glassFreq} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassFreq: v }))} />
-              <ParamSlider label={t.gradient.shift} value={params.glassShift} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassShift: v }))} />
-            </div>
-          )}
-          <ParamSlider label={t.gradient.chromaticAberration} value={params.chromatic} min={0} max={2} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, chromatic: v }))} />
-          <ParamSlider label={t.gradient.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveAmount: v }))} />
-          {params.waveAmount > 0 && (
-            <div className="pl-3 border-l-2 border-[#242424] flex flex-col gap-2">
-              <ParamSlider label={t.gradient.frequency} value={params.waveFrequency} min={1} max={30} step={0.5} onChange={(v) => setParams((prev) => ({ ...prev, waveFrequency: v }))} />
-              <ParamSlider label={t.gradient.direction} value={params.waveAngle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, waveAngle: v }))} />
-              <ParamSlider label={t.gradient.random} value={params.waveRandom} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveRandom: v }))} />
-            </div>
-          )}
+            {params.colors.length < 8 && (
+              <button className="w-full py-2.5 px-4 border border-[#bbbbbe] text-[#333] font-mono text-[11px] uppercase tracking-[0.14em] hover:bg-[#242424]/10 active:bg-[#242424]/20 transition-colors select-none" onClick={handleAddColor}>
+                [ {t.gradient.addColor} ]
+              </button>
+            )}
+          </div>
 
-          <div className="h-px bg-[#242424] my-2" />
+          {/* Effects (secondary) */}
+          <div className="flex flex-col gap-3 px-5 py-4">
+            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">FX</span>
+            <ParamSlider label={t.gradient.particle} value={params.stipple} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stipple: v }))} />
+            {params.stipple > 0 && (
+              <div className="pl-3 border-l-2 border-[#bbbbbe]">
+                <ParamSlider label={t.gradient.granularity} value={params.stippleSize} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stippleSize: v }))} />
+              </div>
+            )}
+            <ParamSlider label={t.gradient.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, halftone: v }))} />
+            <ParamSlider label={t.gradient.rib} value={params.glassAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassAmount: v }))} />
+            {params.glassAmount > 0 && (
+              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
+                <ParamSlider label={t.gradient.density} value={params.glassFreq} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassFreq: v }))} />
+                <ParamSlider label={t.gradient.shift} value={params.glassShift} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassShift: v }))} />
+              </div>
+            )}
+            <ParamSlider label={t.gradient.chromaticAberration} value={params.chromatic} min={0} max={2} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, chromatic: v }))} />
+            <ParamSlider label={t.gradient.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveAmount: v }))} />
+            {params.waveAmount > 0 && (
+              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
+                <ParamSlider label={t.gradient.frequency} value={params.waveFrequency} min={1} max={30} step={0.5} onChange={(v) => setParams((prev) => ({ ...prev, waveFrequency: v }))} />
+                <ParamSlider label={t.gradient.direction} value={params.waveAngle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, waveAngle: v }))} />
+                <ParamSlider label={t.gradient.random} value={params.waveRandom} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveRandom: v }))} />
+              </div>
+            )}
+          </div>
 
-          <button className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={handleDownload}>
-            [ {t.download} ]
-          </button>
+        </div>
+
+        {/* Download button */}
+        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
+          <PushButton variant="dark" className="w-full text-center" onClick={handleDownload}>
+            [ DOWNLOAD ]
+          </PushButton>
         </div>
       </aside>
     </div>

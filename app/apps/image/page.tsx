@@ -19,7 +19,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n";
 import { ParamSlider } from "@/components/ui/param-slider";
-import { SectionHeader } from "@/components/ui/section-header";
+import { Knob } from "@/components/ui/knob";
+import { PhysicalFader } from "@/components/ui/physical-fader";
+import { PushButton } from "@/components/ui/push-button";
 import { downloadCanvas } from "@/lib/canvas-download";
 
 /* ------------------------------------------------------------------ */
@@ -689,128 +691,184 @@ export default function ImagePage() {
         </div>
       </div>
 
-      {/* サイドバー */}
-      <aside className="flex-1 md:flex-none md:w-80 shrink bg-[linear-gradient(180deg,_#e8e8e9,_#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-l-[#bbbbbe] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-6 h-10 md:h-14 shrink-0 border-b border-[#242424]">
-          <span className="text-[12px] font-mono uppercase tracking-[0.22em] text-[#242424] select-none">
-            {t.apps.image.name}
-          </span>
-          <button className="bg-[#242424] text-white font-mono text-[11px] uppercase tracking-[0.10em] px-2.5 py-1 active:translate-y-[2px] transition-[transform] select-none" onClick={handleReset} disabled={!hasImage}>[ {t.reset} ]</button>
+      {/* Control surface */}
+      <aside className="flex-1 md:flex-none md:w-[320px] shrink-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
+          <span className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">IMAGE</span>
+          <PushButton size="sm" variant="dark" onClick={handleReset} disabled={!hasImage}>RESET</PushButton>
         </div>
-        <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-6 py-5 pb-8">
-          {/* アップロード */}
-          <label className="flex items-center justify-center gap-2 min-h-10 py-2.5 border border-dashed border-[#242424] text-[12px] font-mono text-[#242424] cursor-pointer bg-transparent hover:bg-[#242424]/5 transition-colors hover:border-[#242424]">
-            {hasImage ? t.image.changeImage : t.image.selectImage}
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) loadImage(file);
-              }}
+
+        {/* Scrollable interior */}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+
+          {/* File upload */}
+          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)]">
+            <label className="flex items-center justify-center gap-2 min-h-10 py-2.5 border border-dashed border-[#bbbbbe] text-[11px] font-mono text-[#555] cursor-pointer bg-transparent hover:bg-[#242424]/5 transition-colors">
+              {hasImage ? t.image.changeImage : t.image.selectImage}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) loadImage(file);
+                }}
+              />
+            </label>
+          </div>
+
+          {/* Knob row: BRITE / CONT / SAT / EXPSR */}
+          <div className="flex items-start justify-evenly px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
+            <Knob
+              label="BRITE"
+              value={params.brightness}
+              min={-1} max={1} step={0.01}
+              onChange={(v) => updateParam("brightness", v)}
+              color="blue"
+              defaultValue={0}
             />
-          </label>
+            <Knob
+              label="CONT"
+              value={params.contrast}
+              min={-1} max={1} step={0.01}
+              onChange={(v) => updateParam("contrast", v)}
+              color="ochre"
+              defaultValue={0}
+            />
+            <Knob
+              label="SAT"
+              value={params.saturation}
+              min={-1} max={1} step={0.01}
+              onChange={(v) => updateParam("saturation", v)}
+              color="grey"
+              defaultValue={0}
+            />
+            <Knob
+              label="EXPSR"
+              value={params.exposure}
+              min={-2} max={2} step={0.01}
+              onChange={(v) => updateParam("exposure", v)}
+              color="orange"
+              defaultValue={0}
+            />
+          </div>
 
-          <div className="h-px bg-[#242424] my-2" />
+          {/* Fader bank: NOISE / BLUR / VIGNT / FADE */}
+          <div className="flex items-start justify-evenly px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
+            <PhysicalFader
+              label="NOISE"
+              value={params.noise}
+              min={0} max={1}
+              onChange={(v) => updateParam("noise", v)}
+              channelNumber="01"
+            />
+            <PhysicalFader
+              label="BLUR"
+              value={params.blur}
+              min={0} max={20}
+              onChange={(v) => updateParam("blur", v)}
+              channelNumber="02"
+            />
+            <PhysicalFader
+              label="VIGNT"
+              value={params.vignette}
+              min={0} max={1}
+              onChange={(v) => updateParam("vignette", v)}
+              channelNumber="03"
+            />
+            <PhysicalFader
+              label="FADE"
+              value={params.fade}
+              min={0} max={1}
+              onChange={(v) => updateParam("fade", v)}
+              channelNumber="04"
+            />
+          </div>
 
-          {/* 基本補正 */}
-          <SectionHeader>{t.image.basicAdjustments}</SectionHeader>
-          <ParamSlider label={t.image.brightness} value={params.brightness} min={-1} max={1} step={0.01} onChange={(v) => updateParam("brightness", v)} />
-          <ParamSlider label={t.image.contrast} value={params.contrast} min={-1} max={1} step={0.01} onChange={(v) => updateParam("contrast", v)} />
-          <ParamSlider label={t.image.saturation} value={params.saturation} min={-1} max={1} step={0.01} onChange={(v) => updateParam("saturation", v)} />
-          <ParamSlider label={t.image.exposure} value={params.exposure} min={-2} max={2} step={0.01} onChange={(v) => updateParam("exposure", v)} />
-          <ParamSlider label={t.image.highlights} value={params.highlights} min={-1} max={1} step={0.01} onChange={(v) => updateParam("highlights", v)} />
-          <ParamSlider label={t.image.shadows} value={params.shadows} min={-1} max={1} step={0.01} onChange={(v) => updateParam("shadows", v)} />
+          {/* Scrollable secondary controls */}
+          <div className="flex flex-col gap-4 px-5 py-4">
+            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">TONE</span>
+            <ParamSlider label={t.image.highlights} value={params.highlights} min={-1} max={1} step={0.01} onChange={(v) => updateParam("highlights", v)} />
+            <ParamSlider label={t.image.shadows} value={params.shadows} min={-1} max={1} step={0.01} onChange={(v) => updateParam("shadows", v)} />
+            <ParamSlider label={t.image.cyanYellow} value={params.temperature} min={-1} max={1} step={0.01} onChange={(v) => updateParam("temperature", v)} />
+            <ParamSlider label={t.image.greenMagenta} value={params.tint} min={-1} max={1} step={0.01} onChange={(v) => updateParam("tint", v)} />
+            <ParamSlider label={t.image.hueShift} value={params.hueShift} min={-0.5} max={0.5} step={0.01} onChange={(v) => updateParam("hueShift", v)} />
 
-          <div className="h-px bg-[#242424] my-2" />
-
-          {/* エフェクト */}
-          <SectionHeader>{t.image.effects}</SectionHeader>
-          <ParamSlider label={t.image.glitch} value={params.glitchAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("glitchAmount", v)} />
-          {params.glitchAmount > 0 && (
-            <div className="pl-3 border-l-2 border-[#242424]">
-              <ParamSlider label={t.image.seed} value={params.glitchSeed} min={0} max={100} step={1} onChange={(v) => updateParam("glitchSeed", v)} />
-            </div>
-          )}
-          <ParamSlider label={t.image.noise} value={params.noise} min={0} max={1} step={0.01} onChange={(v) => updateParam("noise", v)} />
-          <ParamSlider label={t.image.blur} value={params.blur} min={0} max={20} step={0.1} onChange={(v) => updateParam("blur", v)} />
-          <ParamSlider label={t.image.vignette} value={params.vignette} min={0} max={1} step={0.01} onChange={(v) => updateParam("vignette", v)} />
-          <ParamSlider label={t.image.pixelate} value={params.pixelate} min={0} max={1} step={0.01} onChange={(v) => updateParam("pixelate", v)} />
-          <ParamSlider label={t.image.rgbShift} value={params.rgbShift} min={0} max={1} step={0.01} onChange={(v) => updateParam("rgbShift", v)} />
-          {params.rgbShift > 0 && (
-            <div className="pl-3 border-l-2 border-[#242424] flex flex-col gap-3">
-              <div className="flex flex-col gap-2">
-                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.image.type}</Label>
-                <Select
-                  value={String(params.rgbShiftMode)}
-                  onValueChange={(v) => updateParam("rgbShiftMode", Number(v))}
-                >
-                  <SelectTrigger className="cursor-pointer">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">{t.image.linear}</SelectItem>
-                    <SelectItem value="1">{t.image.radial}</SelectItem>
-                  </SelectContent>
-                </Select>
+            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none mt-2">FX</span>
+            <ParamSlider label={t.image.glitch} value={params.glitchAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("glitchAmount", v)} />
+            {params.glitchAmount > 0 && (
+              <div className="pl-3 border-l-2 border-[#bbbbbe]">
+                <ParamSlider label={t.image.seed} value={params.glitchSeed} min={0} max={100} step={1} onChange={(v) => updateParam("glitchSeed", v)} />
               </div>
-              {params.rgbShiftMode === 0 && (
-                <ParamSlider label={t.image.angle} value={params.rgbShiftAngle} min={0} max={360} step={1} onChange={(v) => updateParam("rgbShiftAngle", v)} />
-              )}
-            </div>
-          )}
-          <ParamSlider label={t.image.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("waveAmount", v)} />
-          {params.waveAmount > 0 && (
-            <div className="pl-3 border-l-2 border-[#242424]">
-              <ParamSlider label={t.image.frequency} value={params.waveFrequency} min={1} max={50} step={0.5} onChange={(v) => updateParam("waveFrequency", v)} />
-            </div>
-          )}
-          <ParamSlider label={t.image.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => updateParam("halftone", v)} />
-          <ParamSlider label={t.image.scanline} value={params.scanline} min={0} max={1} step={0.01} onChange={(v) => updateParam("scanline", v)} />
-
-          <div className="h-px bg-[#242424] my-2" />
-
-          {/* カラーエフェクト */}
-          <SectionHeader>{t.image.colorEffects}</SectionHeader>
-          <ParamSlider label={t.image.cyanYellow} value={params.temperature} min={-1} max={1} step={0.01} onChange={(v) => updateParam("temperature", v)} />
-          <ParamSlider label={t.image.greenMagenta} value={params.tint} min={-1} max={1} step={0.01} onChange={(v) => updateParam("tint", v)} />
-          <ParamSlider label={t.image.hueShift} value={params.hueShift} min={-0.5} max={0.5} step={0.01} onChange={(v) => updateParam("hueShift", v)} />
-          <ParamSlider label={t.image.fade} value={params.fade} min={0} max={1} step={0.01} onChange={(v) => updateParam("fade", v)} />
-          <ParamSlider label={t.image.duotone} value={params.duotone} min={0} max={1} step={0.01} onChange={(v) => updateParam("duotone", v)} />
-          {params.duotone > 0 && (
-            <div className="pl-3 border-l-2 border-[#242424] flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] flex-1">{t.image.shadow}</Label>
-                <input
-                  type="color"
-                  value={params.duotoneShadow}
-                  onChange={(e) => updateParam("duotoneShadow", e.target.value)}
-                  className="size-9 shrink-0 block border border-[#242424] cursor-pointer p-0 overflow-hidden color-swatch"
-                />
-                <span className="text-[12px] font-mono text-[#242424] w-16">{params.duotoneShadow}</span>
+            )}
+            <ParamSlider label={t.image.pixelate} value={params.pixelate} min={0} max={1} step={0.01} onChange={(v) => updateParam("pixelate", v)} />
+            <ParamSlider label={t.image.rgbShift} value={params.rgbShift} min={0} max={1} step={0.01} onChange={(v) => updateParam("rgbShift", v)} />
+            {params.rgbShift > 0 && (
+              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-3">
+                <div className="flex flex-col gap-2">
+                  <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{t.image.type}</Label>
+                  <Select
+                    value={String(params.rgbShiftMode)}
+                    onValueChange={(v) => updateParam("rgbShiftMode", Number(v))}
+                  >
+                    <SelectTrigger className="cursor-pointer">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">{t.image.linear}</SelectItem>
+                      <SelectItem value="1">{t.image.radial}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {params.rgbShiftMode === 0 && (
+                  <ParamSlider label={t.image.angle} value={params.rgbShiftAngle} min={0} max={360} step={1} onChange={(v) => updateParam("rgbShiftAngle", v)} />
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] flex-1">{t.image.highlight}</Label>
-                <input
-                  type="color"
-                  value={params.duotoneHighlight}
-                  onChange={(e) => updateParam("duotoneHighlight", e.target.value)}
-                  className="size-9 shrink-0 block border border-[#242424] cursor-pointer p-0 overflow-hidden color-swatch"
-                />
-                <span className="text-[12px] font-mono text-[#242424] w-16">{params.duotoneHighlight}</span>
+            )}
+            <ParamSlider label={t.image.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("waveAmount", v)} />
+            {params.waveAmount > 0 && (
+              <div className="pl-3 border-l-2 border-[#bbbbbe]">
+                <ParamSlider label={t.image.frequency} value={params.waveFrequency} min={1} max={50} step={0.5} onChange={(v) => updateParam("waveFrequency", v)} />
               </div>
-            </div>
-          )}
+            )}
+            <ParamSlider label={t.image.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => updateParam("halftone", v)} />
+            <ParamSlider label={t.image.scanline} value={params.scanline} min={0} max={1} step={0.01} onChange={(v) => updateParam("scanline", v)} />
+            <ParamSlider label={t.image.duotone} value={params.duotone} min={0} max={1} step={0.01} onChange={(v) => updateParam("duotone", v)} />
+            {params.duotone > 0 && (
+              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] flex-1">{t.image.shadow}</Label>
+                  <input
+                    type="color"
+                    value={params.duotoneShadow}
+                    onChange={(e) => updateParam("duotoneShadow", e.target.value)}
+                    className="size-9 shrink-0 block border border-[#242424] cursor-pointer p-0 overflow-hidden color-swatch"
+                  />
+                  <span className="text-[12px] font-mono text-[#242424] w-16">{params.duotoneShadow}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] flex-1">{t.image.highlight}</Label>
+                  <input
+                    type="color"
+                    value={params.duotoneHighlight}
+                    onChange={(e) => updateParam("duotoneHighlight", e.target.value)}
+                    className="size-9 shrink-0 block border border-[#242424] cursor-pointer p-0 overflow-hidden color-swatch"
+                  />
+                  <span className="text-[12px] font-mono text-[#242424] w-16">{params.duotoneHighlight}</span>
+                </div>
+              </div>
+            )}
+          </div>
 
-          <div className="h-px bg-[#242424] my-2" />
-          <button
-            className="w-full py-3 px-4 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
-            onClick={() => setShowDownload(true)}
-            disabled={!hasImage}
-          >
-            {t.download}
-          </button>
+        </div>
+
+        {/* Download button */}
+        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
+          <PushButton variant="dark" className="w-full text-center" onClick={() => setShowDownload(true)} disabled={!hasImage}>
+            [ DOWNLOAD ]
+          </PushButton>
         </div>
       </aside>
 

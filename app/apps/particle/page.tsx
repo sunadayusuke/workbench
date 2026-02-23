@@ -17,9 +17,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n";
-import { Knob } from "@/components/ui/knob";
-import { PhysicalFader } from "@/components/ui/physical-fader";
-import { LedButton } from "@/components/ui/led-button";
+import { DragParam } from "@/components/ui/drag-param";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { PushButton } from "@/components/ui/push-button";
 import { hexToRGB } from "@/lib/color-utils";
 import { downloadCanvas } from "@/lib/canvas-download";
@@ -845,6 +844,9 @@ export default function ParticlePage() {
         prevMouseY = mouseY;
         mouseSpeed += (rawSpeed - mouseSpeed) * 0.15;
 
+        // Force disable when toggle is off
+        if (!paramsRef.current.mouseInteraction) mouseActive = false;
+
         // Gravity ramps up when mouse is slow/still, drops when fast
         if (mouseActive) {
           // Slow mouse → gravity grows toward 1.0; fast mouse → gravity drops toward ~0.1
@@ -970,16 +972,11 @@ export default function ParticlePage() {
         {/* Top bar */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
-              [ {t.back} ]
-            </button>
+            <PushButton variant="dark" size="sm">[ {t.back} ]</PushButton>
           </Link>
-          <button
-            onClick={toggle}
-            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.12em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
-          >
+          <PushButton onClick={toggle} variant="dark" size="sm">
             [ {lang === "ja" ? "EN" : "JA"} ]
-          </button>
+          </PushButton>
         </div>
       </div>
 
@@ -988,103 +985,16 @@ export default function ParticlePage() {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
-          <span className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">PARTICLE</span>
-          <PushButton size="sm" variant="dark" onClick={() => setParams({ ...DEFAULT_PARAMS })}>RESET</PushButton>
+          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.particle.name}</span>
+          <PushButton size="sm" variant="dark" onClick={() => setParams({ ...DEFAULT_PARAMS })}>[ {t.reset} ]</PushButton>
         </div>
 
         {/* Scrollable interior */}
         <div className="flex-1 overflow-y-auto flex flex-col">
 
-          {/* ANIM MODE: LED buttons */}
-          <div className="flex items-end justify-evenly px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
-            {([t.particle.flow, t.particle.wave, t.particle.diffusion] as const).map((label, i) => (
-              <LedButton
-                key={i}
-                active={params.animMode === i}
-                onClick={() => updateParam("animMode", i)}
-                label={label.slice(0, 4).toUpperCase()}
-                size="sm"
-              />
-            ))}
-            <LedButton
-              active={params.mouseInteraction}
-              onClick={() => updateParam("mouseInteraction", !params.mouseInteraction)}
-              label="MOUS"
-              size="sm"
-            />
-          </div>
-
-          {/* Knob row: SIZE / SPEED / OPCT / SCALE */}
-          <div className="flex items-start justify-evenly px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
-            <Knob
-              label="SIZE"
-              value={params.particleSize}
-              min={0.5} max={5} step={0.1}
-              onChange={(v) => updateParam("particleSize", v)}
-              color="blue"
-              defaultValue={DEFAULT_PARAMS.particleSize}
-            />
-            <Knob
-              label="SPEED"
-              value={params.speed}
-              min={0} max={2} step={0.01}
-              onChange={(v) => updateParam("speed", v)}
-              color="ochre"
-              defaultValue={DEFAULT_PARAMS.speed}
-            />
-            <Knob
-              label="OPCT"
-              value={params.opacity}
-              min={0.1} max={1.0} step={0.01}
-              onChange={(v) => updateParam("opacity", v)}
-              color="grey"
-              defaultValue={DEFAULT_PARAMS.opacity}
-            />
-            <Knob
-              label="SCALE"
-              value={params.formationScale}
-              min={0.5} max={2.0} step={0.01}
-              onChange={(v) => updateParam("formationScale", v)}
-              color="orange"
-              defaultValue={DEFAULT_PARAMS.formationScale}
-            />
-          </div>
-
-          {/* Fader bank: TURB / SCATTER / NOISE / SIZE-V */}
-          <div className="flex items-start justify-evenly px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
-            <PhysicalFader
-              label="TURB"
-              value={params.turbulence}
-              min={0} max={3}
-              onChange={(v) => updateParam("turbulence", v)}
-              channelNumber="01"
-            />
-            <PhysicalFader
-              label="SCATTER"
-              value={params.scatter}
-              min={0} max={1}
-              onChange={(v) => updateParam("scatter", v)}
-              channelNumber="02"
-            />
-            <PhysicalFader
-              label="NOISE"
-              value={params.noiseScale}
-              min={0.5} max={5}
-              onChange={(v) => updateParam("noiseScale", v)}
-              channelNumber="03"
-            />
-            <PhysicalFader
-              label="SIZE-V"
-              value={params.sizeVariation}
-              min={0} max={1}
-              onChange={(v) => updateParam("sizeVariation", v)}
-              channelNumber="04"
-            />
-          </div>
-
           {/* Formation section */}
           <div className="px-5 py-4 flex flex-col gap-3 border-b border-[rgba(0,0,0,0.08)]">
-            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">FORMATION</span>
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.particle.formation}</span>
             <div className="flex flex-col gap-2">
               <Select
                 value={String(params.formationMode)}
@@ -1113,7 +1023,7 @@ export default function ParticlePage() {
                     value={params.inputText}
                     onChange={(e) => updateParam("inputText", e.target.value)}
                     placeholder={t.particle.enterText}
-                    className="h-9 border border-[#bbbbbe] bg-white px-3 font-mono text-[12px] outline-none"
+                    className="h-9 w-full rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] px-3 font-mono text-[12px] outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)] focus:[box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35),0_0_0_1px_var(--led-green)] placeholder:text-[#505050]"
                   />
                 </div>
               </div>
@@ -1159,13 +1069,97 @@ export default function ParticlePage() {
             </div>
           </div>
 
+          {/* ANIM MODE: select */}
+          <div className="px-4 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.particle.mode}</span>
+              <Select value={String(params.animMode)} onValueChange={(v) => updateParam("animMode", Number(v))}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">{t.particle.flow.toUpperCase()}</SelectItem>
+                  <SelectItem value="1">{t.particle.wave.toUpperCase()}</SelectItem>
+                  <SelectItem value="2">{t.particle.diffusion.toUpperCase()}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Knob row: SIZE / SPEED / OPCT / SCALE */}
+          <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
+            <DragParam
+              label={t.particle.size}
+              value={params.particleSize}
+              min={0.5} max={5} step={0.1}
+              onChange={(v) => updateParam("particleSize", v)}
+              accent="blue"
+              defaultValue={DEFAULT_PARAMS.particleSize}
+            />
+            <DragParam
+              label={t.particle.speed}
+              value={params.speed}
+              min={0} max={2} step={0.01}
+              onChange={(v) => updateParam("speed", v)}
+              accent="ochre"
+              defaultValue={DEFAULT_PARAMS.speed}
+            />
+            <DragParam
+              label={t.particle.opacity}
+              value={params.opacity}
+              min={0.1} max={1.0} step={0.01}
+              onChange={(v) => updateParam("opacity", v)}
+              accent="grey"
+              defaultValue={DEFAULT_PARAMS.opacity}
+            />
+            <DragParam
+              label={t.particle.scale}
+              value={params.formationScale}
+              min={0.5} max={2.0} step={0.01}
+              onChange={(v) => updateParam("formationScale", v)}
+              accent="orange"
+              defaultValue={DEFAULT_PARAMS.formationScale}
+            />
+          </div>
+
+          {/* Fader bank: TURB / SCATTER / NOISE / SIZE-V */}
+          <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
+            <DragParam label={t.particle.turbulence} value={params.turbulence} min={0} max={3} step={0.01} onChange={(v) => updateParam("turbulence", v)} accent="blue" defaultValue={DEFAULT_PARAMS.turbulence} />
+            <DragParam label={t.particle.scatter} value={params.scatter} min={0} max={1} step={0.01} onChange={(v) => updateParam("scatter", v)} accent="ochre" defaultValue={DEFAULT_PARAMS.scatter} />
+            <DragParam label={t.particle.noiseScale} value={params.noiseScale} min={0.5} max={5} step={0.1} onChange={(v) => updateParam("noiseScale", v)} accent="grey" defaultValue={DEFAULT_PARAMS.noiseScale} />
+            <DragParam label={t.particle.sizeVariation} value={params.sizeVariation} min={0} max={1} step={0.01} onChange={(v) => updateParam("sizeVariation", v)} accent="orange" defaultValue={DEFAULT_PARAMS.sizeVariation} />
+          </div>
+
+          {/* Interaction section */}
+          <div className="px-5 py-4 flex flex-col gap-3 border-b border-[rgba(0,0,0,0.08)]">
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.particle.interaction}</span>
+            <ToggleSwitch
+              active={params.mouseInteraction}
+              onClick={() => updateParam("mouseInteraction", !params.mouseInteraction)}
+              label={t.particle.mouseHover}
+              size="sm"
+            />
+            {params.mouseInteraction && (
+              <div className="pl-3 border-l-2 border-[#bbbbbe]">
+                <DragParam
+                  label={t.particle.attraction}
+                  value={params.mouseGravity}
+                  min={0.1} max={5} step={0.1}
+                  onChange={(v) => updateParam("mouseGravity", v)}
+                  accent="blue"
+                  defaultValue={DEFAULT_PARAMS.mouseGravity}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Color section */}
           <div className="flex-1 px-5 py-4 flex flex-col gap-3">
-            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">COLORS</span>
-            <LedButton
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.colors}</span>
+            <ToggleSwitch
               active={params.colorBgTransparent}
               onClick={() => updateParam("colorBgTransparent", !params.colorBgTransparent)}
-              label="TRNS BG"
+              label={t.particle.transparentBg}
               size="sm"
             />
             {!params.colorBgTransparent && (
@@ -1223,10 +1217,10 @@ export default function ParticlePage() {
         {/* Action buttons */}
         <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] flex flex-col gap-2">
           <PushButton variant="dark" className="w-full text-center" onClick={handleExport}>
-            [ EXPORT CODE ]
+            [ {t.particle.exportCode} ]
           </PushButton>
           <PushButton variant="light" className="w-full text-center" onClick={handleDownload}>
-            [ DOWNLOAD ]
+            [ {t.particle.exportImage} ]
           </PushButton>
         </div>
       </aside>
@@ -1238,7 +1232,7 @@ export default function ParticlePage() {
             <DialogTitle>{t.particle.exportCodeTitle}</DialogTitle>
           </DialogHeader>
           <textarea
-            className="flex-1 min-h-[300px] bg-white text-[#242424] border border-[#242424] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none"
+            className="flex-1 min-h-[300px] rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)]"
             value={exportCode}
             readOnly
           />

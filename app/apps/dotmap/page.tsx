@@ -12,8 +12,7 @@ import {
 } from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
 import { downloadBlob } from "@/lib/canvas-download";
-import { Knob } from "@/components/ui/knob";
-import { LedButton } from "@/components/ui/led-button";
+import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 
 /* ------------------------------------------------------------------ */
@@ -487,16 +486,11 @@ export default function DotMapPage() {
         {/* Top bar */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
-              [ {t.back} ]
-            </button>
+            <PushButton variant="dark" size="sm">[ {t.back} ]</PushButton>
           </Link>
-          <button
-            onClick={toggle}
-            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.12em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
-          >
+          <PushButton onClick={toggle} variant="dark" size="sm">
             [ {lang === "ja" ? "EN" : "JA"} ]
-          </button>
+          </PushButton>
         </div>
       </div>
 
@@ -505,66 +499,84 @@ export default function DotMapPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
-          <span className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">DOTMAP</span>
-          <PushButton size="sm" variant="dark" onClick={() => setParams({ ...DEFAULT_PARAMS })}>RESET</PushButton>
+          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.dotmap.name}</span>
+          <PushButton size="sm" variant="dark" onClick={() => setParams({ ...DEFAULT_PARAMS })}>[ {t.reset} ]</PushButton>
         </div>
 
         {/* Scrollable interior */}
         <div className="flex-1 overflow-y-auto flex flex-col">
 
           {/* Knob row: ROWS / RADIUS / OFFSET */}
-          <div className="flex items-start justify-evenly px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
-            <Knob
-              label="ROWS"
+          <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
+            <DragParam
+              label={t.dotmap.density}
               value={params.rows}
               min={20} max={250} step={1}
               onChange={(v) => updateParam("rows", v)}
-              color="blue"
+              accent="blue"
               defaultValue={DEFAULT_PARAMS.rows}
             />
-            <Knob
-              label="RADIUS"
+            <DragParam
+              label={t.dotmap.dotRadius}
               value={params.dotRadius}
               min={0.1} max={0.6} step={0.05}
               onChange={(v) => updateParam("dotRadius", v)}
-              color="ochre"
+              accent="ochre"
               defaultValue={DEFAULT_PARAMS.dotRadius}
             />
-            <Knob
-              label="OFFSET"
+            <DragParam
+              label={t.dotmap.lngShift}
               value={params.lngOffset}
               min={-180} max={180} step={1}
               onChange={(v) => updateParam("lngOffset", v)}
-              color="grey"
+              accent="grey"
               defaultValue={0}
             />
           </div>
 
-          {/* LED toggles: shape / pattern / transparent */}
-          <div className="flex items-end justify-evenly px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
-            <LedButton
-              active={params.shape === "hexagon"}
-              onClick={() => updateParam("shape", params.shape === "hexagon" ? "circle" : "hexagon")}
-              label="HEX"
-              size="sm"
-            />
-            <LedButton
-              active={params.gridPattern === "diagonal"}
-              onClick={() => updateParam("gridPattern", params.gridPattern === "diagonal" ? "vertical" : "diagonal")}
-              label="DIAG"
-              size="sm"
-            />
-            <LedButton
-              active={params.bgTransparent}
-              onClick={() => updateParam("bgTransparent", !params.bgTransparent)}
-              label="TRNS"
-              size="sm"
-            />
+          {/* Shape / pattern / background selects */}
+          <div className="flex flex-col gap-3 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
+            {/* SHAPE */}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[12px] font-mono uppercase tracking-[0.10em] text-[#666] flex-1">{t.dotmap.shape}</span>
+              <Select value={params.shape} onValueChange={(v) => updateParam("shape", v as "circle" | "hexagon")}>
+                <SelectTrigger size="sm" className="w-[130px] shrink-0"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="circle">{t.dotmap.circle}</SelectItem>
+                  <SelectItem value="hexagon">{t.dotmap.hexagon}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* GRID */}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[12px] font-mono uppercase tracking-[0.10em] text-[#666] flex-1">{t.dotmap.gridPattern}</span>
+              <Select value={params.gridPattern} onValueChange={(v) => updateParam("gridPattern", v as "vertical" | "diagonal")}>
+                <SelectTrigger size="sm" className="w-[130px] shrink-0"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="vertical">{t.dotmap.vertical}</SelectItem>
+                  <SelectItem value="diagonal">{t.dotmap.diagonal}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* BG */}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[12px] font-mono uppercase tracking-[0.10em] text-[#666] flex-1">{t.dotmap.bgColor}</span>
+              <Select
+                value={params.bgTransparent ? "transparent" : "solid"}
+                onValueChange={(v) => updateParam("bgTransparent", v === "transparent")}
+              >
+                <SelectTrigger size="sm" className="w-[130px] shrink-0"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="solid">{t.dotmap.solid}</SelectItem>
+                  <SelectItem value="transparent">{t.dotmap.transparentBg}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Color section */}
           <div className="px-5 py-4 flex flex-col gap-3 border-b border-[rgba(0,0,0,0.08)]">
-            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">COLORS</span>
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.colors}</span>
             <ColorRow
               label={t.dotmap.dotColor}
               value={params.dotColor}
@@ -581,7 +593,7 @@ export default function DotMapPage() {
 
           {/* Country highlight */}
           <div className="flex-1 px-5 py-4 flex flex-col gap-3">
-            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">COUNTRIES</span>
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.dotmap.countries}</span>
 
             {availableCountries.length > 0 && (
               <div className="flex flex-col gap-2">
@@ -629,7 +641,7 @@ export default function DotMapPage() {
         {/* Download button */}
         <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
           <PushButton variant="dark" className="w-full text-center" onClick={handleDownload}>
-            [ SVG DOWNLOAD ]
+            [ {t.dotmap.svgDownload} ]
           </PushButton>
         </div>
       </aside>

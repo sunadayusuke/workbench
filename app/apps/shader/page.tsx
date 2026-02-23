@@ -11,9 +11,14 @@ import {
 } from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n";
 import { useClipboard } from "@/hooks/use-clipboard";
-import { Knob } from "@/components/ui/knob";
-import { PhysicalFader } from "@/components/ui/physical-fader";
-import { LedButton } from "@/components/ui/led-button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 
 /* ------------------------------------------------------------------ */
@@ -338,16 +343,11 @@ export default function ShaderPage() {
         {/* Top bar */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
-              [ {t.back} ]
-            </button>
+            <PushButton variant="dark" size="sm">[ {t.back} ]</PushButton>
           </Link>
-          <button
-            onClick={toggle}
-            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.12em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
-          >
+          <PushButton onClick={toggle} variant="dark" size="sm">
             [ {lang === "ja" ? "EN" : "JA"} ]
-          </button>
+          </PushButton>
         </div>
       </div>
 
@@ -356,100 +356,89 @@ export default function ShaderPage() {
 
         {/* Header band */}
         <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
-          <span className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">SHADER</span>
-          <PushButton size="sm" variant="dark" onClick={() => setParams({ ...DEFAULT_PARAMS })}>RESET</PushButton>
+          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.shader.name}</span>
+          <PushButton size="sm" variant="dark" onClick={() => setParams({ ...DEFAULT_PARAMS })}>[ {t.reset} ]</PushButton>
         </div>
 
         {/* Scrollable interior */}
         <div className="flex-1 overflow-y-auto flex flex-col">
 
-          {/* MODE: LED buttons */}
-          <div className="flex items-end justify-evenly px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
-            {(["FLOW", "WAVE", "RIPPLE", "MORPH"] as const).map((label, i) => (
-              <LedButton
-                key={i}
-                active={params.mode === i}
-                onClick={() => updateParam("mode", i)}
-                label={label}
-                size="sm"
-              />
-            ))}
+          {/* MODE: select */}
+          <div className="px-4 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-2">
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.shader.mode}</span>
+            <Select value={String(params.mode)} onValueChange={(v) => updateParam("mode", Number(v))}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">{t.shader.flow}</SelectItem>
+                <SelectItem value="1">{t.shader.wave}</SelectItem>
+                <SelectItem value="2">{t.shader.ripple}</SelectItem>
+                <SelectItem value="3">{t.shader.morph}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Knob row: SPEED / SCALE / WARP / CHRM */}
-          <div className="flex items-start justify-evenly px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
-            <Knob
-              label="SPEED"
+          <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
+            <DragParam
+              label={t.shader.speed}
               value={params.speed}
               min={0} max={1} step={0.01}
               onChange={(v) => updateParam("speed", v)}
-              color="blue"
+              accent="blue"
               defaultValue={DEFAULT_PARAMS.speed}
             />
-            <Knob
-              label="SCALE"
+            <DragParam
+              label={t.shader.noiseScale}
               value={params.noiseScale}
               min={0.1} max={4} step={0.1}
               onChange={(v) => updateParam("noiseScale", v)}
-              color="ochre"
+              accent="ochre"
               defaultValue={DEFAULT_PARAMS.noiseScale}
             />
-            <Knob
-              label="WARP"
+            <DragParam
+              label={t.shader.distortion}
               value={params.warp}
               min={0.1} max={10} step={0.1}
               onChange={(v) => updateParam("warp", v)}
-              color="grey"
+              accent="grey"
               defaultValue={DEFAULT_PARAMS.warp}
             />
-            <Knob
-              label="CHRM"
+            <DragParam
+              label={t.shader.aberration}
               value={params.aberration}
               min={0} max={0.1} step={0.001}
               onChange={(v) => updateParam("aberration", v)}
-              color="orange"
+              accent="orange"
               defaultValue={DEFAULT_PARAMS.aberration}
             />
           </div>
 
-          {/* Fader bank: INTNS1 / THRSH1 / INTNS2 / THRSH2 */}
-          <div className="flex items-start justify-evenly px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
-            <PhysicalFader
-              label="INTNS1"
-              value={params.intensity1}
-              min={0} max={5}
-              onChange={(v) => updateParam("intensity1", v)}
-              channelNumber="01"
-            />
-            <PhysicalFader
-              label="THRSH1"
-              value={params.threshold1}
-              min={-1} max={1}
-              onChange={(v) => updateParam("threshold1", v)}
-              channelNumber="02"
-            />
-            <PhysicalFader
-              label="INTNS2"
-              value={params.intensity2}
-              min={0} max={5}
-              onChange={(v) => updateParam("intensity2", v)}
-              channelNumber="03"
-            />
-            <PhysicalFader
-              label="THRSH2"
-              value={params.threshold2}
-              min={-1} max={1}
-              onChange={(v) => updateParam("threshold2", v)}
-              channelNumber="04"
-            />
-          </div>
+          {/* Color pickers + per-color params */}
+          <div className="px-5 py-4 flex flex-col gap-4">
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.colors}</span>
 
-          {/* Color pickers */}
-          <div className="px-5 py-4 flex flex-col gap-3">
-            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">COLORS</span>
+            {/* BG */}
             <ColorRow label="BG" value={params.colorBg} onChange={(v) => updateParam("colorBg", v)} />
-            <ColorRow label="COLOR 1" value={params.color1} onChange={(v) => updateParam("color1", v)} />
-            <ColorRow label="COLOR 2" value={params.color2} onChange={(v) => updateParam("color2", v)} />
+
+            {/* Color 1 + intensity + threshold */}
+            <div className="flex flex-col gap-2">
+              <ColorRow label={t.shader.color1} value={params.color1} onChange={(v) => updateParam("color1", v)} />
+              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
+                <DragParam label={t.shader.intensity} value={params.intensity1} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity1", v)} accent="blue" defaultValue={DEFAULT_PARAMS.intensity1} />
+                <DragParam label={t.shader.threshold} value={params.threshold1} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold1", v)} accent="ochre" defaultValue={DEFAULT_PARAMS.threshold1} />
+              </div>
+            </div>
+
+            {/* Color 2 + intensity + threshold */}
+            <div className="flex flex-col gap-2">
+              <ColorRow label={t.shader.color2} value={params.color2} onChange={(v) => updateParam("color2", v)} />
+              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
+                <DragParam label={t.shader.intensity} value={params.intensity2} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity2", v)} accent="grey" defaultValue={DEFAULT_PARAMS.intensity2} />
+                <DragParam label={t.shader.threshold} value={params.threshold2} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold2", v)} accent="orange" defaultValue={DEFAULT_PARAMS.threshold2} />
+              </div>
+            </div>
           </div>
 
         </div>
@@ -457,7 +446,7 @@ export default function ShaderPage() {
         {/* Export button */}
         <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
           <PushButton variant="dark" className="w-full text-center" onClick={handleExport}>
-            [ EXPORT CODE ]
+            [ {t.exportCode} ]
           </PushButton>
         </div>
       </aside>
@@ -469,7 +458,7 @@ export default function ShaderPage() {
             <DialogTitle>{t.shader.exportCodeTitle}</DialogTitle>
           </DialogHeader>
           <textarea
-            className="flex-1 min-h-[300px] bg-white text-[#242424] border border-[#242424] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none"
+            className="flex-1 min-h-[300px] rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)]"
             value={exportCode}
             readOnly
           />

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
+import { PushButton } from "@/components/ui/push-button";
 
 const APP_KEYS = ["color", "shader", "image", "easing", "gradient", "particle", "dotmap"] as const;
 
@@ -13,16 +14,6 @@ const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
   gradient: "/apps/gradient",
   particle: "/apps/particle",
   dotmap:   "/apps/dotmap",
-};
-
-const ACCENT_COLORS: Record<typeof APP_KEYS[number], string> = {
-  color:    "#1e3246",
-  shader:   "#e84a1b",
-  image:    "#b59257",
-  easing:   "#858585",
-  gradient: "#4af626",
-  particle: "#2a6db6",
-  dotmap:   "#8a6a3a",
 };
 
 export default function Home() {
@@ -43,12 +34,9 @@ export default function Home() {
           <p className="text-[12px] font-mono uppercase tracking-[0.18em] text-[#242424] select-none hidden md:block">
             {t.homeSubtitle}
           </p>
-          <button
-            onClick={toggle}
-            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.12em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
-          >
+          <PushButton onClick={toggle} variant="dark" size="sm">
             [ {lang === "ja" ? "EN" : "JA"} ]
-          </button>
+          </PushButton>
           <a
             href="https://x.com/YusukeSunada"
             target="_blank"
@@ -70,28 +58,33 @@ export default function Home() {
         {APP_KEYS.map((key) => {
           const href = APP_HREFS[key];
           const app = t.apps[key];
-          const accent = ACCENT_COLORS[key];
           return (
             <Link
               key={href}
               href={href}
-              className="no-underline text-inherit"
+              className={[
+                "no-underline block relative overflow-hidden select-none",
+                "rounded-[14px]",
+                "bg-[linear-gradient(180deg,#e8e8e9_0%,#d4d4d6_100%)]",
+                "border border-[rgba(0,0,0,0.18)]",
+                "[box-shadow:0_3px_0_#b8b8bc,0_4px_8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.72)]",
+                "active:translate-y-[3px] active:[box-shadow:0_0_0_#b8b8bc,inset_0_1px_4px_rgba(0,0,0,0.1)]",
+                "transition-[transform,box-shadow] duration-[50ms]",
+                "h-28 md:h-32 p-4 pl-5 flex flex-col justify-between",
+              ].join(" ")}
             >
-              <div className="key-card relative overflow-hidden h-28 md:h-32 flex flex-col justify-between select-none">
-                {/* Left accent bar */}
-                <div
-                  className="absolute left-0 top-0 bottom-0 w-1 rounded-l-[20px]"
-                  style={{ backgroundColor: accent }}
-                />
-                <div>
-                  <p className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424] font-bold mb-2">
-                    {app.name}
-                  </p>
-                  <p className="text-[10px] font-mono text-[#555] leading-relaxed">
-                    {app.description}
-                  </p>
-                </div>
+              <div>
+                <p className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#1a1a1a] font-bold mb-2">
+                  {app.name}
+                </p>
+                <p className="text-[10px] font-mono text-[#555] leading-relaxed">
+                  {app.description}
+                </p>
               </div>
+              {/* Bottom-right label */}
+              <p className="text-[12px] font-mono uppercase tracking-[0.14em] text-[#aaa] text-right">
+                {key}
+              </p>
             </Link>
           );
         })}

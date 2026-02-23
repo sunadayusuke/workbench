@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
 import { useClipboard } from "@/hooks/use-clipboard";
-import { Knob } from "@/components/ui/knob";
+import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 import { Label } from "@/components/ui/label";
 import {
@@ -458,11 +458,14 @@ function PresetGrid({
                 key={preset.name}
                 title={preset.name}
                 onClick={() => onSelect(preset.name, preset.value)}
-                className={`p-[4px] border transition-colors cursor-pointer ${
+                className={[
+                  "p-[5px] rounded-[6px] cursor-pointer select-none",
+                  "border border-[rgba(0,0,0,0.18)]",
+                  "transition-[transform,box-shadow] duration-[50ms]",
                   activePreset === preset.name
-                    ? "border-[#242424] bg-[#242424]/10"
-                    : "border-[#242424] bg-white"
-                }`}
+                    ? "translate-y-[3px] bg-[linear-gradient(180deg,#c8c8ca_0%,#d0d0d2_100%)] [box-shadow:0_0_0_#b8b8bc,inset_0_1px_4px_rgba(0,0,0,0.14)]"
+                    : "bg-[linear-gradient(180deg,#e8e8e9_0%,#d4d4d6_100%)] [box-shadow:0_3px_0_#b8b8bc,0_2px_4px_rgba(0,0,0,0.10),inset_0_1px_0_rgba(255,255,255,0.72)]",
+                ].join(" ")}
               >
                 <PresetMiniCurve points={preset.value} />
               </button>
@@ -912,7 +915,7 @@ function ExportDialog({
           <textarea
             readOnly
             value={code}
-            className="flex-1 min-h-[200px] bg-white text-[#242424] border border-[#242424] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none"
+            className="flex-1 min-h-[200px] rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)]"
           />
           <Button className="w-full py-3" onClick={() => copy(code)}>
             {copied ? t.copied : t.copy}
@@ -975,16 +978,11 @@ export default function EasingPage() {
         {/* Top bar */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
-              [ {t.back} ]
-            </button>
+            <PushButton variant="dark" size="sm">[ {t.back} ]</PushButton>
           </Link>
-          <button
-            onClick={toggle}
-            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.12em] px-3 py-1.5 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
-          >
+          <PushButton onClick={toggle} variant="dark" size="sm">
             [ {lang === "ja" ? "EN" : "JA"} ]
-          </button>
+          </PushButton>
         </div>
 
         {/* Scene tabs */}
@@ -1018,8 +1016,8 @@ export default function EasingPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
-          <span className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">EASING</span>
-          <PushButton size="sm" variant="dark" onClick={handleReset}>RESET</PushButton>
+          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.easing.name}</span>
+          <PushButton size="sm" variant="dark" onClick={handleReset}>[ {t.reset} ]</PushButton>
         </div>
 
         {/* Scrollable interior */}
@@ -1027,14 +1025,14 @@ export default function EasingPage() {
 
           {/* Duration knob */}
           <div className="flex items-center justify-center gap-8 px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
-            <Knob
-              label="DURTN"
+            <DragParam
+              label={t.easing.duration}
               value={duration}
               min={10}
               max={2000}
               step={10}
               onChange={(v) => setDuration(v)}
-              color="blue"
+              accent="blue"
               defaultValue={DEFAULT_DURATION}
             />
             <span className="text-[11px] font-mono text-[#555] select-none">{duration}ms</span>
@@ -1066,7 +1064,7 @@ export default function EasingPage() {
 
           {/* Presets */}
           <div className="flex-1 px-5 py-4 flex flex-col gap-2">
-            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">PRESETS</span>
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.easing.presets}</span>
             <PresetGrid
               activePreset={activePreset}
               onSelect={handlePresetSelect}
@@ -1078,7 +1076,7 @@ export default function EasingPage() {
         {/* Export button */}
         <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
           <PushButton variant="dark" className="w-full text-center" onClick={() => setShowExport(true)}>
-            [ EXPORT CODE ]
+            [ {t.easing.exportCode} ]
           </PushButton>
         </div>
       </aside>

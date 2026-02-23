@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
 import { useClipboard } from "@/hooks/use-clipboard";
-import { Knob } from "@/components/ui/knob";
+import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 
 /* ================================================================== */
@@ -583,7 +583,7 @@ function ColorInput({
           onKeyDown={(e) => {
             if (e.key === "Enter") commitDraft(draft);
           }}
-          className={`font-mono text-[12px] bg-white! border-[#242424] shadow-none ${inputClassName ?? ""}`}
+          className={`font-mono text-[12px] ${inputClassName ?? ""}`}
         />
       </div>
     </div>
@@ -947,16 +947,11 @@ export default function ColorPage() {
         {/* Back button */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
           <Link href="/">
-            <button className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none">
-              [ {t.back} ]
-            </button>
+            <PushButton variant="dark" size="sm">[ {t.back} ]</PushButton>
           </Link>
-          <button
-            onClick={toggle}
-            className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-3 py-1.5 backdrop-blur-xl hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
-          >
+          <PushButton onClick={toggle} variant="dark" size="sm">
             [ {lang === "ja" ? "EN" : "JA"} ]
-          </button>
+          </PushButton>
         </div>
 
         {/* Content */}
@@ -1052,8 +1047,8 @@ export default function ColorPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
-          <span className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">COLOR</span>
-          <PushButton size="sm" variant="dark" onClick={() => { setHex('#2a6db6'); setOklch(hexToOklch('#2a6db6')); }}>RESET</PushButton>
+          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.color.name}</span>
+          <PushButton size="sm" variant="dark" onClick={() => { setHex('#2a6db6'); setOklch(hexToOklch('#2a6db6')); }}>[ {t.reset} ]</PushButton>
         </div>
 
         {/* Scrollable interior */}
@@ -1069,41 +1064,41 @@ export default function ColorPage() {
           </div>
 
           {/* OKLCH knobs: L / C / H */}
-          <div className="flex items-start justify-evenly px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
-            <Knob
-              label="L"
+          <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
+            <DragParam
+              label={t.color.oklchL}
               value={oklch[0]}
               min={0} max={1} step={0.001}
               onChange={(v) => updateFromOklch(0, v)}
-              color="white"
+              accent="white"
               defaultValue={0.5}
             />
-            <Knob
-              label="C"
+            <DragParam
+              label={t.color.oklchC}
               value={oklch[1]}
               min={0} max={0.4} step={0.001}
               onChange={(v) => updateFromOklch(1, v)}
-              color="blue"
+              accent="blue"
               defaultValue={0.1}
             />
-            <Knob
-              label="H"
+            <DragParam
+              label={t.color.oklchH}
               value={oklch[2]}
               min={0} max={360} step={0.1}
               onChange={(v) => updateFromOklch(2, v)}
-              color="ochre"
+              accent="ochre"
               defaultValue={220}
             />
           </div>
 
           {/* Scale name */}
           <div className="px-5 py-4 flex flex-col gap-2">
-            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">SCALE NAME</span>
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.color.scaleName}</span>
             <Input
               value={scaleName}
               onChange={(e) => setScaleName(e.target.value)}
               placeholder="brand"
-              className="font-mono text-[12px] bg-white! border-[#bbbbbe] shadow-none"
+              className="font-mono text-[12px]"
             />
             <p className="text-[11px] font-mono text-[#777]">
               {t.color.scaleNameHint.replace("{name}", scaleName)}
@@ -1158,7 +1153,7 @@ export default function ColorPage() {
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
             <textarea
-              className="w-full h-full bg-white text-[#242424] border border-[#242424] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none"
+              className="w-full h-full rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)]"
               value={cssOutput}
               readOnly
             />

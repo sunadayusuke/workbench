@@ -287,13 +287,23 @@
     color: var(--primary-foreground);
   }
 
-  /* Color input swatch — remove default chrome */
+  /* Color input swatch — physical push button style */
+  .color-swatch {
+    padding: 0;
+    border: 1px solid rgba(0,0,0,0.28) !important;
+    border-radius: 50% !important;
+    cursor: pointer;
+    transition: transform 50ms ease;
+  }
+  .color-swatch:active {
+    transform: translateY(3px);
+  }
   .color-swatch::-webkit-color-swatch-wrapper {
     padding: 0;
   }
   .color-swatch::-webkit-color-swatch {
     border: none;
-    border-radius: var(--radius1-sm);
+    border-radius: 50%;
   }
 
   /* UI Sample hover states */

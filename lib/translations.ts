@@ -23,6 +23,33 @@ export interface Translations {
     gradient: { name: string; description: string };
     particle: { name: string; description: string };
     dotmap: { name: string; description: string };
+    signal: { name: string; description: string };
+  };
+
+  // Signal page
+  signal: {
+    mode: string;
+    wave: string;
+    ripple: string;
+    random: string;
+    plasma: string;
+    grid: string;
+    gridSize: string;
+    shape: string;
+    square: string;
+    circle: string;
+    motion: string;
+    speed: string;
+    frequency: string;
+    amplitude: string;
+    spread: string;
+    noise: string;
+    layers: string;
+    colors: string;
+    fgColor: string;
+    midColor: string;
+    bgColor: string;
+    transparentBg: string;
   };
 
   // Color page
@@ -288,6 +315,7 @@ const ja: Translations = {
     gradient: { name: "グラデーション", description: "メッシュグラデーション壁紙ジェネレーター" },
     particle: { name: "パーティクル", description: "テキスト＆SVGパーティクルアニメーション" },
     dotmap: { name: "ドットマップ", description: "ドット世界地図SVGジェネレーター" },
+    signal: { name: "シグナルノイズ", description: "ディザリングシグナルノイズジェネレーター" },
   },
 
   color: {
@@ -487,6 +515,31 @@ const ja: Translations = {
     fx: "エフェクト",
   },
 
+  signal: {
+    mode: "モード",
+    wave: "ウェーブ",
+    ripple: "リップル",
+    random: "ランダム",
+    plasma: "プラズマ",
+    grid: "グリッド",
+    gridSize: "セルサイズ",
+    shape: "形状",
+    square: "四角",
+    circle: "円",
+    motion: "モーション",
+    speed: "速度",
+    frequency: "周波数",
+    amplitude: "振幅",
+    spread: "広がり",
+    noise: "ノイズ",
+    layers: "レイヤー",
+    colors: "カラー",
+    fgColor: "前景色",
+    midColor: "中間色",
+    bgColor: "背景色",
+    transparentBg: "背景透過",
+  },
+
   easing: {
     duration: "デュレーション",
     presets: "プリセット",
@@ -545,6 +598,7 @@ const en: Translations = {
     gradient: { name: "Gradient", description: "Mesh gradient wallpaper generator" },
     particle: { name: "Particle", description: "Text & SVG particle animation" },
     dotmap: { name: "Dot Map", description: "Dot world map SVG generator" },
+    signal: { name: "Signal Noise", description: "Dithered signal noise generator" },
   },
 
   color: {
@@ -742,6 +796,31 @@ const en: Translations = {
     quality: "Quality",
     tone: "Tone",
     fx: "Effects",
+  },
+
+  signal: {
+    mode: "Mode",
+    wave: "Wave",
+    ripple: "Ripple",
+    random: "Random",
+    plasma: "Plasma",
+    grid: "Grid",
+    gridSize: "Cell Size",
+    shape: "Shape",
+    square: "Square",
+    circle: "Circle",
+    motion: "Motion",
+    speed: "Speed",
+    frequency: "Frequency",
+    amplitude: "Amplitude",
+    spread: "Spread",
+    noise: "Noise",
+    layers: "Layers",
+    colors: "Colors",
+    fgColor: "Foreground",
+    midColor: "Midtone",
+    bgColor: "Background",
+    transparentBg: "Transparent BG",
   },
 
   easing: {

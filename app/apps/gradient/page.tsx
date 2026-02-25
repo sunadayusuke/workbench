@@ -11,7 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
-import { ParamSlider } from "@/components/ui/param-slider";
 import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 import { hexToRGB } from "@/lib/color-utils";
@@ -888,7 +887,7 @@ export default function GradientPage() {
             </div>
             {params.gradientType === 1 && (
               <div className="pl-3 border-l-2 border-[#bbbbbe]">
-                <ParamSlider label={t.gradient.angle} value={params.angle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, angle: v }))} />
+                <DragParam label={t.gradient.angle} value={params.angle} min={0} max={360} step={1} defaultValue={DEFAULT_PARAMS.angle} onChange={(v) => setParams((prev) => ({ ...prev, angle: v }))} />
               </div>
             )}
           </div>
@@ -932,27 +931,27 @@ export default function GradientPage() {
           {/* Effects (secondary) */}
           <div className="flex flex-col gap-3 px-5 py-4">
             <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.gradient.effects}</span>
-            <ParamSlider label={t.gradient.particle} value={params.stipple} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stipple: v }))} />
+            <DragParam label={t.gradient.particle} value={params.stipple} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.stipple} onChange={(v) => setParams((prev) => ({ ...prev, stipple: v }))} />
             {params.stipple > 0 && (
               <div className="pl-3 border-l-2 border-[#bbbbbe]">
-                <ParamSlider label={t.gradient.granularity} value={params.stippleSize} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, stippleSize: v }))} />
+                <DragParam label={t.gradient.granularity} value={params.stippleSize} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.stippleSize} onChange={(v) => setParams((prev) => ({ ...prev, stippleSize: v }))} />
               </div>
             )}
-            <ParamSlider label={t.gradient.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, halftone: v }))} />
-            <ParamSlider label={t.gradient.rib} value={params.glassAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassAmount: v }))} />
+            <DragParam label={t.gradient.halftone} value={params.halftone} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.halftone} onChange={(v) => setParams((prev) => ({ ...prev, halftone: v }))} />
+            <DragParam label={t.gradient.rib} value={params.glassAmount} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassAmount} onChange={(v) => setParams((prev) => ({ ...prev, glassAmount: v }))} />
             {params.glassAmount > 0 && (
               <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
-                <ParamSlider label={t.gradient.density} value={params.glassFreq} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassFreq: v }))} />
-                <ParamSlider label={t.gradient.shift} value={params.glassShift} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, glassShift: v }))} />
+                <DragParam label={t.gradient.density} value={params.glassFreq} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassFreq} onChange={(v) => setParams((prev) => ({ ...prev, glassFreq: v }))} />
+                <DragParam label={t.gradient.shift} value={params.glassShift} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassShift} onChange={(v) => setParams((prev) => ({ ...prev, glassShift: v }))} />
               </div>
             )}
-            <ParamSlider label={t.gradient.chromaticAberration} value={params.chromatic} min={0} max={2} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, chromatic: v }))} />
-            <ParamSlider label={t.gradient.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveAmount: v }))} />
+            <DragParam label={t.gradient.chromaticAberration} value={params.chromatic} min={0} max={2} step={0.01} defaultValue={DEFAULT_PARAMS.chromatic} onChange={(v) => setParams((prev) => ({ ...prev, chromatic: v }))} />
+            <DragParam label={t.gradient.wave} value={params.waveAmount} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.waveAmount} onChange={(v) => setParams((prev) => ({ ...prev, waveAmount: v }))} />
             {params.waveAmount > 0 && (
               <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
-                <ParamSlider label={t.gradient.frequency} value={params.waveFrequency} min={1} max={30} step={0.5} onChange={(v) => setParams((prev) => ({ ...prev, waveFrequency: v }))} />
-                <ParamSlider label={t.gradient.direction} value={params.waveAngle} min={0} max={360} step={1} onChange={(v) => setParams((prev) => ({ ...prev, waveAngle: v }))} />
-                <ParamSlider label={t.gradient.random} value={params.waveRandom} min={0} max={1} step={0.01} onChange={(v) => setParams((prev) => ({ ...prev, waveRandom: v }))} />
+                <DragParam label={t.gradient.frequency} value={params.waveFrequency} min={1} max={30} step={0.5} defaultValue={DEFAULT_PARAMS.waveFrequency} onChange={(v) => setParams((prev) => ({ ...prev, waveFrequency: v }))} />
+                <DragParam label={t.gradient.direction} value={params.waveAngle} min={0} max={360} step={1} defaultValue={DEFAULT_PARAMS.waveAngle} onChange={(v) => setParams((prev) => ({ ...prev, waveAngle: v }))} />
+                <DragParam label={t.gradient.random} value={params.waveRandom} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.waveRandom} onChange={(v) => setParams((prev) => ({ ...prev, waveRandom: v }))} />
               </div>
             )}
           </div>

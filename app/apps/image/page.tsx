@@ -718,62 +718,58 @@ export default function ImagePage() {
               label={t.image.brightness}
               value={params.brightness}
               min={-1} max={1} step={0.01}
-              onChange={(v) => updateParam("brightness", v)}
-              accent="blue"
               defaultValue={0}
+              onChange={(v) => updateParam("brightness", v)}
             />
             <DragParam
               label={t.image.contrast}
               value={params.contrast}
               min={-1} max={1} step={0.01}
-              onChange={(v) => updateParam("contrast", v)}
-              accent="ochre"
               defaultValue={0}
+              onChange={(v) => updateParam("contrast", v)}
             />
             <DragParam
               label={t.image.saturation}
               value={params.saturation}
               min={-1} max={1} step={0.01}
-              onChange={(v) => updateParam("saturation", v)}
-              accent="grey"
               defaultValue={0}
+              onChange={(v) => updateParam("saturation", v)}
             />
             <DragParam
               label={t.image.exposure}
               value={params.exposure}
               min={-2} max={2} step={0.01}
-              onChange={(v) => updateParam("exposure", v)}
-              accent="orange"
               defaultValue={0}
+              onChange={(v) => updateParam("exposure", v)}
             />
           </div>
 
           {/* Fader bank: NOISE / BLUR / VIGNT / FADE */}
           <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
-            <DragParam label={t.image.noise} value={params.noise} min={0} max={1} step={0.01} onChange={(v) => updateParam("noise", v)} accent="blue" defaultValue={0} />
-            <DragParam label={t.image.blur} value={params.blur} min={0} max={20} step={0.5} onChange={(v) => updateParam("blur", v)} accent="ochre" defaultValue={0} />
-            <DragParam label={t.image.vignette} value={params.vignette} min={0} max={1} step={0.01} onChange={(v) => updateParam("vignette", v)} accent="grey" defaultValue={0} />
-            <DragParam label={t.image.fade} value={params.fade} min={0} max={1} step={0.01} onChange={(v) => updateParam("fade", v)} accent="orange" defaultValue={0} />
+            <DragParam label={t.image.noise} value={params.noise} min={0} max={1} step={0.01} onChange={(v) => updateParam("noise", v)} defaultValue={0} />
+            <DragParam label={t.image.blur} value={params.blur} min={0} max={20} step={0.5} onChange={(v) => updateParam("blur", v)} defaultValue={0} />
+            <DragParam label={t.image.vignette} value={params.vignette} min={0} max={1} step={0.01} onChange={(v) => updateParam("vignette", v)} defaultValue={0} />
+            <DragParam label={t.image.fade} value={params.fade} min={0} max={1} step={0.01} onChange={(v) => updateParam("fade", v)} defaultValue={0} />
           </div>
 
           {/* Scrollable secondary controls */}
           <div className="flex flex-col gap-4 px-5 py-4">
             <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.image.tone}</span>
-            <DragParam label={t.image.highlights} value={params.highlights} min={-1} max={1} step={0.01} onChange={(v) => updateParam("highlights", v)} accent="blue" defaultValue={0} />
-            <DragParam label={t.image.shadows} value={params.shadows} min={-1} max={1} step={0.01} onChange={(v) => updateParam("shadows", v)} accent="ochre" defaultValue={0} />
-            <DragParam label={t.image.cyanYellow} value={params.temperature} min={-1} max={1} step={0.01} onChange={(v) => updateParam("temperature", v)} accent="grey" defaultValue={0} />
-            <DragParam label={t.image.greenMagenta} value={params.tint} min={-1} max={1} step={0.01} onChange={(v) => updateParam("tint", v)} accent="orange" defaultValue={0} />
-            <DragParam label={t.image.hueShift} value={params.hueShift} min={-0.5} max={0.5} step={0.01} onChange={(v) => updateParam("hueShift", v)} accent="white" defaultValue={0} />
+            <DragParam label={t.image.highlights} value={params.highlights} min={-1} max={1} step={0.01} onChange={(v) => updateParam("highlights", v)} defaultValue={0} />
+            <DragParam label={t.image.shadows} value={params.shadows} min={-1} max={1} step={0.01} onChange={(v) => updateParam("shadows", v)} defaultValue={0} />
+            <DragParam label={t.image.cyanYellow} value={params.temperature} min={-1} max={1} step={0.01} onChange={(v) => updateParam("temperature", v)} defaultValue={0} />
+            <DragParam label={t.image.greenMagenta} value={params.tint} min={-1} max={1} step={0.01} onChange={(v) => updateParam("tint", v)} defaultValue={0} />
+            <DragParam label={t.image.hueShift} value={params.hueShift} min={-0.5} max={0.5} step={0.01} onChange={(v) => updateParam("hueShift", v)} defaultValue={0} />
 
             <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none mt-2">{t.image.fx}</span>
-            <DragParam label={t.image.glitch} value={params.glitchAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("glitchAmount", v)} accent="blue" defaultValue={0} />
+            <DragParam label={t.image.glitch} value={params.glitchAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("glitchAmount", v)} defaultValue={0} />
             {params.glitchAmount > 0 && (
               <div className="pl-3 border-l-2 border-[#bbbbbe]">
-                <DragParam label={t.image.seed} value={params.glitchSeed} min={0} max={100} step={1} onChange={(v) => updateParam("glitchSeed", v)} accent="grey" defaultValue={0} />
+                <DragParam label={t.image.seed} value={params.glitchSeed} min={0} max={100} step={1} onChange={(v) => updateParam("glitchSeed", v)} defaultValue={0} />
               </div>
             )}
-            <DragParam label={t.image.pixelate} value={params.pixelate} min={0} max={1} step={0.01} onChange={(v) => updateParam("pixelate", v)} accent="ochre" defaultValue={0} />
-            <DragParam label={t.image.rgbShift} value={params.rgbShift} min={0} max={1} step={0.01} onChange={(v) => updateParam("rgbShift", v)} accent="orange" defaultValue={0} />
+            <DragParam label={t.image.pixelate} value={params.pixelate} min={0} max={1} step={0.01} onChange={(v) => updateParam("pixelate", v)} defaultValue={0} />
+            <DragParam label={t.image.rgbShift} value={params.rgbShift} min={0} max={1} step={0.01} onChange={(v) => updateParam("rgbShift", v)} defaultValue={0} />
             {params.rgbShift > 0 && (
               <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-3">
                 <Select value={String(params.rgbShiftMode)} onValueChange={(v) => updateParam("rgbShiftMode", Number(v))}>
@@ -784,19 +780,19 @@ export default function ImagePage() {
                   </SelectContent>
                 </Select>
                 {params.rgbShiftMode === 0 && (
-                  <DragParam label={t.image.angle} value={params.rgbShiftAngle} min={0} max={360} step={1} onChange={(v) => updateParam("rgbShiftAngle", v)} accent="grey" defaultValue={0} />
+                  <DragParam label={t.image.angle} value={params.rgbShiftAngle} min={0} max={360} step={1} onChange={(v) => updateParam("rgbShiftAngle", v)} defaultValue={0} />
                 )}
               </div>
             )}
-            <DragParam label={t.image.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("waveAmount", v)} accent="blue" defaultValue={0} />
+            <DragParam label={t.image.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("waveAmount", v)} defaultValue={0} />
             {params.waveAmount > 0 && (
               <div className="pl-3 border-l-2 border-[#bbbbbe]">
-                <DragParam label={t.image.frequency} value={params.waveFrequency} min={1} max={50} step={0.5} onChange={(v) => updateParam("waveFrequency", v)} accent="grey" defaultValue={10} />
+                <DragParam label={t.image.frequency} value={params.waveFrequency} min={1} max={50} step={0.5} onChange={(v) => updateParam("waveFrequency", v)} defaultValue={10} />
               </div>
             )}
-            <DragParam label={t.image.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => updateParam("halftone", v)} accent="ochre" defaultValue={0} />
-            <DragParam label={t.image.scanline} value={params.scanline} min={0} max={1} step={0.01} onChange={(v) => updateParam("scanline", v)} accent="grey" defaultValue={0} />
-            <DragParam label={t.image.duotone} value={params.duotone} min={0} max={1} step={0.01} onChange={(v) => updateParam("duotone", v)} accent="orange" defaultValue={0} />
+            <DragParam label={t.image.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => updateParam("halftone", v)} defaultValue={0} />
+            <DragParam label={t.image.scanline} value={params.scanline} min={0} max={1} step={0.01} onChange={(v) => updateParam("scanline", v)} defaultValue={0} />
+            <DragParam label={t.image.duotone} value={params.duotone} min={0} max={1} step={0.01} onChange={(v) => updateParam("duotone", v)} defaultValue={0} />
             {params.duotone > 0 && (
               <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-3">
                 <div className="flex items-center gap-2">
@@ -861,7 +857,7 @@ export default function ImagePage() {
                 max={1}
                 step={0.01}
                 onChange={setJpegQuality}
-                accent="blue"
+               
                 defaultValue={0.92}
               />
             )}

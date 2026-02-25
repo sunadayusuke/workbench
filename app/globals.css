@@ -289,6 +289,8 @@
 
   /* Color input swatch — physical push button style */
   .color-swatch {
+    width: 28px;
+    height: 28px;
     padding: 0;
     border: 1px solid rgba(0,0,0,0.28) !important;
     border-radius: 50% !important;

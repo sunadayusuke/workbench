@@ -385,33 +385,29 @@ export default function ShaderPage() {
               label={t.shader.speed}
               value={params.speed}
               min={0} max={1} step={0.01}
-              onChange={(v) => updateParam("speed", v)}
-              accent="blue"
               defaultValue={DEFAULT_PARAMS.speed}
+              onChange={(v) => updateParam("speed", v)}
             />
             <DragParam
               label={t.shader.noiseScale}
               value={params.noiseScale}
               min={0.1} max={4} step={0.1}
-              onChange={(v) => updateParam("noiseScale", v)}
-              accent="ochre"
               defaultValue={DEFAULT_PARAMS.noiseScale}
+              onChange={(v) => updateParam("noiseScale", v)}
             />
             <DragParam
               label={t.shader.distortion}
               value={params.warp}
               min={0.1} max={10} step={0.1}
-              onChange={(v) => updateParam("warp", v)}
-              accent="grey"
               defaultValue={DEFAULT_PARAMS.warp}
+              onChange={(v) => updateParam("warp", v)}
             />
             <DragParam
               label={t.shader.aberration}
               value={params.aberration}
               min={0} max={0.1} step={0.001}
-              onChange={(v) => updateParam("aberration", v)}
-              accent="orange"
               defaultValue={DEFAULT_PARAMS.aberration}
+              onChange={(v) => updateParam("aberration", v)}
             />
           </div>
 
@@ -426,8 +422,8 @@ export default function ShaderPage() {
             <div className="flex flex-col gap-2">
               <ColorRow label={t.shader.color1} value={params.color1} onChange={(v) => updateParam("color1", v)} />
               <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
-                <DragParam label={t.shader.intensity} value={params.intensity1} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity1", v)} accent="blue" defaultValue={DEFAULT_PARAMS.intensity1} />
-                <DragParam label={t.shader.threshold} value={params.threshold1} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold1", v)} accent="ochre" defaultValue={DEFAULT_PARAMS.threshold1} />
+                <DragParam label={t.shader.intensity} value={params.intensity1} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity1", v)} defaultValue={DEFAULT_PARAMS.intensity1} />
+                <DragParam label={t.shader.threshold} value={params.threshold1} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold1", v)} defaultValue={DEFAULT_PARAMS.threshold1} />
               </div>
             </div>
 
@@ -435,8 +431,8 @@ export default function ShaderPage() {
             <div className="flex flex-col gap-2">
               <ColorRow label={t.shader.color2} value={params.color2} onChange={(v) => updateParam("color2", v)} />
               <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
-                <DragParam label={t.shader.intensity} value={params.intensity2} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity2", v)} accent="grey" defaultValue={DEFAULT_PARAMS.intensity2} />
-                <DragParam label={t.shader.threshold} value={params.threshold2} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold2", v)} accent="orange" defaultValue={DEFAULT_PARAMS.threshold2} />
+                <DragParam label={t.shader.intensity} value={params.intensity2} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity2", v)} defaultValue={DEFAULT_PARAMS.intensity2} />
+                <DragParam label={t.shader.threshold} value={params.threshold2} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold2", v)} defaultValue={DEFAULT_PARAMS.threshold2} />
               </div>
             </div>
           </div>

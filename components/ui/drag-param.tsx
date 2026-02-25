@@ -43,7 +43,10 @@ export function DragParam({
   const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
-    currentValue.current = value;
+    // Don't overwrite the float accumulator while the user is dragging.
+    if (!isDragging.current) {
+      currentValue.current = value;
+    }
   }, [value]);
 
   const clamp = useCallback((v: number) => Math.min(max, Math.max(min, v)), [min, max]);
@@ -62,9 +65,11 @@ export function DragParam({
     const deltaX = e.clientX - lastX.current;
     lastX.current = e.clientX;
     const sensitivity = (max - min) / 200;
-    const next = clamp(snap(currentValue.current + deltaX * sensitivity));
-    currentValue.current = next;
-    onChange(next);
+    // Store the raw float so small per-frame deltas accumulate correctly.
+    // Only snap when emitting to onChange.
+    const rawNext = clamp(currentValue.current + deltaX * sensitivity);
+    currentValue.current = rawNext;
+    onChange(snap(rawNext));
   }, [min, max, clamp, snap, onChange]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
 import { PushButton } from "@/components/ui/push-button";
 
-const APP_KEYS = ["color", "shader", "image", "easing", "gradient", "particle", "dotmap"] as const;
+const APP_KEYS = ["color", "shader", "image", "easing", "gradient", "particle", "dotmap", "signal"] as const;
 
 const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
   color:    "/apps/color",
@@ -14,6 +14,7 @@ const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
   gradient: "/apps/gradient",
   particle: "/apps/particle",
   dotmap:   "/apps/dotmap",
+  signal:   "/apps/signal",
 };
 
 export default function Home() {

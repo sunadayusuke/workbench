@@ -231,6 +231,7 @@ interface ParticleParams {
   colors: string[];
   colorSpeed: number;
   colorFreq: number;
+  blending: number; // THREE.NormalBlending=1, AdditiveBlending=2, SubtractiveBlending=3, MultiplyBlending=4
   opacity: number;
   animMode: number;
   speed: number;
@@ -258,6 +259,7 @@ const DEFAULT_PARAMS: ParticleParams = {
   colors: ["#f472b6", "#60a5fa"],
   colorSpeed: 2.0,
   colorFreq: 1.0,
+  blending: 1,
   opacity: 0.2,
   animMode: 0,
   speed: 0.5,
@@ -524,7 +526,7 @@ function generateExportCode(params: ParticleParams): string {
         },
         vertexShader: \`${VERTEX_SHADER}\`,
         fragmentShader: \`${FRAGMENT_SHADER}\`,
-        transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+        transparent: true, depthWrite: false, blending: ${params.blending},
     });
     scene.add(new THREE.Points(geo, mat));
     addEventListener('resize', () => {
@@ -772,7 +774,7 @@ export default function ParticlePage() {
         fragmentShader: FRAGMENT_SHADER,
         transparent: true,
         depthWrite: false,
-        blending: THREE.AdditiveBlending,
+        blending: THREE.NormalBlending,
       });
 
       const points = new THREE.Points(geometry, material);
@@ -950,6 +952,16 @@ export default function ParticlePage() {
     }
   }, [params.colorBg, params.colorBgTransparent]);
 
+  /* --- Update blending mode --- */
+  useEffect(() => {
+    const t = threeRef.current;
+    if (!t) return;
+    t.material.blending = params.blending;
+    // SubtractiveBlending (3) and MultiplyBlending (4) require premultipliedAlpha
+    t.material.premultipliedAlpha = params.blending === 3 || params.blending === 4;
+    t.material.needsUpdate = true;
+  }, [params.blending]);
+
   /* --- Download --- */
   const handleDownload = useCallback(async () => {
     const t = threeRef.current;
@@ -1115,19 +1127,20 @@ export default function ParticlePage() {
             <DragParam
               label={t.particle.scale}
               value={params.formationScale}
-              min={0.5} max={2.0} step={0.01}
+              min={0.1} max={5.0} step={0.05}
               onChange={(v) => updateParam("formationScale", v)}
               accent="orange"
               defaultValue={DEFAULT_PARAMS.formationScale}
             />
           </div>
 
-          {/* Fader bank: TURB / SCATTER / NOISE / SIZE-V */}
+          {/* Fader bank: TURB / SCATTER / NOISE / SIZE-V / VARIATION */}
           <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
             <DragParam label={t.particle.turbulence} value={params.turbulence} min={0} max={3} step={0.01} onChange={(v) => updateParam("turbulence", v)} accent="blue" defaultValue={DEFAULT_PARAMS.turbulence} />
             <DragParam label={t.particle.scatter} value={params.scatter} min={0} max={1} step={0.01} onChange={(v) => updateParam("scatter", v)} accent="ochre" defaultValue={DEFAULT_PARAMS.scatter} />
             <DragParam label={t.particle.noiseScale} value={params.noiseScale} min={0.5} max={5} step={0.1} onChange={(v) => updateParam("noiseScale", v)} accent="grey" defaultValue={DEFAULT_PARAMS.noiseScale} />
             <DragParam label={t.particle.sizeVariation} value={params.sizeVariation} min={0} max={1} step={0.01} onChange={(v) => updateParam("sizeVariation", v)} accent="orange" defaultValue={DEFAULT_PARAMS.sizeVariation} />
+            <DragParam label={t.particle.variation} value={params.formationSpread} min={0} max={2} step={0.01} onChange={(v) => updateParam("formationSpread", v)} accent="blue" defaultValue={DEFAULT_PARAMS.formationSpread} />
           </div>
 
           {/* Interaction section */}
@@ -1156,6 +1169,20 @@ export default function ParticlePage() {
           {/* Color section */}
           <div className="flex-1 px-5 py-4 flex flex-col gap-3">
             <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.colors}</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[12px] font-mono uppercase tracking-[0.10em] text-[#555] shrink-0">{t.particle.blending}</span>
+              <Select value={String(params.blending)} onValueChange={(v) => updateParam("blending", Number(v))}>
+                <SelectTrigger className="cursor-pointer">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">{t.particle.blendNormal}</SelectItem>
+                  <SelectItem value="2">{t.particle.blendAdditive}</SelectItem>
+                  <SelectItem value="3">{t.particle.blendSubtractive}</SelectItem>
+                  <SelectItem value="4">{t.particle.blendMultiply}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <ToggleSwitch
               active={params.colorBgTransparent}
               onClick={() => updateParam("colorBgTransparent", !params.colorBgTransparent)}

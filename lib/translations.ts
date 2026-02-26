@@ -186,6 +186,11 @@ export interface Translations {
     text: string;
     svg: string;
     mouse: string;
+    blending: string;
+    blendNormal: string;
+    blendAdditive: string;
+    blendSubtractive: string;
+    blendMultiply: string;
   };
 
   // Dotmap page
@@ -447,6 +452,11 @@ const ja: Translations = {
     text: "テキスト",
     svg: "SVG",
     mouse: "マウス",
+    blending: "ブレンド",
+    blendNormal: "通常",
+    blendAdditive: "加算",
+    blendSubtractive: "減算",
+    blendMultiply: "乗算",
   },
 
   dotmap: {
@@ -730,6 +740,11 @@ const en: Translations = {
     text: "Text",
     svg: "SVG",
     mouse: "Mouse",
+    blending: "Blending",
+    blendNormal: "Normal",
+    blendAdditive: "Additive",
+    blendSubtractive: "Subtractive",
+    blendMultiply: "Multiply",
   },
 
   dotmap: {

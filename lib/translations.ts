@@ -24,6 +24,7 @@ export interface Translations {
     particle: { name: string; description: string };
     dotmap: { name: string; description: string };
     signal: { name: string; description: string };
+    aurora: { name: string; description: string };
   };
 
   // Signal page
@@ -261,6 +262,20 @@ export interface Translations {
     fx: string;
   };
 
+  // Aurora page
+  aurora: {
+    shape: string;
+    shuffle: string;
+    upload: string;
+    dropSvg: string;
+    scale: string;
+    roundness: string;
+    blur: string;
+    background: string;
+    transparent: string;
+    exportCodeTitle: string;
+  };
+
   // Easing page
   easing: {
     duration: string;
@@ -321,6 +336,7 @@ const ja: Translations = {
     particle: { name: "パーティクル", description: "テキスト＆SVGパーティクルアニメーション" },
     dotmap: { name: "ドットマップ", description: "ドット世界地図SVGジェネレーター" },
     signal: { name: "シグナルノイズ", description: "ディザリングシグナルノイズジェネレーター" },
+    aurora: { name: "グロウ", description: "SVGマスクグロウシェーダー" },
   },
 
   color: {
@@ -550,6 +566,19 @@ const ja: Translations = {
     transparentBg: "背景透過",
   },
 
+  aurora: {
+    shape: "シェイプ",
+    shuffle: "シャッフル",
+    upload: "SVGアップロード",
+    dropSvg: "SVGをドロップ",
+    scale: "スケール",
+    roundness: "角の丸さ",
+    blur: "ぼかし",
+    background: "背景",
+    transparent: "背景透過",
+    exportCodeTitle: "コード出力 — グロウシェーダー",
+  },
+
   easing: {
     duration: "デュレーション",
     presets: "プリセット",
@@ -609,6 +638,7 @@ const en: Translations = {
     particle: { name: "Particle", description: "Text & SVG particle animation" },
     dotmap: { name: "Dot Map", description: "Dot world map SVG generator" },
     signal: { name: "Signal Noise", description: "Dithered signal noise generator" },
+    aurora: { name: "Glow", description: "SVG mask glow shader" },
   },
 
   color: {
@@ -836,6 +866,19 @@ const en: Translations = {
     midColor: "Midtone",
     bgColor: "Background",
     transparentBg: "Transparent BG",
+  },
+
+  aurora: {
+    shape: "Shape",
+    shuffle: "Shuffle",
+    upload: "Upload SVG",
+    dropSvg: "Drop SVG here",
+    scale: "Scale",
+    roundness: "Roundness",
+    blur: "Blur",
+    background: "Background",
+    transparent: "Transparent BG",
+    exportCodeTitle: "Code Export — Glow Shader",
   },
 
   easing: {

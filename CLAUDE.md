@@ -53,6 +53,8 @@ app/
     particle/page.tsx — パーティクルアニメーションツール（Three.js + Points + ShaderMaterial）
     dotmap/page.tsx   — ドット世界地図SVGジェネレーター（d3-geo + topojson-client、Canvas raster方式）
     easing/page.tsx   — ベジェカーブエディター＆アニメーションプレビュー
+    signal/page.tsx   — ディザリングシグナルノイズジェネレーター（Canvas 2D + Bayer dither）
+    aurora/page.tsx   — グロウシェーダー × SVGマスク合成ツール（Three.js + GLSL + MediaRecorder）
 components/
   ui/                 — shadcn/ui コンポーネント（button, slider, select, dialog, label, separator）
   ui/push-button.tsx  — 物理プッシュボタン（variant: light/dark/accent、押し込みアニメーション）
@@ -61,7 +63,6 @@ components/
   ui/knob.tsx         — ロータリーノブ（color: blue/ochre/grey/orange/white）
   ui/led-button.tsx   — LED トグルボタン
   ui/physical-fader.tsx — 縦型フェーダー
-  ui/param-slider.tsx — 旧スライダーコンポーネント（gradient/page.tsx で一部使用）
 lib/
   utils.ts            — cn() ユーティリティ
   color-utils.ts      — hexToRGB()（Three.js ShaderMaterial 向け色変換）
@@ -143,6 +144,25 @@ hooks/
 - `next build` 中に `.next` キャッシュが壊れることがある → `rm -rf .next` で解消
 - stale な next-server プロセスが port 3000 に残ると Internal Server Error になる → `kill -9 $(lsof -ti :3000)` で解消
 - ドメイン: ムームードメインで `suna.design` を管理、`workbench` サブドメインを CNAME で Vercel に向けている
+- **DragParam の蓄積バグ**: `currentValue.current` にスナップ済み整数を保存すると小さいデルタが蓄積できず値が固まる。`currentValue.current = rawNext`（生float）として保存し、`onChange(snap(rawNext))` でスナップは出力時のみ行う。外部 `value` からの更新はドラッグ中は無視（`if (!isDragging.current) currentValue.current = value`）
+- **`.color-swatch`（カラーピッカー）**: `width: 28px; height: 28px` を明示しないと `border-radius: 50%` と組み合わさって楕円になる。`globals.css` で定義済み
+- **Three.js ブレンドモード**: `SubtractiveBlending`（3）と `MultiplyBlending`（4）は `material.premultipliedAlpha = true` が必須（未設定だとコンソールエラー）。`NormalBlending`（1）と `AdditiveBlending`（2）は不要
+- **Three.js AdditiveBlending と明るい背景**: `AdditiveBlending` は `bg + particle > 1.0` でクランプされ白くなる。明るい背景と組み合わせる場合は `NormalBlending` をデフォルトにする
+- **シグナルノイズ波のキャンセル**: 複数レイヤーの位相オフセットに `(l / layers) * Math.PI * 2` を使うと `layers=2` で `sin(x) + sin(x+π) = 0` となり完全キャンセル。無理数オフセット `l * 0.9` を使うことで回避
+
+## Aurora固有の注意点
+- **GLSL 9-tap ブラー**: `uBlur` uniform で `getShaderCol()` を9点サンプリングし `mask` との合成前に適用。CSS `canvas.style.filter` をシェーダーエフェクトに使うとマスク輪郭まで滲むので GLSL 内で処理する
+- **CSS キャンバスブラー（シェイプぼかし）**: `canvasBlur` param → `renderer.domElement.style.filter = blur(Xpx)` で全体ぼかし。シェーダーブラーとは独立した別 param
+- **Iconify Collection API**: `GET https://api.iconify.design/collection?prefix=material-symbols` の `data.icons` は配列ではなく `{name:{}}` のオブジェクト → `Object.keys(data.icons)` で名前一覧を取得。`-outline` / `-sharp` サフィックスを除外して基本バリアントのみ使用
+- **MediaRecorder 動画書き出しパターン**:
+  1. 録画前に `renderer.setPixelRatio(1); renderer.setSize(recW, recH, false)` で高解像度にリサイズ（`updateStyle:false` で表示サイズは変えない）
+  2. `composite = document.createElement('canvas')` → `composite.captureStream(30)` → `MediaRecorder`
+  3. RAF ループで `ctx2d.drawImage(glCanvas, 0, 0, w, h)` を composite に転写（canvasBlur は `ctx2d.filter` で適用）
+  4. 録画終了後 `finally` ブロックで `renderer.setPixelRatio(dpr); renderer.setSize(origW, origH)` 復元
+  5. MIME タイプは `['video/webm;codecs=vp9', 'video/webm', 'video/mp4'].find(isTypeSupported)` で検出、未対応なら `new MediaRecorder(stream)`（引数なし）でブラウザ既定を使う
+  6. `recorder.onstop` で `recorder.mimeType`（実際の型）から拡張子を決定
+- **ポップアップメニューと pointerdown の競合**: `document.addEventListener('pointerdown', closeHandler)` + 絶対配置ポップアップの組み合わせは、ボタン押下時に close → click で reopen するレースが起きやすい。フッターの書き出しボタンはポップアップを使わずインライン行レイアウトにする
+- **フッター書き出しエリアのレイアウト**: ラベル列 `w-14 shrink-0` + ボタン `flex-1` の行 × 3（Image / Video / Code）。ボタンには `size="sm" whitespace-nowrap` を付ける
 
 ## アナリティクス
 - **Vercel Analytics** 導入済み（`@vercel/analytics/react`）。`app/layout.tsx` に `<Analytics />` コンポーネント配置

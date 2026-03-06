@@ -337,7 +337,7 @@ const ja: Translations = {
     particle: { name: "パーティクル", description: "テキスト＆SVGパーティクルアニメーション" },
     dotmap: { name: "ドットマップ", description: "ドット世界地図SVGジェネレーター" },
     signal: { name: "シグナルノイズ", description: "ディザリングシグナルノイズジェネレーター" },
-    aurora: { name: "グロウ", description: "SVGマスクグロウシェーダー" },
+    aurora: { name: "シェイプシェーダー", description: "SVGシェイプにシェーダーを合成するツール" },
   },
 
   color: {
@@ -640,7 +640,7 @@ const en: Translations = {
     particle: { name: "Particle", description: "Text & SVG particle animation" },
     dotmap: { name: "Dot Map", description: "Dot world map SVG generator" },
     signal: { name: "Signal Noise", description: "Dithered signal noise generator" },
-    aurora: { name: "Glow", description: "SVG mask glow shader" },
+    aurora: { name: "Shape Shader", description: "Shader compositor over SVG shapes" },
   },
 
   color: {

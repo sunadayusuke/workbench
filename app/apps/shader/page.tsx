@@ -38,15 +38,13 @@ uniform float uSpeed;
 uniform float uWarp;
 uniform float uNoiseScale;
 uniform float uAberration;
+uniform float uBlur;
 uniform int uMode;
 uniform float uAngle;
 uniform vec3 uColorBg;
 uniform vec3 uColor1;
 uniform float uIntensity1;
 uniform float uThreshold1;
-uniform vec3 uColor2;
-uniform float uIntensity2;
-uniform float uThreshold2;
 
 varying vec2 vUv;
 
@@ -84,23 +82,35 @@ float getNoise(vec2 p) {
 vec3 calculateColor(float n) {
     vec3 col = uColorBg;
     col = mix(col, uColor1 * uIntensity1, smoothstep(uThreshold1, uThreshold1 + 0.6, n));
-    col = mix(col, uColor2 * uIntensity2, smoothstep(uThreshold2, uThreshold2 + 0.4, n));
     return col;
+}
+
+vec3 getShaderCol(vec2 uv) {
+    if (uAberration > 0.0) {
+        float nR = getNoise(uv + vec2(uAberration, 0.0));
+        float nG = getNoise(uv);
+        float nB = getNoise(uv - vec2(uAberration, 0.0));
+        return vec3(calculateColor(nR).r, calculateColor(nG).g, calculateColor(nB).b);
+    }
+    return calculateColor(getNoise(uv));
 }
 
 void main() {
     vec2 ratio = vec2(uResolution.x / uResolution.y, 1.0);
     vec2 uv = (vUv - 0.5) * ratio * uNoiseScale;
 
-    if (uAberration > 0.0) {
-        float nR = getNoise(uv + vec2(uAberration, 0.0));
-        float nG = getNoise(uv);
-        float nB = getNoise(uv - vec2(uAberration, 0.0));
-        gl_FragColor = vec4(calculateColor(nR).r, calculateColor(nG).g, calculateColor(nB).b, 1.0);
+    vec3 col;
+    if (uBlur > 0.0) {
+        float r = uBlur * 0.08;
+        col = (
+            getShaderCol(uv + vec2(-r,-r)) + getShaderCol(uv + vec2(0.0,-r)) + getShaderCol(uv + vec2(r,-r)) +
+            getShaderCol(uv + vec2(-r, 0.0)) + getShaderCol(uv) + getShaderCol(uv + vec2(r, 0.0)) +
+            getShaderCol(uv + vec2(-r, r)) + getShaderCol(uv + vec2(0.0, r)) + getShaderCol(uv + vec2(r, r))
+        ) / 9.0;
     } else {
-        float n = getNoise(uv);
-        gl_FragColor = vec4(calculateColor(n), 1.0);
+        col = getShaderCol(uv);
     }
+    gl_FragColor = vec4(col, 1.0);
 }
 `;
 
@@ -115,13 +125,11 @@ interface ShaderParams {
   warp: number;
   noiseScale: number;
   aberration: number;
+  blur: number;
   colorBg: string;
   color1: string;
   intensity1: number;
   threshold1: number;
-  color2: string;
-  intensity2: number;
-  threshold2: number;
 }
 
 const DEFAULT_PARAMS: ShaderParams = {
@@ -131,13 +139,11 @@ const DEFAULT_PARAMS: ShaderParams = {
   warp: 3.0,
   noiseScale: 1.2,
   aberration: 0.01,
+  blur: 0,
   colorBg: "#050505",
   color1: "#ffffff",
   intensity1: 1.2,
   threshold1: -0.3,
-  color2: "#2a4d69",
-  intensity2: 2.0,
-  threshold2: 0.2,
 };
 
 /* ------------------------------------------------------------------ */
@@ -163,10 +169,9 @@ function generateExportCode(params: ShaderParams): string {
             uResolution: { value: new THREE.Vector2(renderer.domElement.width, renderer.domElement.height) },
             uMode: { value: ${params.mode} }, uAngle: { value: ${params.angle.toFixed(3)} },
             uSpeed: { value: ${params.speed.toFixed(3)} }, uWarp: { value: ${params.warp.toFixed(3)} },
-            uNoiseScale: { value: ${params.noiseScale.toFixed(3)} }, uAberration: { value: ${params.aberration.toFixed(4)} },
+            uNoiseScale: { value: ${params.noiseScale.toFixed(3)} }, uAberration: { value: ${params.aberration.toFixed(4)} }, uBlur: { value: ${params.blur.toFixed(3)} },
             uColorBg: { value: new THREE.Color('${params.colorBg}') },
-            uColor1: { value: new THREE.Color('${params.color1}') }, uIntensity1: { value: ${params.intensity1} }, uThreshold1: { value: ${params.threshold1} },
-            uColor2: { value: new THREE.Color('${params.color2}') }, uIntensity2: { value: ${params.intensity2} }, uThreshold2: { value: ${params.threshold2} }
+            uColor1: { value: new THREE.Color('${params.color1}') }, uIntensity1: { value: ${params.intensity1} }, uThreshold1: { value: ${params.threshold1} }
         },
         vertexShader: \`${VERTEX_SHADER}\`,
         fragmentShader: \`${FRAGMENT_SHADER}\`
@@ -263,13 +268,11 @@ export default function ShaderPage() {
           uWarp: { value: p.warp },
           uNoiseScale: { value: p.noiseScale },
           uAberration: { value: p.aberration },
+          uBlur: { value: p.blur },
           uColorBg: { value: new THREE.Color(p.colorBg) },
           uColor1: { value: new THREE.Color(p.color1) },
           uIntensity1: { value: p.intensity1 },
           uThreshold1: { value: p.threshold1 },
-          uColor2: { value: new THREE.Color(p.color2) },
-          uIntensity2: { value: p.intensity2 },
-          uThreshold2: { value: p.threshold2 },
         },
         vertexShader: VERTEX_SHADER,
         fragmentShader: FRAGMENT_SHADER,
@@ -319,13 +322,11 @@ export default function ShaderPage() {
     u.uWarp.value = params.warp;
     u.uNoiseScale.value = params.noiseScale;
     u.uAberration.value = params.aberration;
+    u.uBlur.value = params.blur;
     u.uIntensity1.value = params.intensity1;
     u.uThreshold1.value = params.threshold1;
-    u.uIntensity2.value = params.intensity2;
-    u.uThreshold2.value = params.threshold2;
     (u.uColorBg.value as { set(v: string): void }).set(params.colorBg);
     (u.uColor1.value as { set(v: string): void }).set(params.color1);
-    (u.uColor2.value as { set(v: string): void }).set(params.color2);
   }, [params]);
 
   /* --- Export --- */
@@ -409,6 +410,13 @@ export default function ShaderPage() {
               defaultValue={DEFAULT_PARAMS.aberration}
               onChange={(v) => updateParam("aberration", v)}
             />
+            <DragParam
+              label={t.shader.blur}
+              value={params.blur}
+              min={0} max={1} step={0.05}
+              defaultValue={DEFAULT_PARAMS.blur}
+              onChange={(v) => updateParam("blur", v)}
+            />
           </div>
 
           {/* Color pickers + per-color params */}
@@ -427,14 +435,6 @@ export default function ShaderPage() {
               </div>
             </div>
 
-            {/* Color 2 + intensity + threshold */}
-            <div className="flex flex-col gap-2">
-              <ColorRow label={t.shader.color2} value={params.color2} onChange={(v) => updateParam("color2", v)} />
-              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
-                <DragParam label={t.shader.intensity} value={params.intensity2} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity2", v)} defaultValue={DEFAULT_PARAMS.intensity2} />
-                <DragParam label={t.shader.threshold} value={params.threshold2} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold2", v)} defaultValue={DEFAULT_PARAMS.threshold2} />
-              </div>
-            </div>
           </div>
 
         </div>

@@ -69,9 +69,6 @@ uniform vec3 uColorBg;
 uniform vec3 uColor1;
 uniform float uIntensity1;
 uniform float uThreshold1;
-uniform vec3 uColor2;
-uniform float uIntensity2;
-uniform float uThreshold2;
 uniform vec3 uCanvasBg;
 uniform bool uTransparentBg;
 varying vec2 vUv;
@@ -89,7 +86,6 @@ float getNoise(vec2 p){
 vec3 calcColor(float n){
     vec3 col=uColorBg;
     col=mix(col,uColor1*uIntensity1,smoothstep(uThreshold1,uThreshold1+.6,n));
-    col=mix(col,uColor2*uIntensity2,smoothstep(uThreshold2,uThreshold2+.4,n));
     return col;
 }
 vec3 getShaderCol(vec2 uv){
@@ -136,9 +132,6 @@ type Params = {
   color1: string;
   intensity1: number;
   threshold1: number;
-  color2: string;
-  intensity2: number;
-  threshold2: number;
   canvasBg: string;
   transparentBg: boolean;
 };
@@ -158,9 +151,6 @@ const DEFAULT_PARAMS: Params = {
   color1: '#f0faff',
   intensity1: 1.1,
   threshold1: -0.28,
-  color2: '#4d91ff',
-  intensity2: 1.5,
-  threshold2: 0.11,
   canvasBg: '#f3f7fb',
   transparentBg: false,
 };
@@ -267,7 +257,6 @@ const material = new THREE.ShaderMaterial({
     uNoiseScale:{value:${params.noiseScale}}, uAberration:{value:${params.aberration}}, uBlur:{value:${params.blur}},
     uColorBg:{value:${v3(params.colorBg)}},
     uColor1:{value:${v3(params.color1)}}, uIntensity1:{value:${params.intensity1}}, uThreshold1:{value:${params.threshold1}},
-    uColor2:{value:${v3(params.color2)}}, uIntensity2:{value:${params.intensity2}}, uThreshold2:{value:${params.threshold2}},
     uCanvasBg:{value:${v3(params.canvasBg)}}, uTransparentBg:{value:${params.transparentBg}},
   },
   vertexShader: VERT, fragmentShader: FRAG, transparent: true,
@@ -444,9 +433,6 @@ export default function AuroraPage() {
           uColor1:        { value: hexToRGB(p.color1) },
           uIntensity1:    { value: p.intensity1 },
           uThreshold1:    { value: p.threshold1 },
-          uColor2:        { value: hexToRGB(p.color2) },
-          uIntensity2:    { value: p.intensity2 },
-          uThreshold2:    { value: p.threshold2 },
           uCanvasBg:      { value: hexToRGB(p.canvasBg) },
           uTransparentBg: { value: p.transparentBg },
         },
@@ -478,9 +464,6 @@ export default function AuroraPage() {
         u.uColor1.value = hexToRGB(p.color1);
         u.uIntensity1.value = p.intensity1;
         u.uThreshold1.value = p.threshold1;
-        u.uColor2.value = hexToRGB(p.color2);
-        u.uIntensity2.value = p.intensity2;
-        u.uThreshold2.value = p.threshold2;
         u.uCanvasBg.value = hexToRGB(p.canvasBg);
         u.uTransparentBg.value = p.transparentBg;
         renderer.render(scene, camera);
@@ -783,13 +766,6 @@ export default function AuroraPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <ColorRow label={t.shader.color2} value={params.color2} onChange={v => setParams({ color2: v })} />
-              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
-                <DragParam label={t.shader.intensity} value={params.intensity2} min={0} max={5} step={0.1} onChange={v => setParams({ intensity2: v })} defaultValue={DEFAULT_PARAMS.intensity2} />
-                <DragParam label={t.shader.threshold} value={params.threshold2} min={-1} max={1} step={0.01} onChange={v => setParams({ threshold2: v })} defaultValue={DEFAULT_PARAMS.threshold2} />
-              </div>
-            </div>
           </div>
 
           {/* Background */}

@@ -103,6 +103,7 @@ export interface Translations {
     colorLabel: string;
     intensity: string;
     threshold: string;
+    blur: string;
     exportCodeTitle: string;
   };
 
@@ -386,6 +387,7 @@ const ja: Translations = {
     colorLabel: "色",
     intensity: "強度",
     threshold: "しきい値",
+    blur: "ぼかし",
     exportCodeTitle: "コード出力 — 軽量版HTML",
   },
 
@@ -688,6 +690,7 @@ const en: Translations = {
     colorLabel: "Color",
     intensity: "Intensity",
     threshold: "Threshold",
+    blur: "Blur",
     exportCodeTitle: "Code Export — Standalone HTML",
   },
 

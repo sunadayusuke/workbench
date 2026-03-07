@@ -54,15 +54,14 @@ app/
     dotmap/page.tsx   — ドット世界地図SVGジェネレーター（d3-geo + topojson-client、Canvas raster方式）
     easing/page.tsx   — ベジェカーブエディター＆アニメーションプレビュー
     signal/page.tsx   — ディザリングシグナルノイズジェネレーター（Canvas 2D + Bayer dither）
-    aurora/page.tsx   — グロウシェーダー × SVGマスク合成ツール（Three.js + GLSL + MediaRecorder）
+    aurora/page.tsx   — シェイプシェーダー × SVGマスク合成ツール（Three.js + GLSL + MediaRecorder）
 components/
-  ui/                 — shadcn/ui コンポーネント（button, slider, select, dialog, label, separator）
+  app-top-bar.tsx     — 全アプリ共通トップバー（戻るボタン + 言語切替）`useLanguage()` を内部で使用
+  ui/                 — shadcn/ui コンポーネント（button, select, dialog, label, input）
   ui/push-button.tsx  — 物理プッシュボタン（variant: light/dark/accent、押し込みアニメーション）
   ui/drag-param.tsx   — ドラッグ操作でパラメーター変更するラベル+値表示コンポーネント
   ui/toggle-switch.tsx — LED付きトグルスイッチ（size: sm/md）
-  ui/knob.tsx         — ロータリーノブ（color: blue/ochre/grey/orange/white）
-  ui/led-button.tsx   — LED トグルボタン
-  ui/physical-fader.tsx — 縦型フェーダー
+  ui/color-row.tsx    — カラーピッカー行（label + input[type=color] + hex値表示）
 lib/
   utils.ts            — cn() ユーティリティ
   color-utils.ts      — hexToRGB()（Three.js ShaderMaterial 向け色変換）
@@ -78,18 +77,10 @@ hooks/
 
 - `lib/translations.ts` — `Translations` interface と `ja`/`en` オブジェクトを定義
 - `lib/i18n.tsx` — `LanguageProvider`（`app/layout.tsx` でラップ済み）と `useLanguage()` フックを export
-- 各ページで `const { lang, toggle, t } = useLanguage()` を使用
-- トップバーの `[ JA | EN ]` ボタンで `toggle()` を呼ぶ
+- 各ページで `const { t } = useLanguage()`（`lang` が必要な場合は追加）
+- トップバーは `<AppTopBar />` コンポーネントが `useLanguage()` を内部で呼んで処理
 - 翻訳キーを追加するときは `Translations` interface / `ja` / `en` の3か所に追加する
 - ボタンテキストは `[ {t.xxx} ]` 形式（角括弧含む）で統一
-
-## アプリ追加の手順
-1. `app/apps/<app-name>/page.tsx` を作成
-2. `app/page.tsx` の `apps` 配列にエントリ追加
-3. 必要に応じて `npx shadcn@latest add <component>` でUIコンポーネント追加
-4. パラメーター操作は `DragParam`、トグルは `ToggleSwitch`、ボタンは `PushButton` を使用
-5. ダウンロードは `downloadCanvas` / `downloadBlob`、クリップボードは `useClipboard` を使用
-6. `lib/translations.ts` に新アプリのキーを追加し、`useLanguage()` で `t` を取得
 
 ## スタイリングルール
 - **Tailwind CSS のみ使用**（CSS Modules は使わない）
@@ -101,17 +92,24 @@ hooks/
 - セクションタイトル: `text-[14px] font-mono uppercase tracking-[0.14em] text-[#777]`
 - ネスト要素（子パラメーター）: `pl-3 border-l-2 border-[#bbbbbe]`
 
+## アプリ追加の手順
+1. `app/apps/<app-name>/page.tsx` を作成
+2. `app/page.tsx` の `APP_KEYS` 配列と `APP_HREFS` にエントリ追加
+3. 必要に応じて `npx shadcn@latest add <component>` でUIコンポーネント追加
+4. パラメーター操作は `DragParam`、トグルは `ToggleSwitch`、ボタンは `PushButton` を使用
+5. ダウンロードは `downloadCanvas` / `downloadBlob`、クリップボードは `useClipboard` を使用
+6. `lib/translations.ts` に新アプリのキーを追加し、`useLanguage()` で `t` を取得
+
 ## アプリ共通レイアウトパターン
 ```tsx
+import { AppTopBar } from "@/components/app-top-bar";
+import { ColorRow } from "@/components/ui/color-row";
+
 <div className="fixed inset-0 flex flex-col md:flex-row bg-[#d8d8da]">
   {/* キャンバスエリア */}
   <div className="h-[55vh] md:h-auto md:flex-1 relative">
     {/* Three.js canvas / SVG preview */}
-    {/* トップバー（絶対配置） */}
-    <div className="absolute inset-x-0 top-0 flex justify-between p-3 z-10 pointer-events-none [&>*]:pointer-events-auto">
-      <Link href="/"><PushButton variant="dark" size="sm">[ {t.back} ]</PushButton></Link>
-      <PushButton onClick={toggle} variant="dark" size="sm">[ {lang === "ja" ? "EN" : "JA"} ]</PushButton>
-    </div>
+    <AppTopBar />  {/* 戻るボタン + 言語切替を自動で出す */}
   </div>
 
   {/* コントロールサーフェス */}
@@ -131,6 +129,19 @@ hooks/
     </div>
   </aside>
 </div>
+```
+
+## ダイアログボタンのスタイル統一
+shadcn `Button` は使わず、rawの `<button>` で以下のスタイルを使う:
+```tsx
+// キャンセル・閉じるボタン
+<button className="px-4 py-2 bg-transparent border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#242424]/5 transition-colors select-none" onClick={...}>
+  [ {t.close} ]
+</button>
+// アクション（コピー・ダウンロード等）ボタン
+<button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={...}>
+  [ {t.copy} ]
+</button>
 ```
 
 ## 注意点

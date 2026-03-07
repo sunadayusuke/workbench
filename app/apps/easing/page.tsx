@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 import { Label } from "@/components/ui/label";
+import { AppTopBar } from "@/components/app-top-bar";
 import {
   Select,
   SelectContent,
@@ -20,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 /* ------------------------------------------------------------------ */
@@ -917,9 +916,12 @@ function ExportDialog({
             value={code}
             className="flex-1 min-h-[200px] rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)]"
           />
-          <Button className="w-full py-3" onClick={() => copy(code)}>
-            {copied ? t.copied : t.copy}
-          </Button>
+          <button
+            className="w-full py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
+            onClick={() => copy(code)}
+          >
+            [ {copied ? t.copied : t.copy} ]
+          </button>
         </div>
       </DialogContent>
     </Dialog>
@@ -936,7 +938,7 @@ export default function EasingPage() {
   const [activePreset, setActivePreset] = useState<string | null>(DEFAULT_PRESET);
   const [activeScene, setActiveScene] = useState<SceneKey>("button");
   const [showExport, setShowExport] = useState(false);
-  const { lang, toggle, t } = useLanguage();
+  const { t } = useLanguage();
 
   const easingCSS = formatCubicBezier(controlPoints);
 
@@ -976,14 +978,7 @@ export default function EasingPage() {
       {/* Main area */}
       <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0 flex flex-col">
         {/* Top bar */}
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
-          <Link href="/">
-            <PushButton variant="dark" size="sm">[ {t.back} ]</PushButton>
-          </Link>
-          <PushButton onClick={toggle} variant="dark" size="sm">
-            [ {lang === "ja" ? "EN" : "JA"} ]
-          </PushButton>
-        </div>
+        <AppTopBar />
 
         {/* Scene tabs */}
         <div className="flex items-center gap-1 px-3 pt-14 pb-2 md:px-4 md:pt-16 md:pb-3 overflow-x-auto shrink-0">

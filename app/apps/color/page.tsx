@@ -1,12 +1,9 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { AppTopBar } from "@/components/app-top-bar";
 import {
   Dialog,
   DialogContent,
@@ -628,17 +625,17 @@ function ContrastResult({
       {/* WCAG badges */}
       <div className="flex flex-wrap gap-1.5">
         {checks.map((c) => (
-          <Badge
+          <span
             key={c.label}
-            variant={ratio >= c.threshold ? "default" : "outline"}
-            className={
+            className={[
+              "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium",
               ratio >= c.threshold
-                ? "bg-success text-success-foreground"
-                : "text-[#242424]"
-            }
+                ? "bg-[#22c55e] text-white"
+                : "border border-[#242424] text-[#242424]",
+            ].join(" ")}
           >
             {c.label} {ratio >= c.threshold ? "Pass" : "Fail"}
-          </Badge>
+          </span>
         ))}
       </div>
     </div>
@@ -875,7 +872,7 @@ function UiSample({ scale, bg }: { scale: ScaleEntry[]; bg: "light" | "dark" }) 
 /* ================================================================== */
 
 export default function ColorPage() {
-  const { lang, toggle, t } = useLanguage();
+  const { t } = useLanguage();
   // Base color state
   const [hex, setHex] = useState("#2a6db6");
   const [oklch, setOklch] = useState<[number, number, number]>(() =>
@@ -944,15 +941,8 @@ export default function ColorPage() {
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d8d8da]">
       {/* Main area */}
       <div className="h-[55vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0 relative bg-white">
-        {/* Back button */}
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
-          <Link href="/">
-            <PushButton variant="dark" size="sm">[ {t.back} ]</PushButton>
-          </Link>
-          <PushButton onClick={toggle} variant="dark" size="sm">
-            [ {lang === "ja" ? "EN" : "JA"} ]
-          </PushButton>
-        </div>
+        {/* Top bar */}
+        <AppTopBar />
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 pt-14 md:pt-16 flex flex-col gap-6 md:gap-8">
@@ -1159,15 +1149,18 @@ export default function ColorPage() {
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="outline"
+            <button
+              className="px-4 py-2 bg-transparent border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#242424]/5 transition-colors select-none"
               onClick={() => setShowCssDialog(false)}
             >
-              {t.close}
-            </Button>
-            <Button onClick={() => copyCss(cssOutput)}>
-              {copied ? t.copied : t.copy}
-            </Button>
+              [ {t.close} ]
+            </button>
+            <button
+              className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
+              onClick={() => copyCss(cssOutput)}
+            >
+              [ {copied ? t.copied : t.copy} ]
+            </button>
           </div>
         </DialogContent>
       </Dialog>

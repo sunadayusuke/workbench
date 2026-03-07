@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -13,6 +12,7 @@ import {
 import { useLanguage } from "@/lib/i18n";
 import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
+import { AppTopBar } from "@/components/app-top-bar";
 import { hexToRGB } from "@/lib/color-utils";
 import { downloadCanvas } from "@/lib/canvas-download";
 
@@ -443,7 +443,7 @@ function getContentRect(
 /* ------------------------------------------------------------------ */
 
 export default function GradientPage() {
-  const { lang, toggle, t } = useLanguage();
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rendererRef = useRef<{ renderer: any; scene: any; camera: any; material: any } | null>(null);
@@ -765,14 +765,7 @@ export default function GradientPage() {
         </div>
 
         {/* Top bar */}
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
-          <Link href="/">
-            <PushButton variant="dark" size="sm">[ {t.back} ]</PushButton>
-          </Link>
-          <PushButton onClick={toggle} variant="dark" size="sm">
-            [ {lang === "ja" ? "EN" : "JA"} ]
-          </PushButton>
-        </div>
+        <AppTopBar />
       </div>
 
       {/* Control surface */}

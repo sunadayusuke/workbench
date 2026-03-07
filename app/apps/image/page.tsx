@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -16,8 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n";
+import { AppTopBar } from "@/components/app-top-bar";
 import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 import { downloadCanvas } from "@/lib/canvas-download";
@@ -397,7 +396,7 @@ function DropZone({
 /* ------------------------------------------------------------------ */
 
 export default function ImagePage() {
-  const { lang, toggle, t } = useLanguage();
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rendererRef = useRef<{ renderer: any; scene: any; camera: any; material: any } | null>(null);
@@ -673,15 +672,8 @@ export default function ImagePage() {
         </div>
         {!hasImage && <DropZone onFile={loadImage} isDragging={isDragging} />}
 
-        {/* トップバー */}
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
-          <Link href="/">
-            <PushButton variant="dark" size="sm">[ {t.back} ]</PushButton>
-          </Link>
-          <PushButton onClick={toggle} variant="dark" size="sm">
-            [ {lang === "ja" ? "EN" : "JA"} ]
-          </PushButton>
-        </div>
+        {/* Top bar */}
+        <AppTopBar />
       </div>
 
       {/* Control surface */}
@@ -862,12 +854,18 @@ export default function ImagePage() {
               />
             )}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setShowDownload(false)}>
-                {t.cancel}
-              </Button>
-              <Button onClick={handleDownload}>
-                {t.download}
-              </Button>
+              <button
+                className="px-4 py-2 bg-transparent border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#242424]/5 transition-colors select-none"
+                onClick={() => setShowDownload(false)}
+              >
+                [ {t.cancel} ]
+              </button>
+              <button
+                className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
+                onClick={handleDownload}
+              >
+                [ {t.download} ]
+              </button>
             </div>
           </div>
         </DialogContent>

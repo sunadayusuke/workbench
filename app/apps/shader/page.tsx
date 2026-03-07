@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import Link from "next/link";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +18,8 @@ import {
 } from "@/components/ui/select";
 import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
+import { ColorRow } from "@/components/ui/color-row";
+import { AppTopBar } from "@/components/app-top-bar";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -194,40 +194,11 @@ function generateExportCode(params: ShaderParams): string {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Param control row                                                 */
-/* ------------------------------------------------------------------ */
-
-function ColorRow({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{label}</Label>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="size-8 border border-[#242424] bg-transparent cursor-pointer p-0 color-swatch"
-        />
-        <span className="text-[12px] font-mono text-[#242424]">{value}</span>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /*  Page component                                                    */
 /* ------------------------------------------------------------------ */
 
 export default function ShaderPage() {
-  const { lang, toggle, t } = useLanguage();
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const materialRef = useRef<{ uniforms: Record<string, { value: unknown }> } | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -342,14 +313,7 @@ export default function ShaderPage() {
         <div ref={containerRef} className="w-full h-full" />
 
         {/* Top bar */}
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 md:p-4 z-10 pointer-events-none [&>*]:pointer-events-auto">
-          <Link href="/">
-            <PushButton variant="dark" size="sm">[ {t.back} ]</PushButton>
-          </Link>
-          <PushButton onClick={toggle} variant="dark" size="sm">
-            [ {lang === "ja" ? "EN" : "JA"} ]
-          </PushButton>
-        </div>
+        <AppTopBar />
       </div>
 
       {/* Control surface */}

@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
 import { PushButton } from "@/components/ui/push-button";
 import { DragParam } from "@/components/ui/drag-param";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { downloadCanvas } from "@/lib/canvas-download";
 import { useClipboard } from "@/hooks/use-clipboard";
+import { AppTopBar } from "@/components/app-top-bar";
 import {
   Select,
   SelectContent,
@@ -256,7 +256,7 @@ draw();
 }
 
 export default function SignalPage() {
-  const { lang, toggle, t } = useLanguage();
+  const { t } = useLanguage();
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const paramsRef  = useRef<Params>(DEFAULT);
   const timeRef    = useRef(0);
@@ -364,10 +364,7 @@ export default function SignalPage() {
       {/* Canvas area */}
       <div className="h-[55vh] md:h-auto md:flex-1 relative overflow-hidden" style={{ background: params.transparentBg ? undefined : params.bgColor }}>
         <canvas ref={canvasRef} className="w-full h-full block" />
-        <div className="absolute inset-x-0 top-0 flex justify-between p-3 z-10 pointer-events-none [&>*]:pointer-events-auto">
-          <Link href="/"><PushButton variant="dark" size="sm">[ {t.back} ]</PushButton></Link>
-          <PushButton onClick={toggle} variant="dark" size="sm">[ {lang === "ja" ? "EN" : "JA"} ]</PushButton>
-        </div>
+        <AppTopBar />
       </div>
 
       {/* Control surface */}

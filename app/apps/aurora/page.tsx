@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import Link from 'next/link';
 import { PushButton } from '@/components/ui/push-button';
 import { DragParam } from '@/components/ui/drag-param';
 import { ToggleSwitch } from '@/components/ui/toggle-switch';
@@ -22,6 +21,8 @@ import { useLanguage } from '@/lib/i18n';
 import { downloadCanvas, downloadBlob } from '@/lib/canvas-download';
 import { hexToRGB } from '@/lib/color-utils';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { ColorRow } from '@/components/ui/color-row';
+import { AppTopBar } from '@/components/app-top-bar';
 
 const ICON_NAMES = [
   'favorite', 'star', 'bolt', 'cloud', 'music-note',
@@ -187,17 +188,6 @@ function prepareSvg(svgText: string): string {
   return result;
 }
 
-function ColorRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#555]">{label}</span>
-      <div className="flex items-center gap-2">
-        <input type="color" className="color-swatch" value={value} onChange={e => onChange(e.target.value)} />
-        <span className="text-[11px] font-mono text-[#777] tabular-nums">{value}</span>
-      </div>
-    </div>
-  );
-}
 
 function generateExportCode(params: Params, svgData: string): string {
   const v3 = (hex: string) => {
@@ -276,7 +266,7 @@ window.addEventListener('resize', () => {
 }
 
 export default function AuroraPage() {
-  const { lang, toggle, t } = useLanguage();
+  const { lang, t } = useLanguage();
   const [params, setParamsState] = useState<Params>(DEFAULT_PARAMS);
   const paramsRef = useRef<Params>(DEFAULT_PARAMS);
   const { copy, copied } = useClipboard();
@@ -677,10 +667,7 @@ export default function AuroraPage() {
             </span>
           </div>
         )}
-        <div className="absolute inset-x-0 top-0 flex justify-between p-3 z-10 pointer-events-none [&>*]:pointer-events-auto">
-          <Link href="/"><PushButton variant="dark" size="sm">[ {t.back} ]</PushButton></Link>
-          <PushButton onClick={toggle} variant="dark" size="sm">[ {lang === 'ja' ? 'EN' : 'JA'} ]</PushButton>
-        </div>
+        <AppTopBar />
       </div>
 
       {/* Control surface */}

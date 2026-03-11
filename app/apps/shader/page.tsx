@@ -39,6 +39,7 @@ uniform float uWarp;
 uniform float uNoiseScale;
 uniform float uAberration;
 uniform float uBlur;
+uniform float uGrain;
 uniform int uMode;
 uniform float uAngle;
 uniform vec3 uColorBg;
@@ -47,6 +48,10 @@ uniform float uIntensity1;
 uniform float uThreshold1;
 
 varying vec2 vUv;
+
+float rand(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
 
 vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
 float snoise(vec2 v){
@@ -110,6 +115,10 @@ void main() {
     } else {
         col = getShaderCol(uv);
     }
+    if (uGrain > 0.0) {
+        float n = rand(vUv * 1000.0 + vec2(uTime)) - 0.5;
+        col += n * uGrain * 0.4;
+    }
     gl_FragColor = vec4(col, 1.0);
 }
 `;
@@ -126,6 +135,7 @@ interface ShaderParams {
   noiseScale: number;
   aberration: number;
   blur: number;
+  grain: number;
   colorBg: string;
   color1: string;
   intensity1: number;
@@ -140,6 +150,7 @@ const DEFAULT_PARAMS: ShaderParams = {
   noiseScale: 1.2,
   aberration: 0.01,
   blur: 0,
+  grain: 0,
   colorBg: "#050505",
   color1: "#ffffff",
   intensity1: 1.2,
@@ -169,7 +180,7 @@ function generateExportCode(params: ShaderParams): string {
             uResolution: { value: new THREE.Vector2(renderer.domElement.width, renderer.domElement.height) },
             uMode: { value: ${params.mode} }, uAngle: { value: ${params.angle.toFixed(3)} },
             uSpeed: { value: ${params.speed.toFixed(3)} }, uWarp: { value: ${params.warp.toFixed(3)} },
-            uNoiseScale: { value: ${params.noiseScale.toFixed(3)} }, uAberration: { value: ${params.aberration.toFixed(4)} }, uBlur: { value: ${params.blur.toFixed(3)} },
+            uNoiseScale: { value: ${params.noiseScale.toFixed(3)} }, uAberration: { value: ${params.aberration.toFixed(4)} }, uBlur: { value: ${params.blur.toFixed(3)} }, uGrain: { value: ${params.grain.toFixed(3)} },
             uColorBg: { value: new THREE.Color('${params.colorBg}') },
             uColor1: { value: new THREE.Color('${params.color1}') }, uIntensity1: { value: ${params.intensity1} }, uThreshold1: { value: ${params.threshold1} }
         },
@@ -240,6 +251,7 @@ export default function ShaderPage() {
           uNoiseScale: { value: p.noiseScale },
           uAberration: { value: p.aberration },
           uBlur: { value: p.blur },
+          uGrain: { value: p.grain },
           uColorBg: { value: new THREE.Color(p.colorBg) },
           uColor1: { value: new THREE.Color(p.color1) },
           uIntensity1: { value: p.intensity1 },
@@ -294,6 +306,7 @@ export default function ShaderPage() {
     u.uNoiseScale.value = params.noiseScale;
     u.uAberration.value = params.aberration;
     u.uBlur.value = params.blur;
+    u.uGrain.value = params.grain;
     u.uIntensity1.value = params.intensity1;
     u.uThreshold1.value = params.threshold1;
     (u.uColorBg.value as { set(v: string): void }).set(params.colorBg);
@@ -380,6 +393,13 @@ export default function ShaderPage() {
               min={0} max={1} step={0.05}
               defaultValue={DEFAULT_PARAMS.blur}
               onChange={(v) => updateParam("blur", v)}
+            />
+            <DragParam
+              label={t.shader.grain}
+              value={params.grain}
+              min={0} max={1} step={0.01}
+              defaultValue={DEFAULT_PARAMS.grain}
+              onChange={(v) => updateParam("grain", v)}
             />
           </div>
 

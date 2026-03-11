@@ -104,6 +104,7 @@ export interface Translations {
     intensity: string;
     threshold: string;
     blur: string;
+    grain: string;
     exportCodeTitle: string;
   };
 
@@ -388,6 +389,7 @@ const ja: Translations = {
     intensity: "強度",
     threshold: "しきい値",
     blur: "ぼかし",
+    grain: "グレイン",
     exportCodeTitle: "コード出力 — 軽量版HTML",
   },
 
@@ -691,6 +693,7 @@ const en: Translations = {
     intensity: "Intensity",
     threshold: "Threshold",
     blur: "Blur",
+    grain: "Grain",
     exportCodeTitle: "Code Export — Standalone HTML",
   },
 

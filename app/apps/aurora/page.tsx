@@ -72,7 +72,9 @@ uniform float uIntensity1;
 uniform float uThreshold1;
 uniform vec3 uCanvasBg;
 uniform bool uTransparentBg;
+uniform float uGrain;
 varying vec2 vUv;
+float rand(vec2 co){return fract(sin(dot(co,vec2(12.9898,78.233)))*43758.5453);}
 ${SNOISE}
 float getNoise(vec2 p){
     float t=uTime*uSpeed;
@@ -112,6 +114,7 @@ void main(){
     }else{
         shaderCol=getShaderCol(uv);
     }
+    if(uGrain>0.){float n=rand(vUv*1000.0+vec2(uTime))-0.5;shaderCol+=n*uGrain*0.4;}
     float maskVal=texture2D(uMask,vUv).a;
     vec3 finalColor=mix(uCanvasBg,shaderCol,maskVal);
     float alpha=uTransparentBg?maskVal:1.;
@@ -135,6 +138,7 @@ type Params = {
   threshold1: number;
   canvasBg: string;
   transparentBg: boolean;
+  grain: number;
 };
 
 const DEFAULT_PARAMS: Params = {
@@ -154,6 +158,7 @@ const DEFAULT_PARAMS: Params = {
   threshold1: -0.28,
   canvasBg: '#f3f7fb',
   transparentBg: false,
+  grain: 0,
 };
 
 type ThreeCtx = {
@@ -248,6 +253,7 @@ const material = new THREE.ShaderMaterial({
     uColorBg:{value:${v3(params.colorBg)}},
     uColor1:{value:${v3(params.color1)}}, uIntensity1:{value:${params.intensity1}}, uThreshold1:{value:${params.threshold1}},
     uCanvasBg:{value:${v3(params.canvasBg)}}, uTransparentBg:{value:${params.transparentBg}},
+    uGrain:{value:${params.grain.toFixed(3)}},
   },
   vertexShader: VERT, fragmentShader: FRAG, transparent: true,
 });
@@ -425,6 +431,7 @@ export default function AuroraPage() {
           uThreshold1:    { value: p.threshold1 },
           uCanvasBg:      { value: hexToRGB(p.canvasBg) },
           uTransparentBg: { value: p.transparentBg },
+          uGrain:         { value: p.grain },
         },
         transparent: true,
       });
@@ -456,6 +463,7 @@ export default function AuroraPage() {
         u.uThreshold1.value = p.threshold1;
         u.uCanvasBg.value = hexToRGB(p.canvasBg);
         u.uTransparentBg.value = p.transparentBg;
+        u.uGrain.value = p.grain;
         renderer.render(scene, camera);
       }
       render();
@@ -737,6 +745,7 @@ export default function AuroraPage() {
             <DragParam label={t.shader.distortion} value={params.warp} min={0.1} max={10} step={0.1} defaultValue={DEFAULT_PARAMS.warp} onChange={v => setParams({ warp: v })} />
             <DragParam label={t.shader.aberration} value={params.aberration} min={0} max={0.1} step={0.001} defaultValue={DEFAULT_PARAMS.aberration} onChange={v => setParams({ aberration: v })} />
             <DragParam label={t.aurora.blur} value={params.blur} min={0} max={1} step={0.05} defaultValue={DEFAULT_PARAMS.blur} onChange={v => setParams({ blur: v })} />
+            <DragParam label={t.shader.grain} value={params.grain} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.grain} onChange={v => setParams({ grain: v })} />
           </div>
 
           {/* Colors */}
@@ -754,6 +763,7 @@ export default function AuroraPage() {
             </div>
 
           </div>
+
 
           {/* Background */}
           <div className="px-5 py-4 flex flex-col gap-3">

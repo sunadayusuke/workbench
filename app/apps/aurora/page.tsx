@@ -114,7 +114,7 @@ void main(){
     }else{
         shaderCol=getShaderCol(uv);
     }
-    if(uGrain>0.){float n=rand(vUv*1000.0+vec2(uTime))-0.5;shaderCol+=n*uGrain*0.4;}
+    if(uGrain>0.){float n=rand(vUv*uResolution+vec2(uTime))-0.5;shaderCol+=n*uGrain*0.4;}
     float maskVal=texture2D(uMask,vUv).a;
     vec3 finalColor=mix(uCanvasBg,shaderCol,maskVal);
     float alpha=uTransparentBg?maskVal:1.;

@@ -100,6 +100,7 @@ export interface Translations {
     bgColor: string;
     color1: string;
     color2: string;
+    color3: string;
     colorLabel: string;
     intensity: string;
     threshold: string;
@@ -385,6 +386,7 @@ const ja: Translations = {
     bgColor: "背景色",
     color1: "カラー 1",
     color2: "カラー 2",
+    color3: "カラー 3",
     colorLabel: "色",
     intensity: "強度",
     threshold: "しきい値",
@@ -689,6 +691,7 @@ const en: Translations = {
     bgColor: "Background Color",
     color1: "Color 1",
     color2: "Color 2",
+    color3: "Color 3",
     colorLabel: "Color",
     intensity: "Intensity",
     threshold: "Threshold",

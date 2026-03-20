@@ -43,9 +43,10 @@ uniform float uGrain;
 uniform int uMode;
 uniform float uAngle;
 uniform vec3 uColorBg;
-uniform vec3 uColor1;
-uniform float uIntensity1;
-uniform float uThreshold1;
+uniform vec3 uColors[8];
+uniform float uIntensities[8];
+uniform float uThresholds[8];
+uniform int uColorCount;
 
 varying vec2 vUv;
 
@@ -86,7 +87,10 @@ float getNoise(vec2 p) {
 
 vec3 calculateColor(float n) {
     vec3 col = uColorBg;
-    col = mix(col, uColor1 * uIntensity1, smoothstep(uThreshold1, uThreshold1 + 0.6, n));
+    for (int i = 0; i < 8; i++) {
+        if (i >= uColorCount) break;
+        col = mix(col, uColors[i] * uIntensities[i], smoothstep(uThresholds[i], uThresholds[i] + 0.6, n));
+    }
     return col;
 }
 
@@ -127,6 +131,10 @@ void main() {
 /*  Types & defaults                                                  */
 /* ------------------------------------------------------------------ */
 
+const MAX_COLORS = 8;
+
+type ColorStop = { color: string; intensity: number; threshold: number; };
+
 interface ShaderParams {
   mode: number;
   angle: number;
@@ -137,9 +145,7 @@ interface ShaderParams {
   blur: number;
   grain: number;
   colorBg: string;
-  color1: string;
-  intensity1: number;
-  threshold1: number;
+  colors: ColorStop[];
 }
 
 const DEFAULT_PARAMS: ShaderParams = {
@@ -152,9 +158,7 @@ const DEFAULT_PARAMS: ShaderParams = {
   blur: 0,
   grain: 0,
   colorBg: "#050505",
-  color1: "#ffffff",
-  intensity1: 1.2,
-  threshold1: -0.3,
+  colors: [{ color: "#ffffff", intensity: 1.2, threshold: -0.3 }],
 };
 
 /* ------------------------------------------------------------------ */
@@ -162,6 +166,10 @@ const DEFAULT_PARAMS: ShaderParams = {
 /* ------------------------------------------------------------------ */
 
 function generateExportCode(params: ShaderParams): string {
+  const colorsArr = params.colors.map(s => `new THREE.Color('${s.color}')`).join(', ');
+  const intensitiesArr = params.colors.map(s => s.intensity).join(', ');
+  const thresholdsArr = params.colors.map(s => s.threshold).join(', ');
+
   return `<!DOCTYPE html>
 <html lang="ja">
 <body style="margin:0;overflow:hidden;background:#000;">
@@ -180,9 +188,13 @@ function generateExportCode(params: ShaderParams): string {
             uResolution: { value: new THREE.Vector2(renderer.domElement.width, renderer.domElement.height) },
             uMode: { value: ${params.mode} }, uAngle: { value: ${params.angle.toFixed(3)} },
             uSpeed: { value: ${params.speed.toFixed(3)} }, uWarp: { value: ${params.warp.toFixed(3)} },
-            uNoiseScale: { value: ${params.noiseScale.toFixed(3)} }, uAberration: { value: ${params.aberration.toFixed(4)} }, uBlur: { value: ${params.blur.toFixed(3)} }, uGrain: { value: ${params.grain.toFixed(3)} },
+            uNoiseScale: { value: ${params.noiseScale.toFixed(3)} }, uAberration: { value: ${params.aberration.toFixed(4)} },
+            uBlur: { value: ${params.blur.toFixed(3)} }, uGrain: { value: ${params.grain.toFixed(3)} },
             uColorBg: { value: new THREE.Color('${params.colorBg}') },
-            uColor1: { value: new THREE.Color('${params.color1}') }, uIntensity1: { value: ${params.intensity1} }, uThreshold1: { value: ${params.threshold1} }
+            uColors: { value: [${colorsArr}] },
+            uIntensities: { value: [${intensitiesArr}] },
+            uThresholds: { value: [${thresholdsArr}] },
+            uColorCount: { value: ${params.colors.length} },
         },
         vertexShader: \`${VERTEX_SHADER}\`,
         fragmentShader: \`${FRAGMENT_SHADER}\`
@@ -214,13 +226,34 @@ export default function ShaderPage() {
   const materialRef = useRef<{ uniforms: Record<string, { value: unknown }> } | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
-  const [params, setParams] = useState<ShaderParams>({ ...DEFAULT_PARAMS });
+  const [params, setParams] = useState<ShaderParams>({ ...DEFAULT_PARAMS, colors: [...DEFAULT_PARAMS.colors] });
   const [showExport, setShowExport] = useState(false);
   const [exportCode, setExportCode] = useState("");
   const { copy, copied } = useClipboard();
 
   const updateParam = useCallback(<K extends keyof ShaderParams>(key: K, value: ShaderParams[K]) => {
     setParams((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const updateColor = useCallback((index: number, field: keyof ColorStop, value: string | number) => {
+    setParams(prev => {
+      const colors = prev.colors.map((c, i) => i === index ? { ...c, [field]: value } : c);
+      return { ...prev, colors };
+    });
+  }, []);
+
+  const addColor = useCallback(() => {
+    setParams(prev => ({
+      ...prev,
+      colors: [...prev.colors, { color: "#ffffff", intensity: 1.0, threshold: 0.3 }],
+    }));
+  }, []);
+
+  const removeColor = useCallback((index: number) => {
+    setParams(prev => ({
+      ...prev,
+      colors: prev.colors.filter((_, i) => i !== index),
+    }));
   }, []);
 
   /* --- Three.js setup --- */
@@ -240,22 +273,33 @@ export default function ShaderPage() {
       container.appendChild(renderer.domElement);
 
       const p = DEFAULT_PARAMS;
+      const colorArr = Array.from({ length: MAX_COLORS }, (_, i) =>
+        new THREE.Color(i < p.colors.length ? p.colors[i].color : "#000000")
+      );
+      const intensityArr = Array.from({ length: MAX_COLORS }, (_, i) =>
+        i < p.colors.length ? p.colors[i].intensity : 0
+      );
+      const thresholdArr = Array.from({ length: MAX_COLORS }, (_, i) =>
+        i < p.colors.length ? p.colors[i].threshold : 0
+      );
+
       const material = new THREE.ShaderMaterial({
         uniforms: {
-          uTime: { value: 0 },
+          uTime:       { value: 0 },
           uResolution: { value: new THREE.Vector2(renderer.domElement.width, renderer.domElement.height) },
-          uMode: { value: p.mode },
-          uAngle: { value: p.angle },
-          uSpeed: { value: p.speed },
-          uWarp: { value: p.warp },
+          uMode:       { value: p.mode },
+          uAngle:      { value: p.angle },
+          uSpeed:      { value: p.speed },
+          uWarp:       { value: p.warp },
           uNoiseScale: { value: p.noiseScale },
           uAberration: { value: p.aberration },
-          uBlur: { value: p.blur },
-          uGrain: { value: p.grain },
-          uColorBg: { value: new THREE.Color(p.colorBg) },
-          uColor1: { value: new THREE.Color(p.color1) },
-          uIntensity1: { value: p.intensity1 },
-          uThreshold1: { value: p.threshold1 },
+          uBlur:       { value: p.blur },
+          uGrain:      { value: p.grain },
+          uColorBg:    { value: new THREE.Color(p.colorBg) },
+          uColors:     { value: colorArr },
+          uIntensities:{ value: intensityArr },
+          uThresholds: { value: thresholdArr },
+          uColorCount: { value: p.colors.length },
         },
         vertexShader: VERTEX_SHADER,
         fragmentShader: FRAGMENT_SHADER,
@@ -307,10 +351,14 @@ export default function ShaderPage() {
     u.uAberration.value = params.aberration;
     u.uBlur.value = params.blur;
     u.uGrain.value = params.grain;
-    u.uIntensity1.value = params.intensity1;
-    u.uThreshold1.value = params.threshold1;
     (u.uColorBg.value as { set(v: string): void }).set(params.colorBg);
-    (u.uColor1.value as { set(v: string): void }).set(params.color1);
+    const colorArr = u.uColors.value as { set(v: string): void }[];
+    params.colors.slice(0, MAX_COLORS).forEach((stop, i) => {
+      colorArr[i].set(stop.color);
+      (u.uIntensities.value as number[])[i] = stop.intensity;
+      (u.uThresholds.value as number[])[i] = stop.threshold;
+    });
+    u.uColorCount.value = Math.min(params.colors.length, MAX_COLORS);
   }, [params]);
 
   /* --- Export --- */
@@ -324,8 +372,6 @@ export default function ShaderPage() {
       {/* Canvas area */}
       <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0">
         <div ref={containerRef} className="w-full h-full" />
-
-        {/* Top bar */}
         <AppTopBar />
       </div>
 
@@ -335,13 +381,13 @@ export default function ShaderPage() {
         {/* Header band */}
         <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
           <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.shader.name}</span>
-          <PushButton size="sm" variant="dark" onClick={() => setParams({ ...DEFAULT_PARAMS })}>[ {t.reset} ]</PushButton>
+          <PushButton size="sm" variant="dark" onClick={() => setParams({ ...DEFAULT_PARAMS, colors: [...DEFAULT_PARAMS.colors] })}>[ {t.reset} ]</PushButton>
         </div>
 
         {/* Scrollable interior */}
         <div className="flex-1 overflow-y-auto flex flex-col">
 
-          {/* MODE: select */}
+          {/* Mode */}
           <div className="px-4 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-2">
             <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.shader.mode}</span>
             <Select value={String(params.mode)} onValueChange={(v) => updateParam("mode", Number(v))}>
@@ -357,68 +403,54 @@ export default function ShaderPage() {
             </Select>
           </div>
 
-          {/* Knob row: SPEED / SCALE / WARP / CHRM */}
+          {/* Motion params */}
           <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
-            <DragParam
-              label={t.shader.speed}
-              value={params.speed}
-              min={0} max={1} step={0.01}
-              defaultValue={DEFAULT_PARAMS.speed}
-              onChange={(v) => updateParam("speed", v)}
-            />
-            <DragParam
-              label={t.shader.noiseScale}
-              value={params.noiseScale}
-              min={0.1} max={4} step={0.1}
-              defaultValue={DEFAULT_PARAMS.noiseScale}
-              onChange={(v) => updateParam("noiseScale", v)}
-            />
-            <DragParam
-              label={t.shader.distortion}
-              value={params.warp}
-              min={0.1} max={10} step={0.1}
-              defaultValue={DEFAULT_PARAMS.warp}
-              onChange={(v) => updateParam("warp", v)}
-            />
-            <DragParam
-              label={t.shader.aberration}
-              value={params.aberration}
-              min={0} max={0.1} step={0.001}
-              defaultValue={DEFAULT_PARAMS.aberration}
-              onChange={(v) => updateParam("aberration", v)}
-            />
-            <DragParam
-              label={t.shader.blur}
-              value={params.blur}
-              min={0} max={1} step={0.05}
-              defaultValue={DEFAULT_PARAMS.blur}
-              onChange={(v) => updateParam("blur", v)}
-            />
-            <DragParam
-              label={t.shader.grain}
-              value={params.grain}
-              min={0} max={1} step={0.01}
-              defaultValue={DEFAULT_PARAMS.grain}
-              onChange={(v) => updateParam("grain", v)}
-            />
+            <DragParam label={t.shader.speed} value={params.speed} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.speed} onChange={(v) => updateParam("speed", v)} />
+            <DragParam label={t.shader.noiseScale} value={params.noiseScale} min={0.1} max={4} step={0.1} defaultValue={DEFAULT_PARAMS.noiseScale} onChange={(v) => updateParam("noiseScale", v)} />
+            <DragParam label={t.shader.distortion} value={params.warp} min={0.1} max={10} step={0.1} defaultValue={DEFAULT_PARAMS.warp} onChange={(v) => updateParam("warp", v)} />
+            <DragParam label={t.shader.aberration} value={params.aberration} min={0} max={0.1} step={0.001} defaultValue={DEFAULT_PARAMS.aberration} onChange={(v) => updateParam("aberration", v)} />
+            <DragParam label={t.shader.blur} value={params.blur} min={0} max={1} step={0.05} defaultValue={DEFAULT_PARAMS.blur} onChange={(v) => updateParam("blur", v)} />
+            <DragParam label={t.shader.grain} value={params.grain} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.grain} onChange={(v) => updateParam("grain", v)} />
           </div>
 
-          {/* Color pickers + per-color params */}
+          {/* Colors */}
           <div className="px-5 py-4 flex flex-col gap-4">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.colors}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.colors}</span>
+              {params.colors.length < MAX_COLORS && (
+                <PushButton size="sm" variant="light" onClick={addColor}>[ + ]</PushButton>
+              )}
+            </div>
 
             {/* BG */}
             <ColorRow label="BG" value={params.colorBg} onChange={(v) => updateParam("colorBg", v)} />
 
-            {/* Color 1 + intensity + threshold */}
-            <div className="flex flex-col gap-2">
-              <ColorRow label={t.shader.color1} value={params.color1} onChange={(v) => updateParam("color1", v)} />
-              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
-                <DragParam label={t.shader.intensity} value={params.intensity1} min={0} max={5} step={0.1} onChange={(v) => updateParam("intensity1", v)} defaultValue={DEFAULT_PARAMS.intensity1} />
-                <DragParam label={t.shader.threshold} value={params.threshold1} min={-1} max={1} step={0.01} onChange={(v) => updateParam("threshold1", v)} defaultValue={DEFAULT_PARAMS.threshold1} />
+            {/* Dynamic color stops */}
+            {params.colors.map((stop, i) => (
+              <div key={i} className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <ColorRow
+                      label={`${t.shader.colorLabel} ${i + 1}`}
+                      value={stop.color}
+                      onChange={(v) => updateColor(i, "color", v)}
+                    />
+                  </div>
+                  {params.colors.length > 1 && (
+                    <button
+                      onClick={() => removeColor(i)}
+                      className="text-[#aaa] hover:text-[#555] font-mono text-[14px] leading-none select-none transition-colors"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+                <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
+                  <DragParam label={t.shader.intensity} value={stop.intensity} min={0} max={5} step={0.1} onChange={(v) => updateColor(i, "intensity", v)} defaultValue={1.0} />
+                  <DragParam label={t.shader.threshold} value={stop.threshold} min={-1} max={1} step={0.01} onChange={(v) => updateColor(i, "threshold", v)} defaultValue={-0.3} />
+                </div>
               </div>
-            </div>
-
+            ))}
           </div>
 
         </div>

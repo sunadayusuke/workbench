@@ -25,6 +25,7 @@ export interface Translations {
     dotmap: { name: string; description: string };
     signal: { name: string; description: string };
     aurora: { name: string; description: string };
+    badge: { name: string; description: string };
   };
 
   // Signal page
@@ -340,6 +341,7 @@ const ja: Translations = {
     dotmap: { name: "ドットマップ", description: "ドット世界地図SVGジェネレーター" },
     signal: { name: "シグナルノイズ", description: "ディザリングシグナルノイズジェネレーター" },
     aurora: { name: "シェイプシェーダー", description: "SVGシェイプにシェーダーを合成するツール" },
+    badge: { name: "バッジジェネレーター", description: "SVGを3Dバッジに変換するツール" },
   },
 
   color: {
@@ -645,6 +647,7 @@ const en: Translations = {
     dotmap: { name: "Dot Map", description: "Dot world map SVG generator" },
     signal: { name: "Signal Noise", description: "Dithered signal noise generator" },
     aurora: { name: "Shape Shader", description: "Shader compositor over SVG shapes" },
+    badge: { name: "Badge Generator", description: "Convert SVG to 3D badge" },
   },
 
   color: {

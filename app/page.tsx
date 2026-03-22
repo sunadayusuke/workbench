@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
 import { PushButton } from "@/components/ui/push-button";
 
-const APP_KEYS = ["color", "shader", "image", "easing", "gradient", "particle", "dotmap", "signal", "aurora"] as const;
+const APP_KEYS = ["color", "shader", "image", "easing", "gradient", "particle", "dotmap", "signal", "aurora", "badge"] as const;
 
 const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
   color:    "/apps/color",
@@ -16,6 +16,7 @@ const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
   dotmap:   "/apps/dotmap",
   signal:   "/apps/signal",
   aurora:   "/apps/aurora",
+  badge:    "/apps/badge",
 };
 
 export default function Home() {

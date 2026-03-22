@@ -410,9 +410,8 @@ export default function AuroraPage() {
       renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
       const el = renderer.domElement;
       el.style.position = 'absolute';
-      el.style.inset = '0';
-      el.style.width = '100%';
-      el.style.height = '100%';
+      el.style.top = '0';
+      el.style.left = '0';
       area.appendChild(el);
 
       const p = paramsRef.current;
@@ -658,7 +657,7 @@ export default function AuroraPage() {
       {/* Canvas area */}
       <div
         ref={canvasAreaRef}
-        className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0"
+        className="h-[55vh] md:h-auto md:flex-1 relative overflow-hidden"
         onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
         onDragLeave={() => setIsDragOver(false)}
         onDrop={e => {

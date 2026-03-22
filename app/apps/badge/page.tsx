@@ -508,7 +508,7 @@ export default function BadgePage() {
       <aside className="md:w-[260px] bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] border-l border-[#bbbbbe] flex flex-col overflow-hidden">
         {/* header */}
         <div className="flex items-center justify-between px-5 h-12 border-b border-[rgba(0,0,0,0.12)] shrink-0">
-          <span className="text-[13px] font-mono uppercase tracking-[0.18em] text-[#333] select-none">Badge Gen</span>
+          <span className="text-[13px] font-mono uppercase tracking-[0.18em] text-[#333] select-none">{t.apps.badge.name}</span>
           <PushButton size="sm" variant="dark" onClick={handleReset}>[ {t.reset} ]</PushButton>
         </div>
 

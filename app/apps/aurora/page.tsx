@@ -653,7 +653,7 @@ export default function AuroraPage() {
       {/* Canvas area */}
       <div
         ref={canvasAreaRef}
-        className="h-[55vh] md:h-auto md:flex-1 relative"
+        className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0"
         onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
         onDragLeave={() => setIsDragOver(false)}
         onDrop={e => {
@@ -679,7 +679,7 @@ export default function AuroraPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="md:w-[320px] bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] border-l border-[#bbbbbe] flex flex-col">
+      <aside className="flex-1 md:flex-none md:w-[320px] shrink-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-5 h-12 border-b border-[rgba(0,0,0,0.12)]">
           <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333]">{t.apps.aurora.name}</span>
           <PushButton size="sm" variant="dark" onClick={handleReset}>[ {t.reset} ]</PushButton>

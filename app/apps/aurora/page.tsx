@@ -408,7 +408,12 @@ export default function AuroraPage() {
       renderer.setSize(w, h);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
-      area.appendChild(renderer.domElement);
+      const el = renderer.domElement;
+      el.style.position = 'absolute';
+      el.style.inset = '0';
+      el.style.width = '100%';
+      el.style.height = '100%';
+      area.appendChild(el);
 
       const p = paramsRef.current;
       const material = new THREE.ShaderMaterial({
@@ -679,13 +684,13 @@ export default function AuroraPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="flex-1 md:flex-none md:w-[320px] shrink-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col overflow-hidden">
+      <aside className="flex-1 md:flex-none md:w-[320px] min-h-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col">
         <div className="flex items-center justify-between px-5 h-12 border-b border-[rgba(0,0,0,0.12)]">
           <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333]">{t.apps.aurora.name}</span>
           <PushButton size="sm" variant="dark" onClick={handleReset}>[ {t.reset} ]</PushButton>
         </div>
 
-        <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
 
           {/* Shape */}
           <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">

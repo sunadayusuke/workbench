@@ -18,14 +18,6 @@ const DEF = {
   tile: 5, bump: 0.4,
 };
 
-/* ── helpers ──────────────────────────────────── */
-function Sec({ label }: { label: string }) {
-  return <p className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#888] px-5 pt-4 pb-1 select-none">{label}</p>;
-}
-function Row({ children }: { children: React.ReactNode }) {
-  return <div className="px-5 py-[5px]">{children}</div>;
-}
-
 /* ── scene state type ─────────────────────────── */
 type SceneState = {
   renderer: any; camera: any; controls: any; scene: any;
@@ -41,13 +33,13 @@ export default function BadgePage() {
   const { t } = useLanguage();
   const mountRef  = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const sc        = useRef<SceneState | null>(null);
 
   /* current-value refs (read inside Three.js closures) */
   const colorRef     = useRef(DEF.color);
   const bumpRef      = useRef(DEF.bump);
   const exposureRef  = useRef(DEF.exposure);
-  const globalSatRef = useRef(DEF.globalSat);
 
   /* React state (UI only) */
   const [depth,      setDepth]      = useState(DEF.depth);
@@ -69,19 +61,17 @@ export default function BadgePage() {
   const [frontAnim,  setFrontAnim]  = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
 
-  colorRef.current     = color;
-  bumpRef.current      = bump;
-  exposureRef.current  = exposure;
-  globalSatRef.current = globalSat;
+  colorRef.current    = color;
+  bumpRef.current     = bump;
+  exposureRef.current = exposure;
 
   /* ── buildFromSVG ─────────────────────────────── */
   const buildFromSVG = useCallback(async () => {
     const s = sc.current;
     if (!s || !s.svgContent) return;
-    const THREE     = await import("three");
+    const THREE      = await import("three");
     const { SVGLoader } = await import("three/examples/jsm/loaders/SVGLoader.js");
 
-    /* dispose old group */
     if (s.svgGroup) {
       s.scene.remove(s.svgGroup);
       s.svgGroup.traverse((o: any) => { if (o.isMesh) o.geometry.dispose(); });
@@ -91,7 +81,6 @@ export default function BadgePage() {
     const svgData   = new SVGLoader().parse(s.svgContent);
     const allShapes = svgData.paths.flatMap((p: any) => SVGLoader.createShapes(p));
 
-    /* bbox for normalisation */
     let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
     for (const sh of allShapes)
       for (const pt of sh.getPoints(12)) {
@@ -105,7 +94,6 @@ export default function BadgePage() {
       .makeScale(sf, sf, 1)
       .multiply(new THREE.Matrix4().makeTranslation(-cx, cy, 0));
 
-    /* per-shape bbox for overlap detection (SVG coords, before normalisation) */
     const shapeBBoxes = allShapes.map((sh: any) => {
       let x0=Infinity, y0=Infinity, x1=-Infinity, y1=-Infinity;
       for (const pt of sh.getPoints(12)) {
@@ -117,7 +105,6 @@ export default function BadgePage() {
     const bboxOverlap = (a: any, b: any) =>
       !(a.x1 < b.x0 || b.x1 < a.x0 || a.y1 < b.y0 || b.y1 < a.y0);
 
-    /* assign Z level: 0 unless bbox overlaps a previous shape */
     const zLevels: number[] = [];
     for (let i = 0; i < allShapes.length; i++) {
       let level = 0;
@@ -166,7 +153,6 @@ export default function BadgePage() {
       mat.bumpMap   = s.detailTex;
       mat.bumpScale = bumpRef.current;
 
-      /* onBeforeCompile — patched for Three.js r182 shader layout */
       const su = s.uniforms;
       mat.onBeforeCompile = (shader: any) => {
         shader.uniforms.uRotation   = su.uRotation;
@@ -176,19 +162,15 @@ export default function BadgePage() {
         shader.uniforms.uWarp       = su.uWarp;
         mat.userData.shader = shader;
 
-        /* r182 matcap fragment shader has tab-indented lines — must match exactly */
         shader.fragmentShader = shader.fragmentShader
-          /* inject uniform declarations after #define MATCAP (no tab, safe anchor) */
           .replace(
             "#define MATCAP",
             "#define MATCAP\nuniform float uRotation; uniform float uBrightness; uniform float uContrast; uniform float uSaturation; uniform float uWarp;"
           )
-          /* rotate + warp matcap UV — line has leading \t in r182 */
           .replace(
             "\tvec2 uv = vec2( dot( x, normal ), dot( y, normal ) ) * 0.495 + 0.5;",
             "\tvec2 uvRaw = vec2( dot( x, normal ), dot( y, normal ) ) * 0.495 + 0.5;\n\tfloat cosA = cos(uRotation), sinA = sin(uRotation);\n\tvec2 mc0 = uvRaw - 0.5;\n\tvec2 uv = vec2(cosA*mc0.x - sinA*mc0.y, sinA*mc0.x + cosA*mc0.y) + 0.5;\n\tuv = clamp(uv + uWarp * vec2(sin(uv.y*8.0), cos(uv.x*8.0)) * 0.06, 0.0, 1.0);"
           )
-          /* brightness / contrast / saturation — line has leading \t\t in r182 */
           .replace(
             "\t\tvec4 matcapColor = texture2D( matcap, uv );",
             "\t\tvec4 matcapColor = texture2D( matcap, uv );\n\t\tmatcapColor.rgb *= uBrightness;\n\t\tmatcapColor.rgb = (matcapColor.rgb - 0.5) * uContrast + 0.5;\n\t\tfloat mcLum = dot(matcapColor.rgb, vec3(0.299,0.587,0.114));\n\t\tmatcapColor.rgb = mix(vec3(mcLum), matcapColor.rgb, uSaturation);\n\t\tmatcapColor.rgb = clamp(matcapColor.rgb, 0.0, 1.0);"
@@ -199,7 +181,6 @@ export default function BadgePage() {
       grp.add(new THREE.Mesh(geo, mat));
     }
 
-    /* center + fit camera */
     const box = new THREE.Box3().setFromObject(grp);
     grp.position.sub(box.getCenter(new THREE.Vector3()));
     s.scene.add(grp);
@@ -245,10 +226,10 @@ export default function BadgePage() {
       camera.position.set(0, 0, 200);
 
       const controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping    = true;
-      controls.dampingFactor    = 0.07;
-      controls.autoRotate       = true;
-      controls.autoRotateSpeed  = 1.2;
+      controls.enableDamping   = true;
+      controls.dampingFactor   = 0.07;
+      controls.autoRotate      = true;
+      controls.autoRotateSpeed = 1.2;
       controls.addEventListener("start", () => { controls.autoRotate = false; });
 
       const loader    = new THREE.TextureLoader();
@@ -278,7 +259,6 @@ export default function BadgePage() {
         initCamPos: null,
       };
 
-      /* sync shader uniforms each frame */
       scene.onBeforeRender = () => {
         if (!sc.current) return;
         for (const m of sc.current.mats) {
@@ -293,7 +273,6 @@ export default function BadgePage() {
         renderer.toneMappingExposure = exposureRef.current;
       };
 
-      /* resize */
       const ro = new ResizeObserver(() => {
         const w = container.clientWidth, h = container.clientHeight;
         renderer.setSize(w, h);
@@ -306,7 +285,6 @@ export default function BadgePage() {
       camera.aspect = container.clientWidth / container.clientHeight;
       camera.updateProjectionMatrix();
 
-      /* animate */
       const animate = () => {
         if (destroyed) return;
         animId = requestAnimationFrame(animate);
@@ -318,7 +296,6 @@ export default function BadgePage() {
       setSceneReady(true);
     })();
 
-    /* cleanup — returned properly so React calls it on unmount */
     return () => {
       destroyed = true;
       cancelAnimationFrame(animId);
@@ -372,13 +349,11 @@ export default function BadgePage() {
 
   /* ── param handlers ───────────────────────────── */
   const updateDepth = useCallback((v: number) => {
-    setDepth(v);
-    if (sc.current) { sc.current.depth = v; buildFromSVG(); }
+    setDepth(v); if (sc.current) { sc.current.depth = v; buildFromSVG(); }
   }, [buildFromSVG]);
 
   const updateBevel = useCallback((v: number) => {
-    setBevel(v);
-    if (sc.current) { sc.current.bevel = v; buildFromSVG(); }
+    setBevel(v); if (sc.current) { sc.current.bevel = v; buildFromSVG(); }
   }, [buildFromSVG]);
 
   const updateColor = useCallback((v: string) => {
@@ -387,8 +362,7 @@ export default function BadgePage() {
   }, []);
 
   const updateBgColor = useCallback((v: string) => {
-    setBgColor(v);
-    sc.current?.renderer.setClearColor(v);
+    setBgColor(v); sc.current?.renderer.setClearColor(v);
   }, []);
 
   const updateExposure = useCallback((v: number) => {
@@ -396,44 +370,34 @@ export default function BadgePage() {
   }, []);
 
   const updateGlobalSat = useCallback((v: number) => {
-    setGlobalSat(v); globalSatRef.current = v;
-    // apply global saturation via CSS filter on canvas
-    if (canvasRef.current) {
-      canvasRef.current.style.filter = v === 1 ? "" : `saturate(${v})`;
-    }
+    setGlobalSat(v);
+    if (canvasRef.current) canvasRef.current.style.filter = v === 1 ? "" : `saturate(${v})`;
   }, []);
 
   const updateBrightness = useCallback((v: number) => {
-    setBrightness(v);
-    if (sc.current) sc.current.uniforms.uBrightness.value = v;
+    setBrightness(v); if (sc.current) sc.current.uniforms.uBrightness.value = v;
   }, []);
   const updateContrast = useCallback((v: number) => {
-    setContrast(v);
-    if (sc.current) sc.current.uniforms.uContrast.value = v;
+    setContrast(v); if (sc.current) sc.current.uniforms.uContrast.value = v;
   }, []);
   const updateSaturation = useCallback((v: number) => {
-    setSaturation(v);
-    if (sc.current) sc.current.uniforms.uSaturation.value = v;
+    setSaturation(v); if (sc.current) sc.current.uniforms.uSaturation.value = v;
   }, []);
   const updateWarp = useCallback((v: number) => {
-    setWarp(v);
-    if (sc.current) sc.current.uniforms.uWarp.value = v;
+    setWarp(v); if (sc.current) sc.current.uniforms.uWarp.value = v;
   }, []);
   const updateRotation = useCallback((v: number) => {
-    setRotation(v);
-    if (sc.current) sc.current.uniforms.uRotation.value = v * Math.PI / 180;
+    setRotation(v); if (sc.current) sc.current.uniforms.uRotation.value = v * Math.PI / 180;
   }, []);
   const updateTile = useCallback((v: number) => {
-    setTile(v);
-    sc.current?.detailTex?.repeat.set(v, v);
+    setTile(v); sc.current?.detailTex?.repeat.set(v, v);
   }, []);
   const updateBump = useCallback((v: number) => {
     setBump(v); bumpRef.current = v;
     if (sc.current) for (const m of sc.current.mats) m.bumpScale = v;
   }, []);
   const updateLayerStep = useCallback((v: number) => {
-    setLayerStep(v);
-    if (sc.current) { sc.current.layerStep = v; buildFromSVG(); }
+    setLayerStep(v); if (sc.current) { sc.current.layerStep = v; buildFromSVG(); }
   }, [buildFromSVG]);
 
   /* ── SVG upload ───────────────────────────────── */
@@ -459,7 +423,7 @@ export default function BadgePage() {
     if (sc.current) for (const m of sc.current.mats) m.color?.set(DEF.color);
     setBgColor(DEF.bgColor); sc.current?.renderer.setClearColor(DEF.bgColor);
     setExposure(DEF.exposure); exposureRef.current = DEF.exposure;
-    setGlobalSat(DEF.globalSat); globalSatRef.current = DEF.globalSat;
+    setGlobalSat(DEF.globalSat);
     if (canvasRef.current) canvasRef.current.style.filter = "";
     setBrightness(DEF.brightness); if (sc.current) sc.current.uniforms.uBrightness.value = DEF.brightness;
     setContrast(DEF.contrast);     if (sc.current) sc.current.uniforms.uContrast.value   = DEF.contrast;
@@ -467,7 +431,7 @@ export default function BadgePage() {
     setWarp(DEF.warp);             if (sc.current) sc.current.uniforms.uWarp.value        = DEF.warp;
     setRotation(DEF.rotation);     if (sc.current) sc.current.uniforms.uRotation.value    = 0;
     setTile(DEF.tile);             sc.current?.detailTex?.repeat.set(DEF.tile, DEF.tile);
-    setBump(DEF.bump);   bumpRef.current = DEF.bump;
+    setBump(DEF.bump); bumpRef.current = DEF.bump;
     if (sc.current) for (const m of sc.current.mats) m.bumpScale = DEF.bump;
     setLayerStep(DEF.layerStep); if (sc.current) sc.current.layerStep = DEF.layerStep;
     buildFromSVG();
@@ -479,86 +443,79 @@ export default function BadgePage() {
   }, []);
 
   return (
-    <div className="fixed inset-0 flex flex-col md:flex-row">
+    <div className="fixed inset-0 flex flex-col md:flex-row bg-[#d8d8da]">
       {/* canvas */}
       <div ref={mountRef} className="h-[55vh] md:h-auto md:flex-1 relative overflow-hidden bg-[#0a0a0a]">
         <AppTopBar />
         {!svgName && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/20 select-none">
-              Upload SVG to start
+              {t.badge.uploadPrompt}
             </p>
           </div>
         )}
-        {/* Front View button */}
         {svgName && (
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
-            <button
-              onClick={handleFrontView}
-              disabled={frontAnim}
-              className="px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/60 text-[11px] font-mono uppercase tracking-[0.12em] hover:bg-white/20 transition-colors backdrop-blur-sm select-none disabled:opacity-40"
-            >
-              Front View
-            </button>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+            <PushButton variant="dark" size="sm" onClick={handleFrontView} disabled={frontAnim}>
+              [ {t.badge.frontView} ]
+            </PushButton>
           </div>
         )}
       </div>
 
       {/* sidebar */}
-      <aside className="md:w-[260px] bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] border-l border-[#bbbbbe] flex flex-col overflow-hidden">
+      <aside className="md:w-[320px] bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] border-l border-[#bbbbbe] flex flex-col overflow-hidden">
         {/* header */}
         <div className="flex items-center justify-between px-5 h-12 border-b border-[rgba(0,0,0,0.12)] shrink-0">
-          <span className="text-[13px] font-mono uppercase tracking-[0.18em] text-[#333] select-none">{t.apps.badge.name}</span>
+          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.badge.name}</span>
           <PushButton size="sm" variant="dark" onClick={handleReset}>[ {t.reset} ]</PushButton>
         </div>
 
-        <div className="flex-1 overflow-y-auto flex flex-col pb-2">
-          {/* SHAPE */}
-          <Sec label="Shape" />
-          <div className="px-5 pb-1">
-            <label htmlFor="svg-upload"
-              className="flex items-center justify-center h-8 border border-[#bbbbbe] rounded text-[11px] font-mono tracking-[0.06em] text-[#555] cursor-pointer hover:bg-black/5 transition-colors select-none"
-            >
-              {svgName ?? "Upload SVG"}
-            </label>
-            <input type="file" id="svg-upload" accept=".svg" className="hidden" onChange={handleSvgUpload} />
-          </div>
-          <div className="border-b border-[rgba(0,0,0,0.06)]">
-            <Row><DragParam label="Depth"  value={depth}     min={0.5} max={10}  step={0.1}  onChange={updateDepth} /></Row>
-            <Row><DragParam label="Bevel"  value={bevel}     min={0}   max={2}   step={0.05} onChange={updateBevel} /></Row>
-            {hasLayers && <Row><DragParam label="Layer" value={layerStep} min={0} max={1} step={0.01} onChange={updateLayerStep} /></Row>}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+
+          {/* Shape */}
+          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.badge.shape}</span>
+            <PushButton variant="dark" className="w-full text-center" onClick={() => fileInputRef.current?.click()}>
+              [ {svgName ?? t.badge.uploadSvg} ]
+            </PushButton>
+            <input ref={fileInputRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
+            <DragParam label={t.badge.depth}  value={depth}     min={0.5} max={10} step={0.1}  defaultValue={DEF.depth}     onChange={updateDepth} />
+            <DragParam label={t.badge.bevel}  value={bevel}     min={0}   max={2}  step={0.05} defaultValue={DEF.bevel}     onChange={updateBevel} />
+            {hasLayers && <DragParam label={t.badge.layer} value={layerStep} min={0} max={1} step={0.01} defaultValue={DEF.layerStep} onChange={updateLayerStep} />}
           </div>
 
-          {/* CUSTOMIZE */}
-          <Sec label="Customize" />
-          <div className="border-b border-[rgba(0,0,0,0.06)]">
-            <Row><ColorRow label="Color" value={color}   onChange={updateColor} /></Row>
-            <Row><ColorRow label="BG"    value={bgColor} onChange={updateBgColor} /></Row>
-            <Row><DragParam label="Exposure"   value={exposure}  min={0.1} max={4}  step={0.05} onChange={updateExposure} /></Row>
-            <Row><DragParam label="Saturation" value={globalSat} min={0}   max={3}  step={0.05} onChange={updateGlobalSat} /></Row>
+          {/* Customize */}
+          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.badge.customize}</span>
+            <ColorRow label={t.shader.color1} value={color}   onChange={updateColor} />
+            <ColorRow label={t.shader.bgColor} value={bgColor} onChange={updateBgColor} />
+            <DragParam label={t.badge.exposure}   value={exposure}  min={0.1} max={4} step={0.05} defaultValue={DEF.exposure}  onChange={updateExposure} />
+            <DragParam label={t.badge.saturation} value={globalSat} min={0}   max={3} step={0.05} defaultValue={DEF.globalSat} onChange={updateGlobalSat} />
           </div>
 
-          {/* MATCAP */}
-          <Sec label="Matcap" />
-          <div className="border-b border-[rgba(0,0,0,0.06)]">
-            <Row><DragParam label="Rotation"   value={rotation}   min={0}   max={360} step={1}    onChange={updateRotation} /></Row>
-            <Row><DragParam label="Brightness" value={brightness} min={0.1} max={3}   step={0.05} onChange={updateBrightness} /></Row>
-            <Row><DragParam label="Contrast"   value={contrast}   min={0.1} max={3}   step={0.05} onChange={updateContrast} /></Row>
-            <Row><DragParam label="Saturation" value={saturation} min={0}   max={3}   step={0.05} onChange={updateSaturation} /></Row>
-            <Row><DragParam label="Warp"       value={warp}       min={0}   max={1}   step={0.02} onChange={updateWarp} /></Row>
+          {/* Matcap */}
+          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.badge.matcap}</span>
+            <DragParam label={t.badge.rotation}   value={rotation}   min={0}   max={360} step={1}    defaultValue={DEF.rotation}   onChange={updateRotation} />
+            <DragParam label={t.badge.brightness}  value={brightness} min={0.1} max={3}   step={0.05} defaultValue={DEF.brightness} onChange={updateBrightness} />
+            <DragParam label={t.badge.contrast}    value={contrast}   min={0.1} max={3}   step={0.05} defaultValue={DEF.contrast}   onChange={updateContrast} />
+            <DragParam label={t.badge.saturation}  value={saturation} min={0}   max={3}   step={0.05} defaultValue={DEF.saturation} onChange={updateSaturation} />
+            <DragParam label={t.badge.warp}        value={warp}       min={0}   max={1}   step={0.02} defaultValue={DEF.warp}       onChange={updateWarp} />
           </div>
 
-          {/* DETAIL */}
-          <Sec label="Detail" />
-          <div className="border-b border-[rgba(0,0,0,0.06)]">
-            <Row><DragParam label="Tile" value={tile} min={1} max={30}  step={1}    onChange={updateTile} /></Row>
-            <Row><DragParam label="Bump" value={bump} min={0} max={1.5} step={0.05} onChange={updateBump} /></Row>
+          {/* Detail */}
+          <div className="px-5 py-4 flex flex-col gap-3">
+            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.badge.detail}</span>
+            <DragParam label={t.badge.tile} value={tile} min={1} max={30}  step={1}    defaultValue={DEF.tile} onChange={updateTile} />
+            <DragParam label={t.badge.bump} value={bump} min={0} max={1.5} step={0.05} defaultValue={DEF.bump} onChange={updateBump} />
           </div>
+
         </div>
 
         {/* footer */}
         <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
-          <PushButton variant="dark" className="w-full justify-center" onClick={handleDownload}>
+          <PushButton variant="dark" className="w-full text-center" onClick={handleDownload}>
             [ {t.download} ]
           </PushButton>
         </div>

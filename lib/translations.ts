@@ -280,6 +280,28 @@ export interface Translations {
     exportCodeTitle: string;
   };
 
+  // Badge page
+  badge: {
+    uploadSvg: string;
+    uploadPrompt: string;
+    shape: string;
+    customize: string;
+    matcap: string;
+    detail: string;
+    frontView: string;
+    depth: string;
+    bevel: string;
+    layer: string;
+    exposure: string;
+    rotation: string;
+    bump: string;
+    tile: string;
+    warp: string;
+    brightness: string;
+    contrast: string;
+    saturation: string;
+  };
+
   // Easing page
   easing: {
     duration: string;
@@ -587,6 +609,27 @@ const ja: Translations = {
     exportCodeTitle: "コード出力 — グロウシェーダー",
   },
 
+  badge: {
+    uploadSvg: "SVGをアップロード",
+    uploadPrompt: "SVGをアップロードして開始",
+    shape: "シェイプ",
+    customize: "カスタマイズ",
+    matcap: "マットキャップ",
+    detail: "ディテール",
+    frontView: "正面",
+    depth: "深さ",
+    bevel: "ベベル",
+    layer: "レイヤー間隔",
+    exposure: "露出",
+    rotation: "回転",
+    bump: "バンプ",
+    tile: "タイル",
+    warp: "ワープ",
+    brightness: "明るさ",
+    contrast: "コントラスト",
+    saturation: "彩度",
+  },
+
   easing: {
     duration: "デュレーション",
     presets: "プリセット",
@@ -891,6 +934,27 @@ const en: Translations = {
     background: "Background",
     transparent: "Transparent BG",
     exportCodeTitle: "Code Export — Glow Shader",
+  },
+
+  badge: {
+    uploadSvg: "Upload SVG",
+    uploadPrompt: "Upload SVG to start",
+    shape: "Shape",
+    customize: "Customize",
+    matcap: "Matcap",
+    detail: "Detail",
+    frontView: "Front View",
+    depth: "Depth",
+    bevel: "Bevel",
+    layer: "Layer Step",
+    exposure: "Exposure",
+    rotation: "Rotation",
+    bump: "Bump",
+    tile: "Tile",
+    warp: "Warp",
+    brightness: "Brightness",
+    contrast: "Contrast",
+    saturation: "Saturation",
   },
 
   easing: {

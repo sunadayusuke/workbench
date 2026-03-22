@@ -10,7 +10,7 @@ import { downloadCanvas } from "@/lib/canvas-download";
 
 /* ── defaults ─────────────────────────────────── */
 const DEF = {
-  depth: 1.6, bevel: 0.5,
+  depth: 1.6, bevel: 0.5, layerStep: 0.08,
   color: "#ffffff", bgColor: "#0d0d0d",
   exposure: 1.6, globalSat: 1.0,
   brightness: 1.0, contrast: 1.0, saturation: 1.0,
@@ -32,7 +32,7 @@ type SceneState = {
   matcapTex: any; detailTex: any;
   mats: any[]; svgGroup: any | null;
   svgContent: string;
-  depth: number; bevel: number;
+  depth: number; bevel: number; layerStep: number;
   uniforms: { uRotation: any; uBrightness: any; uContrast: any; uSaturation: any; uWarp: any };
   initCamPos: any | null;
 };
@@ -63,7 +63,9 @@ export default function BadgePage() {
   const [rotation,   setRotation]   = useState(DEF.rotation);
   const [tile,       setTile]       = useState(DEF.tile);
   const [bump,       setBump]       = useState(DEF.bump);
+  const [layerStep,  setLayerStep]  = useState(DEF.layerStep);
   const [svgName,    setSvgName]    = useState<string | null>(null);
+  const [hasLayers,  setHasLayers]  = useState(false);
   const [frontAnim,  setFrontAnim]  = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
 
@@ -103,10 +105,36 @@ export default function BadgePage() {
       .makeScale(sf, sf, 1)
       .multiply(new THREE.Matrix4().makeTranslation(-cx, cy, 0));
 
+    /* per-shape bbox for overlap detection (SVG coords, before normalisation) */
+    const shapeBBoxes = allShapes.map((sh: any) => {
+      let x0=Infinity, y0=Infinity, x1=-Infinity, y1=-Infinity;
+      for (const pt of sh.getPoints(12)) {
+        if (pt.x < x0) x0=pt.x; if (pt.x > x1) x1=pt.x;
+        if (pt.y < y0) y0=pt.y; if (pt.y > y1) y1=pt.y;
+      }
+      return { x0, y0, x1, y1 };
+    });
+    const bboxOverlap = (a: any, b: any) =>
+      !(a.x1 < b.x0 || b.x1 < a.x0 || a.y1 < b.y0 || b.y1 < a.y0);
+
+    /* assign Z level: 0 unless bbox overlaps a previous shape */
+    const zLevels: number[] = [];
+    for (let i = 0; i < allShapes.length; i++) {
+      let level = 0;
+      for (let j = 0; j < i; j++) {
+        if (bboxOverlap(shapeBBoxes[i], shapeBBoxes[j]))
+          level = Math.max(level, zLevels[j] + 1);
+      }
+      zLevels.push(level);
+    }
+    setHasLayers(zLevels.some((l: number) => l > 0));
+    const Z_STEP = s.layerStep;
+
     const grp = new THREE.Group();
     const d   = s.depth, bv = s.bevel;
 
-    for (const shape of allShapes) {
+    for (let si = 0; si < allShapes.length; si++) {
+      const shape = allShapes[si];
       const pts = shape.getPoints(20).map((p: any) => new THREE.Vector2(p.x, -p.y));
       const fl  = new THREE.Shape(pts);
       for (const h of shape.holes)
@@ -118,6 +146,7 @@ export default function BadgePage() {
         bevelSegments: 8, curveSegments: 24,
       });
       geo.applyMatrix4(nm);
+      if (zLevels[si] > 0) geo.translate(0, 0, zLevels[si] * Z_STEP);
       geo.computeVertexNormals();
       geo.computeBoundingBox();
       const bb  = geo.boundingBox!;
@@ -244,7 +273,7 @@ export default function BadgePage() {
         matcapTex, detailTex,
         mats: [], svgGroup: null,
         svgContent: "",
-        depth: DEF.depth, bevel: DEF.bevel,
+        depth: DEF.depth, bevel: DEF.bevel, layerStep: DEF.layerStep,
         uniforms,
         initCamPos: null,
       };
@@ -402,6 +431,10 @@ export default function BadgePage() {
     setBump(v); bumpRef.current = v;
     if (sc.current) for (const m of sc.current.mats) m.bumpScale = v;
   }, []);
+  const updateLayerStep = useCallback((v: number) => {
+    setLayerStep(v);
+    if (sc.current) { sc.current.layerStep = v; buildFromSVG(); }
+  }, [buildFromSVG]);
 
   /* ── SVG upload ───────────────────────────────── */
   const handleSvgUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -436,6 +469,7 @@ export default function BadgePage() {
     setTile(DEF.tile);             sc.current?.detailTex?.repeat.set(DEF.tile, DEF.tile);
     setBump(DEF.bump);   bumpRef.current = DEF.bump;
     if (sc.current) for (const m of sc.current.mats) m.bumpScale = DEF.bump;
+    setLayerStep(DEF.layerStep); if (sc.current) sc.current.layerStep = DEF.layerStep;
     buildFromSVG();
   }, [buildFromSVG]);
 
@@ -490,8 +524,9 @@ export default function BadgePage() {
             <input type="file" id="svg-upload" accept=".svg" className="hidden" onChange={handleSvgUpload} />
           </div>
           <div className="border-b border-[rgba(0,0,0,0.06)]">
-            <Row><DragParam label="Depth" value={depth} min={0.5} max={10}  step={0.1}  onChange={updateDepth} /></Row>
-            <Row><DragParam label="Bevel" value={bevel} min={0}   max={2}   step={0.05} onChange={updateBevel} /></Row>
+            <Row><DragParam label="Depth"  value={depth}     min={0.5} max={10}  step={0.1}  onChange={updateDepth} /></Row>
+            <Row><DragParam label="Bevel"  value={bevel}     min={0}   max={2}   step={0.05} onChange={updateBevel} /></Row>
+            {hasLayers && <Row><DragParam label="Layer" value={layerStep} min={0} max={1} step={0.01} onChange={updateLayerStep} /></Row>}
           </div>
 
           {/* CUSTOMIZE */}

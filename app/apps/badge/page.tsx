@@ -8,9 +8,7 @@ import { ColorRow } from "@/components/ui/color-row";
 import { useLanguage } from "@/lib/i18n";
 import { downloadCanvas } from "@/lib/canvas-download";
 import { useClipboard } from "@/hooks/use-clipboard";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /* ── defaults ─────────────────────────────────── */
 const DEF = {
@@ -212,13 +210,13 @@ export default function BadgePage() {
   const [hasLayers,  setHasLayers]  = useState(false);
   const [frontAnim,  setFrontAnim]  = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [exportCode, setExportCode] = useState("");
-  const [isExporting, setIsExporting] = useState(false);
+  const { copy, copied } = useClipboard();
   const [showOutputMenu, setShowOutputMenu] = useState(false);
   const [isExportingGLB, setIsExportingGLB] = useState(false);
   const outputFooterRef = useRef<HTMLDivElement>(null);
-  const { copy, copied } = useClipboard();
 
   colorRef.current    = color;
   bumpRef.current     = bump;
@@ -601,21 +599,43 @@ export default function BadgePage() {
     if (canvasRef.current) downloadCanvas(canvasRef.current, "badge.png");
   }, []);
 
-  /* ── export ───────────────────────────────────── */
-  const handleExport = useCallback(async () => {
-    if (!sc.current?.svgContent) return;
+  /* ── export helpers ───────────────────────────── */
+  const buildCode = useCallback(async () => {
+    if (!sc.current?.svgContent) return null;
+    return generateExportCode(
+      { depth, bevel, layerStep, color, bgColor, exposure, globalSat, brightness, contrast, saturation, warp, rotation, tile, bump },
+      sc.current.svgContent,
+    );
+  }, [depth, bevel, layerStep, color, bgColor, exposure, globalSat, brightness, contrast, saturation, warp, rotation, tile, bump]);
+
+  const handleExportCopy = useCallback(async () => {
     setIsExporting(true);
     try {
-      const code = await generateExportCode(
-        { depth, bevel, layerStep, color, bgColor, exposure, globalSat, brightness, contrast, saturation, warp, rotation, tile, bump },
-        sc.current.svgContent,
-      );
+      const code = await buildCode();
+      if (!code) return;
       setExportCode(code);
       setShowExport(true);
     } finally {
       setIsExporting(false);
     }
-  }, [depth, bevel, layerStep, color, bgColor, exposure, globalSat, brightness, contrast, saturation, warp, rotation, tile, bump]);
+  }, [buildCode]);
+
+  const handleExportDownload = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const code = await buildCode();
+      if (!code) return;
+      const blob = new Blob([code], { type: "text/html" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `${svgName?.replace(/\.svg$/i, "") || "badge"}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [buildCode, svgName]);
 
   /* ── GLB export ───────────────────────────────── */
   const handleExportGLB = useCallback(async () => {
@@ -794,7 +814,7 @@ export default function BadgePage() {
               <button
                 className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none disabled:opacity-40 border-b border-[rgba(255,255,255,0.06)]"
                 disabled={isExporting}
-                onClick={() => { setShowOutputMenu(false); handleExport(); }}
+                onClick={() => { setShowOutputMenu(false); handleExportCopy(); }}
               >
                 {isExporting ? "..." : "HTML — Code"}
               </button>
@@ -825,12 +845,16 @@ export default function BadgePage() {
             <button className="px-4 py-2 bg-transparent border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#242424]/5 transition-colors select-none" onClick={() => setShowExport(false)}>
               [ {t.close} ]
             </button>
+            <button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={() => handleExportDownload()}>
+              [ .html ]
+            </button>
             <button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={() => copy(exportCode)}>
               [ {copied ? t.copied : t.copy} ]
             </button>
           </div>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

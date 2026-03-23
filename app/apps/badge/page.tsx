@@ -216,6 +216,7 @@ export default function BadgePage() {
   const [exportCode, setExportCode] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [showOutputMenu, setShowOutputMenu] = useState(false);
+  const [isExportingGLB, setIsExportingGLB] = useState(false);
   const outputFooterRef = useRef<HTMLDivElement>(null);
   const { copy, copied } = useClipboard();
 
@@ -616,6 +617,81 @@ export default function BadgePage() {
     }
   }, [depth, bevel, layerStep, color, bgColor, exposure, globalSat, brightness, contrast, saturation, warp, rotation, tile, bump]);
 
+  /* ── GLB export ───────────────────────────────── */
+  const handleExportGLB = useCallback(async () => {
+    const s = sc.current;
+    if (!s?.svgGroup) return;
+    setIsExportingGLB(true);
+    try {
+      const THREE = await import("three");
+      const { GLTFExporter } = await import("three/examples/jsm/exporters/GLTFExporter.js");
+
+      // MeshMatcapMaterial is non-standard GLTF → use MeshStandardMaterial
+      // so matcap/bump textures embed properly in the GLB
+      const origMats: any[] = [];
+      const cleanMats: any[] = [];
+      s.svgGroup.traverse((obj: any) => {
+        if (!obj.isMesh) return;
+        origMats.push(obj.material);
+        const m = new THREE.MeshStandardMaterial({
+          map:       s.matcapTex,   // matcap as base color → embeds in GLB
+          bumpMap:   s.detailTex,
+          bumpScale: bumpRef.current,
+          color:     new THREE.Color(colorRef.current),
+          roughness: 0.4,
+          metalness: 0.6,
+        });
+        cleanMats.push(m);
+        obj.material = m;
+      });
+
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        s.svgGroup,
+        async (result: ArrayBuffer | { [key: string]: unknown }) => {
+          if (!(result instanceof ArrayBuffer)) return;
+          // Restore original materials
+          let i = 0;
+          s.svgGroup!.traverse((obj: any) => {
+            if (!obj.isMesh) return;
+            obj.material = origMats[i];
+            cleanMats[i].dispose();
+            i++;
+          });
+
+          const JSZip = (await import("jszip")).default;
+          const zip  = new JSZip();
+          const base = svgName?.replace(/\.svg$/i, "") || "badge";
+          zip.file(`${base}.glb`, result);
+
+          const matcapBlob = await fetch("/badge/matcap.png").then(r => r.blob());
+          zip.file("matcap.png", matcapBlob);
+          if (bumpRef.current > 0) {
+            const noiseBlob = await fetch("/badge/noise.png").then(r => r.blob());
+            zip.file("noise.png", noiseBlob);
+          }
+
+          const zipBlob = await zip.generateAsync({ type: "blob" });
+          const url     = URL.createObjectURL(zipBlob);
+          const a       = document.createElement("a");
+          a.href        = url;
+          a.download    = `${base}.zip`;
+          a.click();
+          URL.revokeObjectURL(url);
+          setIsExportingGLB(false);
+        },
+        (err: unknown) => {
+          console.error("GLTFExporter error", err);
+          setIsExportingGLB(false);
+        },
+        { binary: true },
+      );
+    } catch (e) {
+      console.error(e);
+      setIsExportingGLB(false);
+    }
+  }, [svgName]);
+
   useEffect(() => {
     if (!showOutputMenu) return;
     const handler = (e: PointerEvent) => {
@@ -716,11 +792,18 @@ export default function BadgePage() {
                 PNG — Image
               </button>
               <button
-                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none disabled:opacity-40"
+                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none disabled:opacity-40 border-b border-[rgba(255,255,255,0.06)]"
                 disabled={isExporting}
                 onClick={() => { setShowOutputMenu(false); handleExport(); }}
               >
                 {isExporting ? "..." : "HTML — Code"}
+              </button>
+              <button
+                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none disabled:opacity-40"
+                disabled={isExportingGLB}
+                onClick={() => { setShowOutputMenu(false); handleExportGLB(); }}
+              >
+                {isExportingGLB ? "..." : "GLB — 3D"}
               </button>
             </div>
           )}

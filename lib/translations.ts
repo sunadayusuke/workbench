@@ -52,6 +52,7 @@ export interface Translations {
     midColor: string;
     bgColor: string;
     transparentBg: string;
+    output: string;
   };
 
   // Color page
@@ -108,6 +109,7 @@ export interface Translations {
     blur: string;
     grain: string;
     exportCodeTitle: string;
+    output: string;
   };
 
   // Gradient page
@@ -196,6 +198,7 @@ export interface Translations {
     blendAdditive: string;
     blendSubtractive: string;
     blendMultiply: string;
+    output: string;
   };
 
   // Dotmap page
@@ -278,6 +281,7 @@ export interface Translations {
     background: string;
     transparent: string;
     exportCodeTitle: string;
+    output: string;
   };
 
   // Badge page
@@ -418,6 +422,7 @@ const ja: Translations = {
     blur: "ぼかし",
     grain: "グレイン",
     exportCodeTitle: "コード出力 — 軽量版HTML",
+    output: "出力",
   },
 
   gradient: {
@@ -504,6 +509,7 @@ const ja: Translations = {
     blendAdditive: "加算",
     blendSubtractive: "減算",
     blendMultiply: "乗算",
+    output: "出力",
   },
 
   dotmap: {
@@ -595,6 +601,7 @@ const ja: Translations = {
     midColor: "中間色",
     bgColor: "背景色",
     transparentBg: "背景透過",
+    output: "出力",
   },
 
   aurora: {
@@ -608,6 +615,7 @@ const ja: Translations = {
     background: "背景",
     transparent: "背景透過",
     exportCodeTitle: "コード出力 — グロウシェーダー",
+    output: "出力",
   },
 
   badge: {
@@ -746,6 +754,7 @@ const en: Translations = {
     blur: "Blur",
     grain: "Grain",
     exportCodeTitle: "Code Export — Standalone HTML",
+    output: "Output",
   },
 
   gradient: {
@@ -832,6 +841,7 @@ const en: Translations = {
     blendAdditive: "Additive",
     blendSubtractive: "Subtractive",
     blendMultiply: "Multiply",
+    output: "Output",
   },
 
   dotmap: {
@@ -923,6 +933,7 @@ const en: Translations = {
     midColor: "Midtone",
     bgColor: "Background",
     transparentBg: "Transparent BG",
+    output: "Output",
   },
 
   aurora: {
@@ -936,6 +947,7 @@ const en: Translations = {
     background: "Background",
     transparent: "Transparent BG",
     exportCodeTitle: "Code Export — Glow Shader",
+    output: "Output",
   },
 
   badge: {

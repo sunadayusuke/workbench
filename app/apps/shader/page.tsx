@@ -20,6 +20,7 @@ import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 import { ColorRow } from "@/components/ui/color-row";
 import { AppTopBar } from "@/components/app-top-bar";
+import { downloadCanvas } from "@/lib/canvas-download";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -177,7 +178,7 @@ function generateExportCode(params: ShaderParams): string {
 <script>
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
@@ -229,6 +230,8 @@ export default function ShaderPage() {
   const [params, setParams] = useState<ShaderParams>({ ...DEFAULT_PARAMS, colors: [...DEFAULT_PARAMS.colors] });
   const [showExport, setShowExport] = useState(false);
   const [exportCode, setExportCode] = useState("");
+  const [showOutputMenu, setShowOutputMenu] = useState(false);
+  const outputFooterRef = useRef<HTMLDivElement>(null);
   const { copy, copied } = useClipboard();
 
   const updateParam = useCallback(<K extends keyof ShaderParams>(key: K, value: ShaderParams[K]) => {
@@ -267,7 +270,7 @@ export default function ShaderPage() {
       const scene = new THREE.Scene();
       const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
       const container = containerRef.current;
-      const renderer = new THREE.WebGLRenderer({ antialias: false });
+      const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
       renderer.setSize(container.clientWidth, container.clientHeight);
       container.appendChild(renderer.domElement);
@@ -367,6 +370,21 @@ export default function ShaderPage() {
     setShowExport(true);
   }, [params]);
 
+  const handleDownload = useCallback(() => {
+    const canvas = containerRef.current?.querySelector("canvas");
+    if (canvas) downloadCanvas(canvas as HTMLCanvasElement, "shader.png");
+  }, []);
+
+  useEffect(() => {
+    if (!showOutputMenu) return;
+    const handler = (e: PointerEvent) => {
+      if (outputFooterRef.current?.contains(e.target as Node)) return;
+      setShowOutputMenu(false);
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [showOutputMenu]);
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d8d8da]">
       {/* Canvas area */}
@@ -455,11 +473,31 @@ export default function ShaderPage() {
 
         </div>
 
-        {/* Export button */}
-        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
-          <PushButton variant="dark" className="w-full text-center" onClick={handleExport}>
-            [ {t.exportCode} ]
+        {/* footer */}
+        <div ref={outputFooterRef} className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] relative">
+          <PushButton
+            variant="dark"
+            className="w-full text-center"
+            onClick={() => setShowOutputMenu(v => !v)}
+          >
+            [ {t.shader.output} ]
           </PushButton>
+          {showOutputMenu && (
+            <div className="absolute bottom-[calc(100%-4px)] left-5 right-5 bg-[#1e1e1e] border border-[rgba(255,255,255,0.1)] rounded-[6px] overflow-hidden [box-shadow:0_-4px_16px_rgba(0,0,0,0.4)]">
+              <button
+                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none border-b border-[rgba(255,255,255,0.06)]"
+                onClick={() => { setShowOutputMenu(false); handleDownload(); }}
+              >
+                PNG — Image
+              </button>
+              <button
+                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none"
+                onClick={() => { setShowOutputMenu(false); handleExport(); }}
+              >
+                HTML — Code
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 

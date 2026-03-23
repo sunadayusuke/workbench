@@ -598,6 +598,8 @@ export default function ParticlePage() {
   const [debouncedText, setDebouncedText] = useState("");
   const [showExport, setShowExport] = useState(false);
   const [exportCode, setExportCode] = useState("");
+  const [showOutputMenu, setShowOutputMenu] = useState(false);
+  const outputFooterRef = useRef<HTMLDivElement>(null);
   const { copy, copied } = useClipboard();
   const [svgFileName, setSvgFileName] = useState("");
   const svgInputRef = useRef<HTMLInputElement>(null);
@@ -950,6 +952,16 @@ export default function ParticlePage() {
     setShowExport(true);
   }, [params]);
 
+  useEffect(() => {
+    if (!showOutputMenu) return;
+    const handler = (e: PointerEvent) => {
+      if (outputFooterRef.current?.contains(e.target as Node)) return;
+      setShowOutputMenu(false);
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [showOutputMenu]);
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d8d8da]">
       {/* Canvas area */}
@@ -1210,13 +1222,30 @@ export default function ParticlePage() {
         </div>
 
         {/* Action buttons */}
-        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] flex flex-col gap-2">
-          <PushButton variant="dark" className="w-full text-center" onClick={handleExport}>
-            [ {t.particle.exportCode} ]
+        <div ref={outputFooterRef} className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] relative">
+          <PushButton
+            variant="dark"
+            className="w-full text-center"
+            onClick={() => setShowOutputMenu(v => !v)}
+          >
+            [ {t.particle.output} ]
           </PushButton>
-          <PushButton variant="light" className="w-full text-center" onClick={handleDownload}>
-            [ {t.particle.exportImage} ]
-          </PushButton>
+          {showOutputMenu && (
+            <div className="absolute bottom-[calc(100%-4px)] left-5 right-5 bg-[#1e1e1e] border border-[rgba(255,255,255,0.1)] rounded-[6px] overflow-hidden [box-shadow:0_-4px_16px_rgba(0,0,0,0.4)]">
+              <button
+                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none border-b border-[rgba(255,255,255,0.06)]"
+                onClick={() => { setShowOutputMenu(false); handleDownload(); }}
+              >
+                PNG — Image
+              </button>
+              <button
+                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none"
+                onClick={() => { setShowOutputMenu(false); handleExport(); }}
+              >
+                HTML — Code
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 

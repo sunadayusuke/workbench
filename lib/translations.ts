@@ -300,6 +300,7 @@ export interface Translations {
     brightness: string;
     contrast: string;
     saturation: string;
+    output: string;
   };
 
   // Easing page
@@ -628,6 +629,7 @@ const ja: Translations = {
     brightness: "明るさ",
     contrast: "コントラスト",
     saturation: "彩度",
+    output: "出力",
   },
 
   easing: {
@@ -955,6 +957,7 @@ const en: Translations = {
     brightness: "Brightness",
     contrast: "Contrast",
     saturation: "Saturation",
+    output: "Output",
   },
 
   easing: {

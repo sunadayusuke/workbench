@@ -215,6 +215,8 @@ export default function BadgePage() {
   const [showExport, setShowExport] = useState(false);
   const [exportCode, setExportCode] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [showOutputMenu, setShowOutputMenu] = useState(false);
+  const outputFooterRef = useRef<HTMLDivElement>(null);
   const { copy, copied } = useClipboard();
 
   colorRef.current    = color;
@@ -614,6 +616,16 @@ export default function BadgePage() {
     }
   }, [depth, bevel, layerStep, color, bgColor, exposure, globalSat, brightness, contrast, saturation, warp, rotation, tile, bump]);
 
+  useEffect(() => {
+    if (!showOutputMenu) return;
+    const handler = (e: PointerEvent) => {
+      if (outputFooterRef.current?.contains(e.target as Node)) return;
+      setShowOutputMenu(false);
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [showOutputMenu]);
+
   return (
     <div className="fixed inset-0 flex flex-col md:flex-row bg-[#d8d8da]">
       {/* canvas */}
@@ -686,19 +698,32 @@ export default function BadgePage() {
         </div>
 
         {/* footer */}
-        <div className="shrink-0 px-5 py-3 border-t border-[rgba(0,0,0,0.12)] flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#999] shrink-0 w-14">Image</span>
-            <PushButton variant="dark" size="sm" className="flex-1 text-center whitespace-nowrap" onClick={handleDownload}>
-              [ PNG ]
-            </PushButton>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#999] shrink-0 w-14">Code</span>
-            <PushButton variant="dark" size="sm" className="flex-1 text-center whitespace-nowrap" disabled={isExporting || !svgName} onClick={handleExport}>
-              [ {isExporting ? "..." : t.exportCode} ]
-            </PushButton>
-          </div>
+        <div ref={outputFooterRef} className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] relative">
+          <PushButton
+            variant="dark"
+            className="w-full text-center"
+            disabled={!svgName}
+            onClick={() => setShowOutputMenu(v => !v)}
+          >
+            [ {t.badge.output} ]
+          </PushButton>
+          {showOutputMenu && (
+            <div className="absolute bottom-[calc(100%-4px)] left-5 right-5 bg-[#1e1e1e] border border-[rgba(255,255,255,0.1)] rounded-[6px] overflow-hidden [box-shadow:0_-4px_16px_rgba(0,0,0,0.4)]">
+              <button
+                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none border-b border-[rgba(255,255,255,0.06)]"
+                onClick={() => { setShowOutputMenu(false); handleDownload(); }}
+              >
+                PNG — Image
+              </button>
+              <button
+                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none disabled:opacity-40"
+                disabled={isExporting}
+                onClick={() => { setShowOutputMenu(false); handleExport(); }}
+              >
+                {isExporting ? "..." : "HTML — Code"}
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 

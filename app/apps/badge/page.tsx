@@ -7,6 +7,10 @@ import { DragParam } from "@/components/ui/drag-param";
 import { ColorRow } from "@/components/ui/color-row";
 import { useLanguage } from "@/lib/i18n";
 import { downloadCanvas } from "@/lib/canvas-download";
+import { useClipboard } from "@/hooks/use-clipboard";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 /* ── defaults ─────────────────────────────────── */
 const DEF = {
@@ -28,6 +32,154 @@ type SceneState = {
   uniforms: { uRotation: any; uBrightness: any; uContrast: any; uSaturation: any; uWarp: any };
   initCamPos: any | null;
 };
+
+/* ── texture → base64 helper ──────────────────── */
+async function fetchAsBase64(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+}
+
+/* ── export code generator ────────────────────── */
+async function generateExportCode(params: {
+  depth: number; bevel: number; layerStep: number;
+  color: string; bgColor: string;
+  exposure: number; globalSat: number;
+  brightness: number; contrast: number; saturation: number;
+  warp: number; rotation: number;
+  tile: number; bump: number;
+}, svgContent: string): Promise<string> {
+  const [matcapB64, noiseB64] = await Promise.all([
+    fetchAsBase64('/badge/matcap.png'),
+    fetchAsBase64('/badge/noise.png'),
+  ]);
+
+  const P = JSON.stringify(params);
+  const SVG = JSON.stringify(svgContent);
+  const MATCAP = JSON.stringify(matcapB64);
+  const NOISE = JSON.stringify(noiseB64);
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Badge</title>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.182.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.182.0/examples/jsm/"}}<\/script>
+</head>
+<body style="margin:0;overflow:hidden;background:${params.bgColor};">
+<script type="module">
+import * as THREE from 'three';
+import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const P = ${P};
+const SVG = ${SVG};
+const MATCAP_B64 = ${MATCAP};
+const NOISE_B64 = ${NOISE};
+
+(async () => {
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setClearColor(new THREE.Color(P.bgColor));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = P.exposure;
+  renderer.setSize(innerWidth, innerHeight);
+  document.body.appendChild(renderer.domElement);
+  if (P.globalSat !== 1) renderer.domElement.style.filter = \`saturate(\${P.globalSat})\`;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 2000);
+  camera.position.set(0, 0, 200);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.07;
+  controls.autoRotate = true; controls.autoRotateSpeed = 1.2;
+  controls.addEventListener('start', () => { controls.autoRotate = false; });
+
+  const uniforms = {
+    uRotation:   { value: P.rotation * Math.PI / 180 },
+    uBrightness: { value: P.brightness },
+    uContrast:   { value: P.contrast },
+    uSaturation: { value: P.saturation },
+    uWarp:       { value: P.warp },
+  };
+
+  const texLoader = new THREE.TextureLoader();
+  const matcapTex = await new Promise(res => texLoader.load(MATCAP_B64, res));
+  matcapTex.colorSpace = THREE.SRGBColorSpace;
+  const detailTex = await new Promise(res => texLoader.load(NOISE_B64, res));
+  detailTex.colorSpace = THREE.NoColorSpace;
+  detailTex.wrapS = detailTex.wrapT = THREE.RepeatWrapping;
+  detailTex.repeat.set(P.tile, P.tile);
+
+  const mats = []; let svgGroup = null;
+
+  function buildFromSVG() {
+    if (svgGroup) { scene.remove(svgGroup); svgGroup.traverse(o => { if (o.isMesh) o.geometry.dispose(); }); mats.length = 0; }
+    const svgData = new SVGLoader().parse(SVG);
+    const allShapes = svgData.paths.flatMap(p => SVGLoader.createShapes(p));
+    let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+    for (const sh of allShapes) for (const pt of sh.getPoints(12)) { if (pt.x<minX) minX=pt.x; if (pt.x>maxX) maxX=pt.x; if (pt.y<minY) minY=pt.y; if (pt.y>maxY) maxY=pt.y; }
+    if (!isFinite(minX)) { minX=0; minY=0; maxX=100; maxY=100; }
+    const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+    const sf=40/Math.max(maxX-minX,maxY-minY,1);
+    const nm=new THREE.Matrix4().makeScale(sf,sf,1).multiply(new THREE.Matrix4().makeTranslation(-cx,cy,0));
+    const shapeBBoxes=allShapes.map(sh=>{ let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity; for(const pt of sh.getPoints(12)){if(pt.x<x0)x0=pt.x;if(pt.x>x1)x1=pt.x;if(pt.y<y0)y0=pt.y;if(pt.y>y1)y1=pt.y;} return{x0,y0,x1,y1}; });
+    const bboxOverlap=(a,b)=>!(a.x1<b.x0||b.x1<a.x0||a.y1<b.y0||b.y1<a.y0);
+    const zLevels=[];
+    for(let i=0;i<allShapes.length;i++){let level=0;for(let j=0;j<i;j++)if(bboxOverlap(shapeBBoxes[i],shapeBBoxes[j]))level=Math.max(level,zLevels[j]+1);zLevels.push(level);}
+    const grp=new THREE.Group();
+    for(let si=0;si<allShapes.length;si++){
+      const shape=allShapes[si];
+      const pts=shape.getPoints(20).map(p=>new THREE.Vector2(p.x,-p.y));
+      const fl=new THREE.Shape(pts);
+      for(const h of shape.holes)fl.holes.push(new THREE.Path(h.getPoints(20).map(p=>new THREE.Vector2(p.x,-p.y))));
+      const geo=new THREE.ExtrudeGeometry([fl],{depth:Math.max(0.05,P.depth-P.bevel*2),bevelEnabled:P.bevel>0,bevelThickness:P.bevel,bevelSize:P.bevel/sf,bevelSegments:8,curveSegments:24});
+      geo.applyMatrix4(nm);
+      if(zLevels[si]>0)geo.translate(0,0,zLevels[si]*P.layerStep);
+      geo.computeVertexNormals(); geo.computeBoundingBox();
+      const bb=geo.boundingBox,pos=geo.attributes.position;
+      const uvs=new Float32Array(pos.count*2);
+      const ext=Math.max(bb.max.x-bb.min.x,bb.max.y-bb.min.y)||1;
+      for(let i=0;i<pos.count;i++){uvs[i*2]=(pos.getX(i)-bb.min.x)/ext;uvs[i*2+1]=(pos.getY(i)-bb.min.y)/ext;}
+      geo.setAttribute('uv',new THREE.BufferAttribute(uvs,2));
+      const mat=new THREE.MeshMatcapMaterial({matcap:matcapTex,color:new THREE.Color(P.color)});
+      mat.bumpMap=detailTex; mat.bumpScale=P.bump;
+      mat.onBeforeCompile=shader=>{
+        shader.uniforms.uRotation=uniforms.uRotation; shader.uniforms.uBrightness=uniforms.uBrightness;
+        shader.uniforms.uContrast=uniforms.uContrast; shader.uniforms.uSaturation=uniforms.uSaturation; shader.uniforms.uWarp=uniforms.uWarp;
+        mat.userData.shader=shader;
+        shader.fragmentShader=shader.fragmentShader
+          .replace("#define MATCAP","#define MATCAP\\nuniform float uRotation; uniform float uBrightness; uniform float uContrast; uniform float uSaturation; uniform float uWarp;")
+          .replace("\\tvec2 uv = vec2( dot( x, normal ), dot( y, normal ) ) * 0.495 + 0.5;","\\tvec2 uvRaw = vec2( dot( x, normal ), dot( y, normal ) ) * 0.495 + 0.5;\\n\\tfloat cosA = cos(uRotation), sinA = sin(uRotation);\\n\\tvec2 mc0 = uvRaw - 0.5;\\n\\tvec2 uv = vec2(cosA*mc0.x - sinA*mc0.y, sinA*mc0.x + cosA*mc0.y) + 0.5;\\n\\tuv = clamp(uv + uWarp * vec2(sin(uv.y*8.0), cos(uv.x*8.0)) * 0.06, 0.0, 1.0);")
+          .replace("\\t\\tvec4 matcapColor = texture2D( matcap, uv );","\\t\\tvec4 matcapColor = texture2D( matcap, uv );\\n\\t\\tmatcapColor.rgb *= uBrightness;\\n\\t\\tmatcapColor.rgb = (matcapColor.rgb - 0.5) * uContrast + 0.5;\\n\\t\\tfloat mcLum = dot(matcapColor.rgb, vec3(0.299,0.587,0.114));\\n\\t\\tmatcapColor.rgb = mix(vec3(mcLum), matcapColor.rgb, uSaturation);\\n\\t\\tmatcapColor.rgb = clamp(matcapColor.rgb, 0.0, 1.0);");
+      };
+      mats.push(mat); grp.add(new THREE.Mesh(geo,mat));
+    }
+    const box=new THREE.Box3().setFromObject(grp);
+    grp.position.sub(box.getCenter(new THREE.Vector3()));
+    scene.add(grp); svgGroup=grp;
+    const size=box.getSize(new THREE.Vector3()), dim=Math.max(size.x,size.y,size.z), dist=dim*2.2;
+    camera.position.set(dist*0.18,dist*0.22,dist); camera.lookAt(0,0,0);
+    controls.minDistance=dim*0.6; controls.maxDistance=dim*6; controls.target.set(0,0,0); controls.update();
+  }
+
+  buildFromSVG();
+
+  scene.onBeforeRender = () => {
+    renderer.toneMappingExposure = P.exposure;
+    for (const m of mats) { const sh = m.userData.shader; if (!sh) continue; sh.uniforms.uRotation.value=uniforms.uRotation.value; sh.uniforms.uBrightness.value=uniforms.uBrightness.value; sh.uniforms.uContrast.value=uniforms.uContrast.value; sh.uniforms.uSaturation.value=uniforms.uSaturation.value; sh.uniforms.uWarp.value=uniforms.uWarp.value; }
+  };
+
+  window.addEventListener('resize', () => { renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+  (function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); })();
+})();
+<\/script>
+</body>
+</html>`;
+}
 
 export default function BadgePage() {
   const { t } = useLanguage();
@@ -60,6 +212,10 @@ export default function BadgePage() {
   const [hasLayers,  setHasLayers]  = useState(false);
   const [frontAnim,  setFrontAnim]  = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [exportCode, setExportCode] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
+  const { copy, copied } = useClipboard();
 
   colorRef.current    = color;
   bumpRef.current     = bump;
@@ -442,6 +598,22 @@ export default function BadgePage() {
     if (canvasRef.current) downloadCanvas(canvasRef.current, "badge.png");
   }, []);
 
+  /* ── export ───────────────────────────────────── */
+  const handleExport = useCallback(async () => {
+    if (!sc.current?.svgContent) return;
+    setIsExporting(true);
+    try {
+      const code = await generateExportCode(
+        { depth, bevel, layerStep, color, bgColor, exposure, globalSat, brightness, contrast, saturation, warp, rotation, tile, bump },
+        sc.current.svgContent,
+      );
+      setExportCode(code);
+      setShowExport(true);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [depth, bevel, layerStep, color, bgColor, exposure, globalSat, brightness, contrast, saturation, warp, rotation, tile, bump]);
+
   return (
     <div className="fixed inset-0 flex flex-col md:flex-row bg-[#d8d8da]">
       {/* canvas */}
@@ -514,12 +686,43 @@ export default function BadgePage() {
         </div>
 
         {/* footer */}
-        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
-          <PushButton variant="dark" className="w-full text-center" onClick={handleDownload}>
-            [ {t.download} ]
-          </PushButton>
+        <div className="shrink-0 px-5 py-3 border-t border-[rgba(0,0,0,0.12)] flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#999] shrink-0 w-14">Image</span>
+            <PushButton variant="dark" size="sm" className="flex-1 text-center whitespace-nowrap" onClick={handleDownload}>
+              [ PNG ]
+            </PushButton>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#999] shrink-0 w-14">Code</span>
+            <PushButton variant="dark" size="sm" className="flex-1 text-center whitespace-nowrap" disabled={isExporting || !svgName} onClick={handleExport}>
+              [ {isExporting ? "..." : t.exportCode} ]
+            </PushButton>
+          </div>
         </div>
       </aside>
+
+      {/* Export dialog */}
+      <Dialog open={showExport} onOpenChange={setShowExport}>
+        <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
+          <DialogHeader>
+            <DialogTitle>{t.apps.badge.name} — Export</DialogTitle>
+          </DialogHeader>
+          <textarea
+            className="flex-1 min-h-[300px] rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)]"
+            value={exportCode}
+            readOnly
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <button className="px-4 py-2 bg-transparent border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#242424]/5 transition-colors select-none" onClick={() => setShowExport(false)}>
+              [ {t.close} ]
+            </button>
+            <button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={() => copy(exportCode)}>
+              [ {copied ? t.copied : t.copy} ]
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

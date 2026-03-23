@@ -669,7 +669,7 @@ export default function AuroraPage() {
       {/* Canvas area */}
       <div
         ref={canvasAreaRef}
-        className="h-[55vh] md:h-auto md:flex-1 relative overflow-hidden"
+        className="h-[40vh] md:h-auto md:flex-1 relative overflow-hidden"
         onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
         onDragLeave={() => setIsDragOver(false)}
         onDrop={e => {

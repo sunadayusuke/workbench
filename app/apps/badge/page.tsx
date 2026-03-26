@@ -12,13 +12,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 
 /* ── defaults ─────────────────────────────────── */
 const DEF = {
-  depth: 1.6, bevel: 0.5, layerStep: 0.08,
+  depth: 1.6, bevel: 0.5, layerStep: 0,
   color: "#ffffff", bgColor: "#0d0d0d",
   exposure: 1.6, globalSat: 1.0,
   brightness: 1.0, contrast: 1.0, saturation: 1.0,
   warp: 0.0, rotation: 0,
   tile: 5, bump: 0.4,
 };
+
+/* ── per-path types ───────────────────────────── */
+type PathInfo = { name: string };
+type PathOverride = { color: string; bump: number; depth: number; bevel: number; layerStep: number };
+type ColorBumpMode = "global" | "paths";
 
 /* ── scene state type ─────────────────────────── */
 type SceneState = {
@@ -29,6 +34,7 @@ type SceneState = {
   depth: number; bevel: number; layerStep: number;
   uniforms: { uRotation: any; uBrightness: any; uContrast: any; uSaturation: any; uWarp: any };
   initCamPos: any | null;
+  shapeToPathIndex: number[];
 };
 
 /* ── texture → base64 helper ──────────────────── */
@@ -187,9 +193,10 @@ export default function BadgePage() {
   const sc        = useRef<SceneState | null>(null);
 
   /* current-value refs (read inside Three.js closures) */
-  const colorRef     = useRef(DEF.color);
-  const bumpRef      = useRef(DEF.bump);
-  const exposureRef  = useRef(DEF.exposure);
+  const colorRef        = useRef(DEF.color);
+  const bumpRef         = useRef(DEF.bump);
+  const exposureRef     = useRef(DEF.exposure);
+  const colorBumpModeRef = useRef<ColorBumpMode>("global");
 
   /* React state (UI only) */
   const [depth,      setDepth]      = useState(DEF.depth);
@@ -206,6 +213,12 @@ export default function BadgePage() {
   const [tile,       setTile]       = useState(DEF.tile);
   const [bump,       setBump]       = useState(DEF.bump);
   const [layerStep,  setLayerStep]  = useState(DEF.layerStep);
+  const [pathInfos,      setPathInfos]      = useState<PathInfo[]>([]);
+  const [pathOverrides,  setPathOverrides]  = useState<PathOverride[]>([]);
+  const [colorBumpMode,  setColorBumpMode]  = useState<ColorBumpMode>("global");
+  const pathOverridesRef  = useRef<PathOverride[]>([]);
+  const prevSvgContentRef = useRef<string>("");
+
   const [svgName,    setSvgName]    = useState<string | null>(null);
   const [hasLayers,  setHasLayers]  = useState(false);
   const [frontAnim,  setFrontAnim]  = useState(false);
@@ -235,8 +248,30 @@ export default function BadgePage() {
       s.mats.length = 0;
     }
 
-    const svgData   = new SVGLoader().parse(s.svgContent);
-    const allShapes = svgData.paths.flatMap((p: any) => SVGLoader.createShapes(p));
+    const svgData = new SVGLoader().parse(s.svgContent);
+    const shapeToPathIndex: number[] = [];
+    const allShapes: any[] = [];
+    svgData.paths.forEach((p: any, pi: number) => {
+      SVGLoader.createShapes(p).forEach((sh: any) => {
+        shapeToPathIndex.push(pi);
+        allShapes.push(sh);
+      });
+    });
+    s.shapeToPathIndex = shapeToPathIndex;
+
+    // Reset path infos/overrides only on fresh SVG load
+    const isNewSvg = s.svgContent !== prevSvgContentRef.current;
+    if (isNewSvg) {
+      prevSvgContentRef.current = s.svgContent;
+      const infos: PathInfo[] = svgData.paths.map((p: any, pi: number) => ({
+        name: p.userData?.node?.getAttribute("id") || `Path ${pi + 1}`,
+      }));
+      setPathInfos(infos);
+      pathOverridesRef.current = [];
+      setPathOverrides([]);
+      colorBumpModeRef.current = "global";
+      setColorBumpMode("global");
+    }
 
     let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
     for (const sh of allShapes)
@@ -272,12 +307,19 @@ export default function BadgePage() {
       zLevels.push(level);
     }
     setHasLayers(zLevels.some((l: number) => l > 0));
-    const Z_STEP = s.layerStep;
 
     const grp = new THREE.Group();
-    const d   = s.depth, bv = s.bevel;
 
     for (let si = 0; si < allShapes.length; si++) {
+      const pi  = shapeToPathIndex[si];
+      const ov  = colorBumpModeRef.current === "paths" ? pathOverridesRef.current[pi] : null;
+      const d          = ov?.depth  ?? s.depth;
+      const bv         = ov?.bevel  ?? s.bevel;
+      const matColor   = ov?.color  ?? colorRef.current;
+      const matBump    = ov?.bump   ?? bumpRef.current;
+      const globalLayerZ = zLevels[si] * s.layerStep;
+      const pathZOffset  = ov ? ov.layerStep : 0;
+
       const shape = allShapes[si];
       const pts = shape.getPoints(20).map((p: any) => new THREE.Vector2(p.x, -p.y));
       const fl  = new THREE.Shape(pts);
@@ -290,7 +332,8 @@ export default function BadgePage() {
         bevelSegments: 8, curveSegments: 24,
       });
       geo.applyMatrix4(nm);
-      if (zLevels[si] > 0) geo.translate(0, 0, zLevels[si] * Z_STEP);
+      const totalZ = globalLayerZ + pathZOffset;
+      if (totalZ !== 0) geo.translate(0, 0, totalZ);
       geo.computeVertexNormals();
       geo.computeBoundingBox();
       const bb  = geo.boundingBox!;
@@ -305,10 +348,10 @@ export default function BadgePage() {
 
       const mat = new THREE.MeshMatcapMaterial({
         matcap: s.matcapTex,
-        color: new THREE.Color(colorRef.current),
+        color: new THREE.Color(matColor),
       });
       mat.bumpMap   = s.detailTex;
-      mat.bumpScale = bumpRef.current;
+      mat.bumpScale = matBump;
 
       const su = s.uniforms;
       mat.onBeforeCompile = (shader: any) => {
@@ -345,14 +388,16 @@ export default function BadgePage() {
 
     const size = box.getSize(new THREE.Vector3());
     const dim  = Math.max(size.x, size.y, size.z);
-    const dist = dim * 2.2;
-    s.camera.position.set(dist*0.18, dist*0.22, dist);
-    s.camera.lookAt(0, 0, 0);
     s.controls.minDistance = dim * 0.6;
     s.controls.maxDistance = dim * 6;
-    s.controls.target.set(0, 0, 0);
+    if (isNewSvg || !s.initCamPos) {
+      const dist = dim * 2.2;
+      s.camera.position.set(dist*0.18, dist*0.22, dist);
+      s.camera.lookAt(0, 0, 0);
+      s.controls.target.set(0, 0, 0);
+      s.initCamPos = s.camera.position.clone();
+    }
     s.controls.update();
-    s.initCamPos = s.camera.position.clone();
   }, []);
 
   /* ── Three.js init ────────────────────────────── */
@@ -414,6 +459,7 @@ export default function BadgePage() {
         depth: DEF.depth, bevel: DEF.bevel, layerStep: DEF.layerStep,
         uniforms,
         initCamPos: null,
+        shapeToPathIndex: [],
       };
 
       scene.onBeforeRender = () => {
@@ -515,7 +561,8 @@ export default function BadgePage() {
 
   const updateColor = useCallback((v: string) => {
     setColor(v); colorRef.current = v;
-    if (sc.current) for (const m of sc.current.mats) m.color?.set(v);
+    if (sc.current && colorBumpModeRef.current === "global")
+      for (const m of sc.current.mats) m.color?.set(v);
   }, []);
 
   const updateBgColor = useCallback((v: string) => {
@@ -551,10 +598,61 @@ export default function BadgePage() {
   }, []);
   const updateBump = useCallback((v: number) => {
     setBump(v); bumpRef.current = v;
-    if (sc.current) for (const m of sc.current.mats) m.bumpScale = v;
+    if (sc.current && colorBumpModeRef.current === "global")
+      for (const m of sc.current.mats) m.bumpScale = v;
   }, []);
   const updateLayerStep = useCallback((v: number) => {
     setLayerStep(v); if (sc.current) { sc.current.layerStep = v; buildFromSVG(); }
+  }, [buildFromSVG]);
+
+  /* ── per-path override handlers ──────────────── */
+  const switchColorBumpMode = useCallback((mode: ColorBumpMode) => {
+    colorBumpModeRef.current = mode;
+    setColorBumpMode(mode);
+    if (mode === "paths") {
+      // Initialize each path with the current global values if not set
+      const next = pathInfos.map((_, pi) =>
+        pathOverridesRef.current[pi] ?? {
+          color: colorRef.current,
+          bump: bumpRef.current,
+          depth: sc.current?.depth ?? DEF.depth,
+          bevel: sc.current?.bevel ?? DEF.bevel,
+          layerStep: 0,
+        }
+      );
+      pathOverridesRef.current = next;
+      setPathOverrides([...next]);
+      // Apply per-path colors to mats
+      if (sc.current) sc.current.mats.forEach((m, si) => {
+        const pi = sc.current!.shapeToPathIndex[si];
+        const ov = next[pi];
+        if (ov) { m.color?.set(ov.color); m.bumpScale = ov.bump; }
+      });
+    } else {
+      // Revert all mats to global
+      if (sc.current) for (const m of sc.current.mats) {
+        m.color?.set(colorRef.current);
+        m.bumpScale = bumpRef.current;
+      }
+    }
+  }, [pathInfos]);
+
+  const updatePathOverride = useCallback((pi: number, field: keyof PathOverride, val: string | number) => {
+    const newOverrides = [...pathOverridesRef.current];
+    newOverrides[pi] = { ...newOverrides[pi], [field]: val };
+    pathOverridesRef.current = newOverrides;
+    setPathOverrides([...newOverrides]);
+    if (field === "color") {
+      if (sc.current) sc.current.mats.forEach((m, si) => {
+        if (sc.current!.shapeToPathIndex[si] === pi) m.color?.set(val as string);
+      });
+    } else if (field === "bump") {
+      if (sc.current) sc.current.mats.forEach((m, si) => {
+        if (sc.current!.shapeToPathIndex[si] === pi) m.bumpScale = val as number;
+      });
+    } else {
+      buildFromSVG();
+    }
   }, [buildFromSVG]);
 
   /* ── SVG upload ───────────────────────────────── */
@@ -591,6 +689,10 @@ export default function BadgePage() {
     setBump(DEF.bump); bumpRef.current = DEF.bump;
     if (sc.current) for (const m of sc.current.mats) m.bumpScale = DEF.bump;
     setLayerStep(DEF.layerStep); if (sc.current) sc.current.layerStep = DEF.layerStep;
+    pathOverridesRef.current = [];
+    setPathOverrides([]);
+    colorBumpModeRef.current = "global";
+    setColorBumpMode("global");
     buildFromSVG();
   }, [buildFromSVG]);
 
@@ -760,18 +862,68 @@ export default function BadgePage() {
               [ {svgName ?? t.badge.uploadSvg} ]
             </PushButton>
             <input ref={fileInputRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
-            <DragParam label={t.badge.depth}  value={depth}     min={0.5} max={10} step={0.1}  defaultValue={DEF.depth}     onChange={updateDepth} />
-            <DragParam label={t.badge.bevel}  value={bevel}     min={0}   max={2}  step={0.05} defaultValue={DEF.bevel}     onChange={updateBevel} />
-            {hasLayers && <DragParam label={t.badge.layer} value={layerStep} min={0} max={1} step={0.01} defaultValue={DEF.layerStep} onChange={updateLayerStep} />}
           </div>
 
           {/* Customize */}
           <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
             <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.badge.customize}</span>
-            <ColorRow label={t.shader.color1} value={color}   onChange={updateColor} />
             <ColorRow label={t.shader.bgColor} value={bgColor} onChange={updateBgColor} />
             <DragParam label={t.badge.exposure}   value={exposure}  min={0.1} max={4} step={0.05} defaultValue={DEF.exposure}  onChange={updateExposure} />
             <DragParam label={t.badge.saturation} value={globalSat} min={0}   max={3} step={0.05} defaultValue={DEF.globalSat} onChange={updateGlobalSat} />
+            <DragParam label={t.badge.tile} value={tile} min={1} max={30} step={1} defaultValue={DEF.tile} onChange={updateTile} />
+
+            {/* Color / Bump with global ↔ paths toggle */}
+            <div className="border-t border-[rgba(0,0,0,0.08)] -mx-5" />
+            <div className="flex flex-col gap-1.5">
+              <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-[#999] select-none">Color / Bump</span>
+              {pathInfos.length > 0 && (
+                <div className="flex gap-1">
+                  <PushButton size="sm" variant={colorBumpMode === "global" ? "accent" : "light"} onClick={() => switchColorBumpMode("global")}>[ {t.badge.global} ]</PushButton>
+                  <PushButton size="sm" variant={colorBumpMode === "paths"  ? "accent" : "light"} onClick={() => switchColorBumpMode("paths")}>[ {t.badge.paths} ]</PushButton>
+                </div>
+              )}
+            </div>
+
+            {colorBumpMode === "global" ? (
+              <>
+                <ColorRow label={t.shader.color1} value={color} onChange={updateColor} />
+                <DragParam label={t.badge.bump}   value={bump}      min={0}   max={1.5} step={0.05} defaultValue={DEF.bump}      onChange={updateBump} />
+                <DragParam label={t.badge.depth}  value={depth}     min={0.5} max={10}  step={0.1}  defaultValue={DEF.depth}     onChange={updateDepth} />
+                <DragParam label={t.badge.bevel}  value={bevel}     min={0}   max={2}   step={0.05} defaultValue={DEF.bevel}     onChange={updateBevel} />
+                {hasLayers && <DragParam label={t.badge.layer} value={layerStep} min={-1} max={1} step={0.01} defaultValue={DEF.layerStep} onChange={updateLayerStep} />}
+              </>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {pathInfos.map((info, pi) => (
+                  <div key={pi} className="flex flex-col gap-1.5">
+                    <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#666] select-none truncate">{info.name}</span>
+                    <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
+                      <ColorRow label={t.shader.color1}
+                        value={pathOverrides[pi]?.color ?? color}
+                        onChange={v => updatePathOverride(pi, "color", v)} />
+                      <DragParam label={t.badge.bump}
+                        value={pathOverrides[pi]?.bump ?? bump}
+                        min={0} max={1.5} step={0.05} defaultValue={DEF.bump}
+                        onChange={v => updatePathOverride(pi, "bump", v)} />
+                      <DragParam label={t.badge.depth}
+                        value={pathOverrides[pi]?.depth ?? depth}
+                        min={0.5} max={10} step={0.1} defaultValue={DEF.depth}
+                        onChange={v => updatePathOverride(pi, "depth", v)} />
+                      <DragParam label={t.badge.bevel}
+                        value={pathOverrides[pi]?.bevel ?? bevel}
+                        min={0} max={2} step={0.05} defaultValue={DEF.bevel}
+                        onChange={v => updatePathOverride(pi, "bevel", v)} />
+                      {hasLayers && (
+                        <DragParam label={t.badge.layer}
+                          value={pathOverrides[pi]?.layerStep ?? layerStep}
+                          min={-1} max={1} step={0.01} defaultValue={DEF.layerStep}
+                          onChange={v => updatePathOverride(pi, "layerStep", v)} />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Matcap */}
@@ -782,13 +934,6 @@ export default function BadgePage() {
             <DragParam label={t.badge.contrast}    value={contrast}   min={0.1} max={3}   step={0.05} defaultValue={DEF.contrast}   onChange={updateContrast} />
             <DragParam label={t.badge.saturation}  value={saturation} min={0}   max={3}   step={0.05} defaultValue={DEF.saturation} onChange={updateSaturation} />
             <DragParam label={t.badge.warp}        value={warp}       min={0}   max={1}   step={0.02} defaultValue={DEF.warp}       onChange={updateWarp} />
-          </div>
-
-          {/* Detail */}
-          <div className="px-5 py-4 flex flex-col gap-3">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.badge.detail}</span>
-            <DragParam label={t.badge.tile} value={tile} min={1} max={30}  step={1}    defaultValue={DEF.tile} onChange={updateTile} />
-            <DragParam label={t.badge.bump} value={bump} min={0} max={1.5} step={0.05} defaultValue={DEF.bump} onChange={updateBump} />
           </div>
 
         </div>

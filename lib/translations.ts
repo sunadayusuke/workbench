@@ -292,6 +292,8 @@ export interface Translations {
     customize: string;
     matcap: string;
     detail: string;
+    paths: string;
+    global: string;
     frontView: string;
     depth: string;
     bevel: string;
@@ -625,6 +627,8 @@ const ja: Translations = {
     customize: "カスタマイズ",
     matcap: "マットキャップ",
     detail: "ディテール",
+    paths: "パス",
+    global: "全体",
     frontView: "正面",
     depth: "深さ",
     bevel: "ベベル",
@@ -957,6 +961,8 @@ const en: Translations = {
     customize: "Customize",
     matcap: "Matcap",
     detail: "Detail",
+    paths: "Paths",
+    global: "Global",
     frontView: "Front View",
     depth: "Depth",
     bevel: "Bevel",

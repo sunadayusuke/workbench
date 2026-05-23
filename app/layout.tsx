@@ -35,6 +35,11 @@ export default function RootLayout({
       <body>
         <Providers>{children}</Providers>
         <Analytics />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if(document.getElementById('bmc-wjs'))return;var s=document.createElement('script');s.id='bmc-wjs';s.src='https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js';s.setAttribute('data-name','BMC-Widget');s.setAttribute('data-cfasync','false');s.setAttribute('data-id','yusukesunada');s.setAttribute('data-description','Support me on Buy me a coffee!');s.setAttribute('data-message','');s.setAttribute('data-color','#000000');s.setAttribute('data-position','left');s.setAttribute('data-x_margin','18');s.setAttribute('data-y_margin','18');s.onload=function(){if(document.readyState!=='loading'){window.dispatchEvent(new Event('DOMContentLoaded'));document.dispatchEvent(new Event('DOMContentLoaded',{bubbles:true}));}};document.body.appendChild(s);})();`,
+          }}
+        />
       </body>
     </html>
   );

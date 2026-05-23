@@ -415,3 +415,13 @@
       2px 2px 8px 0px rgba(0, 0, 0, 0.40);
   }
 }
+
+/* BMC widget: force all logo/icon paths to white so they're visible on the black button. */
+#bmc-wbtn img,
+#bmc-wbtn svg {
+  filter: brightness(0) invert(1);
+}
+#bmc-wbtn svg path {
+  fill: #ffffff !important;
+}
+

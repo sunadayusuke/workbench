@@ -320,10 +320,6 @@ export interface Translations {
     privacy: string;
     format: string;
     formatOriginal: string;
-    quality: string;
-    pngLossless: string;
-    resize: string;
-    noResize: string;
     clearAll: string;
     downloadAll: string;
     zipping: string;
@@ -340,7 +336,6 @@ export interface Translations {
     errorUnsupported: string;
     errorDecodeFailed: string;
     errorEncodeFailed: string;
-    errorAvifNotSupported: string;
     errorTooManyFiles: string;
   };
 
@@ -684,15 +679,11 @@ const ja: Translations = {
     dropHint: "画像をドラッグ&ドロップ",
     clickHint: "またはクリックしてファイルを選択",
     selectFiles: "ファイル選択",
-    supportedTypes: "JPEG · PNG · WebP · AVIF · GIF",
+    supportedTypes: "JPEG · PNG · WebP · GIF",
     maxNote: "1ファイル100MBまで / 最大50枚",
     privacy: "全処理はブラウザ内で完結します。画像は外部サーバーに一切送信されません。",
     format: "出力形式",
     formatOriginal: "元の形式",
-    quality: "品質",
-    pngLossless: "PNGはロスレス。品質スライダーは無効。",
-    resize: "リサイズ（長辺）",
-    noResize: "なし",
     clearAll: "全クリア",
     downloadAll: "全てZIPダウンロード",
     zipping: "ZIP圧縮中...",
@@ -709,7 +700,6 @@ const ja: Translations = {
     errorUnsupported: "非対応形式",
     errorDecodeFailed: "デコード失敗",
     errorEncodeFailed: "エンコード失敗",
-    errorAvifNotSupported: "このブラウザはAVIF書き出し非対応",
     errorTooManyFiles: "ファイル数上限（50枚）に達しました",
   },
 
@@ -1052,15 +1042,11 @@ const en: Translations = {
     dropHint: "Drag & drop images",
     clickHint: "or click to select files",
     selectFiles: "Select files",
-    supportedTypes: "JPEG · PNG · WebP · AVIF · GIF",
+    supportedTypes: "JPEG · PNG · WebP · GIF",
     maxNote: "Up to 100MB per file / max 50 images",
     privacy: "All processing happens inside your browser. Images are never uploaded to any server.",
     format: "Output Format",
     formatOriginal: "Original",
-    quality: "Quality",
-    pngLossless: "PNG is lossless. Quality slider has no effect.",
-    resize: "Resize (long side)",
-    noResize: "None",
     clearAll: "Clear All",
     downloadAll: "Download All (ZIP)",
     zipping: "Zipping...",
@@ -1077,7 +1063,6 @@ const en: Translations = {
     errorUnsupported: "Unsupported format",
     errorDecodeFailed: "Decode failed",
     errorEncodeFailed: "Encode failed",
-    errorAvifNotSupported: "AVIF encode not supported in this browser",
     errorTooManyFiles: "Max files reached (50)",
   },
 

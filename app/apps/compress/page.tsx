@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/lib/i18n";
 import { AppTopBar } from "@/components/app-top-bar";
 import { PushButton } from "@/components/ui/push-button";
-import { DragParam } from "@/components/ui/drag-param";
 import {
   Select,
   SelectContent,
@@ -14,14 +13,13 @@ import {
 } from "@/components/ui/select";
 import { downloadBlob } from "@/lib/canvas-download";
 
-type Format = "webp" | "jpeg" | "png" | "avif" | "original";
+type Format = "webp" | "jpeg" | "png" | "original";
 type Status = "pending" | "processing" | "done" | "error";
 type ErrorKey =
   | "errorTooLarge"
   | "errorUnsupported"
   | "errorDecodeFailed"
   | "errorEncodeFailed"
-  | "errorAvifNotSupported"
   | "errorTooManyFiles";
 
 interface Item {
@@ -34,20 +32,22 @@ interface Item {
   outputUrl?: string;
   outputExt?: string;
   outputSize?: number;
-  outputWidth?: number;
-  outputHeight?: number;
   errorKey?: ErrorKey;
 }
 
 const MAX_SIZE = 100 * 1024 * 1024; // 100MB
 const MAX_FILES = 50;
-const SUPPORTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"];
+const SUPPORTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+// JPEG/WebP lossy quality (0-1 scale for canvas.toBlob).
+const JPEG_WEBP_QUALITY = 0.8;
+// PNG palette color count for UPNG quantization. Lower = smaller files, more
+// posterization. ~128 targets TinyPNG-like ~70% reduction on typical inputs.
+const PNG_COLORS = 128;
 
 const EXT_MAP: Record<Exclude<Format, "original">, string> = {
   webp: "webp",
   jpeg: "jpg",
   png: "png",
-  avif: "avif",
 };
 
 function fmtBytes(b: number): string {
@@ -67,17 +67,14 @@ function resolveOutputFormat(format: Format, fileType: string): Exclude<Format, 
   const t = fileType.toLowerCase();
   if (t.includes("png")) return "png";
   if (t.includes("webp")) return "webp";
-  if (t.includes("avif")) return "avif";
   if (t.includes("jpeg") || t.includes("jpg")) return "jpeg";
-  return "png"; // gif → png fallback
+  return "png"; // gif/avif → png fallback
 }
 
 async function encodeImage(
   file: File,
   format: Format,
-  quality: number,
-  maxLongSide: number,
-): Promise<{ blob: Blob; ext: string; width: number; height: number }> {
+): Promise<{ blob: Blob; ext: string }> {
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file);
@@ -86,52 +83,49 @@ async function encodeImage(
     throw err;
   }
 
-  let width = bitmap.width;
-  let height = bitmap.height;
-  if (maxLongSide > 0 && Math.max(width, height) > maxLongSide) {
-    const ratio = maxLongSide / Math.max(width, height);
-    width = Math.max(1, Math.round(width * ratio));
-    height = Math.max(1, Math.round(height * ratio));
-  }
-
   const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     bitmap.close();
     throw new Error("errorEncodeFailed");
   }
-  ctx.drawImage(bitmap, 0, 0, width, height);
+  ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
 
   const outFormat = resolveOutputFormat(format, file.type);
-  const mime = `image/${outFormat}`;
-  const useQuality = outFormat !== "png";
-  const q = useQuality ? quality / 100 : undefined;
+  let blob: Blob;
 
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob(resolve, mime, q);
-  });
-
-  if (!blob || blob.size === 0) {
-    if (outFormat === "avif") throw new Error("errorAvifNotSupported");
-    throw new Error("errorEncodeFailed");
+  if (outFormat === "png") {
+    // UPNG with color quantization — TinyPNG-style. quality 100 = lossless, lower
+    // values quantize to fewer palette colors (8-bit indexed PNG).
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const UPNG = (await import("upng-js")).default;
+    const buf = UPNG.encode([imgData.data.buffer], canvas.width, canvas.height, PNG_COLORS);
+    blob = new Blob([buf], { type: "image/png" });
+  } else {
+    const mime = `image/${outFormat}`;
+    const result = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, mime, JPEG_WEBP_QUALITY);
+    });
+    if (!result || result.size === 0) throw new Error("errorEncodeFailed");
+    blob = result;
   }
-  // toBlob silently falls back to image/png if the requested type is unsupported.
-  if (blob.type !== mime && outFormat === "avif") {
-    throw new Error("errorAvifNotSupported");
+
+  // In "original" mode the user wants compression without format change. Fall back
+  // to the source file when re-encoding can't beat the original size.
+  if (format === "original" && blob.size >= file.size) {
+    return { blob: file, ext: EXT_MAP[outFormat] };
   }
 
-  return { blob, ext: EXT_MAP[outFormat], width, height };
+  return { blob, ext: EXT_MAP[outFormat] };
 }
 
 export default function CompressPage() {
   const { t } = useLanguage();
   const [items, setItems] = useState<Item[]>([]);
-  const [format, setFormat] = useState<Format>("webp");
-  const [quality, setQuality] = useState(80);
-  const [maxLongSide, setMaxLongSide] = useState(0);
+  const [format, setFormat] = useState<Format>("original");
   const [isDragOver, setIsDragOver] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [topError, setTopError] = useState<ErrorKey | null>(null);
@@ -140,13 +134,13 @@ export default function CompressPage() {
   const itemsRef = useRef<Item[]>([]);
   itemsRef.current = items;
 
-  const paramsRef = useRef({ format, quality, maxLongSide });
-  paramsRef.current = { format, quality, maxLongSide };
+  const formatRef = useRef(format);
+  formatRef.current = format;
 
   const genRef = useRef(0);
   const isProcessingRef = useRef(false);
 
-  // Re-process when format/quality/resize changes — invalidate any prior outputs.
+  // Re-process when format changes — invalidate any prior outputs.
   useEffect(() => {
     genRef.current++;
     setItems((prev) =>
@@ -160,12 +154,10 @@ export default function CompressPage() {
           outputUrl: undefined,
           outputExt: undefined,
           outputSize: undefined,
-          outputWidth: undefined,
-          outputHeight: undefined,
         };
       }),
     );
-  }, [format, quality, maxLongSide]);
+  }, [format]);
 
   // Sequential processing queue.
   useEffect(() => {
@@ -180,14 +172,14 @@ export default function CompressPage() {
         if (!next) break;
 
         const myGen = genRef.current;
-        const p = paramsRef.current;
+        const currentFormat = formatRef.current;
 
         setItems((prev) =>
           prev.map((i) => (i.id === next.id ? { ...i, status: "processing" } : i)),
         );
 
         try {
-          const r = await encodeImage(next.file, p.format, p.quality, p.maxLongSide);
+          const r = await encodeImage(next.file, currentFormat);
           if (myGen !== genRef.current) continue;
           const outputUrl = URL.createObjectURL(r.blob);
           setItems((prev) =>
@@ -200,8 +192,6 @@ export default function CompressPage() {
                     outputUrl,
                     outputExt: r.ext,
                     outputSize: r.blob.size,
-                    outputWidth: r.width,
-                    outputHeight: r.height,
                   }
                 : i,
             ),
@@ -409,7 +399,7 @@ export default function CompressPage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             multiple
             className="hidden"
             onChange={handleSelect}
@@ -473,54 +463,10 @@ export default function CompressPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="original">{t.compress.formatOriginal}</SelectItem>
                 <SelectItem value="webp">WebP</SelectItem>
                 <SelectItem value="jpeg">JPEG</SelectItem>
                 <SelectItem value="png">PNG</SelectItem>
-                <SelectItem value="avif">AVIF</SelectItem>
-                <SelectItem value="original">{t.compress.formatOriginal}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Quality */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
-            <DragParam
-              label={t.compress.quality}
-              value={quality}
-              min={1}
-              max={100}
-              step={1}
-              defaultValue={80}
-              onChange={setQuality}
-              accent="orange"
-            />
-            {(format === "png" ||
-              (format === "original" &&
-                items.some((i) => i.file.type.includes("png")))) && (
-              <p className="text-[10px] font-mono text-[#999] leading-relaxed">
-                {t.compress.pngLossless}
-              </p>
-            )}
-          </div>
-
-          {/* Resize */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777]">
-              {t.compress.resize}
-            </span>
-            <Select
-              value={String(maxLongSide)}
-              onValueChange={(v) => setMaxLongSide(Number(v))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">{t.compress.noResize}</SelectItem>
-                <SelectItem value="1024">1024px</SelectItem>
-                <SelectItem value="1920">1920px</SelectItem>
-                <SelectItem value="2560">2560px</SelectItem>
-                <SelectItem value="3840">3840px</SelectItem>
               </SelectContent>
             </Select>
           </div>

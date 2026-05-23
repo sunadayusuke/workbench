@@ -26,6 +26,7 @@ export interface Translations {
     signal: { name: string; description: string };
     aurora: { name: string; description: string };
     badge: { name: string; description: string };
+    compress: { name: string; description: string };
   };
 
   // Signal page
@@ -309,6 +310,40 @@ export interface Translations {
     output: string;
   };
 
+  // Compress page
+  compress: {
+    dropHint: string;
+    clickHint: string;
+    selectFiles: string;
+    supportedTypes: string;
+    maxNote: string;
+    privacy: string;
+    format: string;
+    formatOriginal: string;
+    quality: string;
+    pngLossless: string;
+    resize: string;
+    noResize: string;
+    clearAll: string;
+    downloadAll: string;
+    zipping: string;
+    empty: string;
+    pending: string;
+    processingItem: string;
+    processingProgress: string;
+    before: string;
+    after: string;
+    reduction: string;
+    totals: string;
+    larger: string;
+    errorTooLarge: string;
+    errorUnsupported: string;
+    errorDecodeFailed: string;
+    errorEncodeFailed: string;
+    errorAvifNotSupported: string;
+    errorTooManyFiles: string;
+  };
+
   // Easing page
   easing: {
     duration: string;
@@ -371,6 +406,7 @@ const ja: Translations = {
     signal: { name: "シグナルノイズ", description: "ディザリングシグナルノイズジェネレーター" },
     aurora: { name: "シェイプシェーダー", description: "SVGシェイプにシェーダーを合成するツール" },
     badge: { name: "バッジジェネレーター", description: "SVGを3Dバッジに変換するツール" },
+    compress: { name: "コンプレッサー", description: "画像の圧縮・形式変換ツール" },
   },
 
   color: {
@@ -644,6 +680,39 @@ const ja: Translations = {
     output: "出力",
   },
 
+  compress: {
+    dropHint: "画像をドラッグ&ドロップ",
+    clickHint: "またはクリックしてファイルを選択",
+    selectFiles: "ファイル選択",
+    supportedTypes: "JPEG · PNG · WebP · AVIF · GIF",
+    maxNote: "1ファイル100MBまで / 最大50枚",
+    privacy: "全処理はブラウザ内で完結します。画像は外部サーバーに一切送信されません。",
+    format: "出力形式",
+    formatOriginal: "元の形式",
+    quality: "品質",
+    pngLossless: "PNGはロスレス。品質スライダーは無効。",
+    resize: "リサイズ（長辺）",
+    noResize: "なし",
+    clearAll: "全クリア",
+    downloadAll: "全てZIPダウンロード",
+    zipping: "ZIP圧縮中...",
+    empty: "ファイル未選択",
+    pending: "待機中",
+    processingItem: "処理中...",
+    processingProgress: "処理中",
+    before: "圧縮前",
+    after: "圧縮後",
+    reduction: "削減率",
+    totals: "合計",
+    larger: "(元より大)",
+    errorTooLarge: "サイズ超過（100MB上限）",
+    errorUnsupported: "非対応形式",
+    errorDecodeFailed: "デコード失敗",
+    errorEncodeFailed: "エンコード失敗",
+    errorAvifNotSupported: "このブラウザはAVIF書き出し非対応",
+    errorTooManyFiles: "ファイル数上限（50枚）に達しました",
+  },
+
   easing: {
     duration: "デュレーション",
     presets: "プリセット",
@@ -705,6 +774,7 @@ const en: Translations = {
     signal: { name: "Signal Noise", description: "Dithered signal noise generator" },
     aurora: { name: "Shape Shader", description: "Shader compositor over SVG shapes" },
     badge: { name: "Badge Generator", description: "Convert SVG to 3D badge" },
+    compress: { name: "Compress", description: "Image compression & format converter" },
   },
 
   color: {
@@ -976,6 +1046,39 @@ const en: Translations = {
     contrast: "Contrast",
     saturation: "Saturation",
     output: "Output",
+  },
+
+  compress: {
+    dropHint: "Drag & drop images",
+    clickHint: "or click to select files",
+    selectFiles: "Select files",
+    supportedTypes: "JPEG · PNG · WebP · AVIF · GIF",
+    maxNote: "Up to 100MB per file / max 50 images",
+    privacy: "All processing happens inside your browser. Images are never uploaded to any server.",
+    format: "Output Format",
+    formatOriginal: "Original",
+    quality: "Quality",
+    pngLossless: "PNG is lossless. Quality slider has no effect.",
+    resize: "Resize (long side)",
+    noResize: "None",
+    clearAll: "Clear All",
+    downloadAll: "Download All (ZIP)",
+    zipping: "Zipping...",
+    empty: "No files selected",
+    pending: "Pending",
+    processingItem: "Processing...",
+    processingProgress: "Processing",
+    before: "Before",
+    after: "After",
+    reduction: "Saved",
+    totals: "Totals",
+    larger: "(larger than original)",
+    errorTooLarge: "Too large (max 100MB)",
+    errorUnsupported: "Unsupported format",
+    errorDecodeFailed: "Decode failed",
+    errorEncodeFailed: "Encode failed",
+    errorAvifNotSupported: "AVIF encode not supported in this browser",
+    errorTooManyFiles: "Max files reached (50)",
   },
 
   easing: {

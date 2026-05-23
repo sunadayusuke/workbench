@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
 import { PushButton } from "@/components/ui/push-button";
 
-const APP_KEYS = ["color", "shader", "image", "easing", "gradient", "particle", "dotmap", "signal", "aurora", "badge"] as const;
+const APP_KEYS = ["color", "shader", "image", "compress", "easing", "gradient", "particle", "dotmap", "signal", "aurora", "badge"] as const;
 
 const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
   color:    "/apps/color",
   shader:   "/apps/shader",
   image:    "/apps/image",
+  compress: "/apps/compress",
   easing:   "/apps/easing",
   gradient: "/apps/gradient",
   particle: "/apps/particle",

@@ -480,10 +480,10 @@ export default function SignalPage() {
         </div>
 
         {/* Footer */}
-        <div ref={outputFooterRef} className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] relative">
+        <div ref={outputFooterRef} className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] relative flex justify-end md:block">
           <PushButton
             variant="dark"
-            className="w-full text-center"
+            className="md:w-full md:text-center"
             onClick={() => setShowOutputMenu(v => !v)}
           >
             [ {t.signal.output} ]

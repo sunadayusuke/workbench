@@ -424,4 +424,11 @@
 #bmc-wbtn svg path {
   fill: #ffffff !important;
 }
+/* Shrink BMC widget on mobile so it doesn't crowd sidebar action buttons. */
+@media (max-width: 768px) {
+  #bmc-wbtn {
+    transform: scale(0.65) !important;
+    transform-origin: bottom left !important;
+  }
+}
 

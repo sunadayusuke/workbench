@@ -1069,8 +1069,8 @@ export default function EasingPage() {
         </div>
 
         {/* Export button */}
-        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
-          <PushButton variant="dark" className="w-full text-center" onClick={() => setShowExport(true)}>
+        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] flex justify-end md:block">
+          <PushButton variant="dark" className="md:w-full md:text-center" onClick={() => setShowExport(true)}>
             [ {t.easing.exportCode} ]
           </PushButton>
         </div>

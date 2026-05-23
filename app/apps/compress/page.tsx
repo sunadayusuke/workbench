@@ -518,10 +518,10 @@ export default function CompressPage() {
         </div>
 
         {/* Footer: download all */}
-        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)]">
+        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] flex justify-end md:block">
           <PushButton
             variant="dark"
-            className="w-full text-center"
+            className="md:w-full md:text-center"
             onClick={handleDownloadAll}
             disabled={doneItems.length === 0 || isZipping}
           >

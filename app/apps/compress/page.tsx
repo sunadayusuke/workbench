@@ -361,7 +361,7 @@ export default function CompressPage() {
   const processedCount = items.filter((i) => i.status !== "pending" && i.status !== "processing").length;
 
   return (
-    <div className="fixed inset-0 flex flex-col md:flex-row bg-[#d8d8da]">
+    <div className="fixed inset-0 flex flex-col md:flex-row bg-wb-50">
       {/* Main area: drop zone + file list */}
       <div
         className="relative flex-1 min-h-0 flex flex-col"
@@ -379,22 +379,21 @@ export default function CompressPage() {
             className={[
               "w-full h-32 md:h-36 rounded-[14px] flex flex-col items-center justify-center gap-1.5",
               "border-2 border-dashed transition-colors select-none cursor-pointer",
-              "[box-shadow:inset_0_1px_3px_rgba(0,0,0,0.04)]",
               isDragOver
-                ? "border-[#e84a1b] bg-[rgba(232,74,27,0.06)]"
-                : "border-[#bbbbbe] bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] hover:border-[#888]",
+                ? "border-wb-green bg-[rgba(13,202,122,0.06)]"
+                : "border-wb-300 bg-wb-0 hover:border-wb-400",
             ].join(" ")}
           >
-            <span className="text-[13px] md:text-[15px] font-mono uppercase tracking-[0.18em] text-[#333]">
+            <span className="text-[14px] md:text-[15px] font-semibold text-wb-900">
               {t.compress.dropHint}
             </span>
-            <span className="text-[11px] font-mono text-[#777]">
+            <span className="text-[12px] text-wb-500">
               {t.compress.clickHint}
             </span>
-            <span className="text-[10px] font-mono text-[#888] mt-1 tracking-[0.08em]">
+            <span className="text-[12px] text-wb-400 mt-1">
               {t.compress.supportedTypes}
             </span>
-            <span className="text-[10px] font-mono text-[#999]">{t.compress.maxNote}</span>
+            <span className="text-[12px] text-wb-400">{t.compress.maxNote}</span>
           </button>
           <input
             ref={fileInputRef}
@@ -405,16 +404,16 @@ export default function CompressPage() {
             onChange={handleSelect}
           />
           {topError && (
-            <p className="mt-2 text-[11px] font-mono text-[#b54e2c]">
+            <p className="mt-2 text-[12px] text-wb-600">
               {t.compress[topError]}
             </p>
           )}
         </div>
 
         {/* File list */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 pb-6">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-4 md:px-6 pb-6">
           {items.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-[12px] font-mono uppercase tracking-[0.14em] text-[#999] select-none">
+            <div className="flex items-center justify-center h-32 text-[13px] text-wb-400 select-none">
               {t.compress.empty}
             </div>
           ) : (
@@ -437,29 +436,18 @@ export default function CompressPage() {
       </div>
 
       {/* Control panel */}
-      <aside className="flex-1 md:flex-none md:w-[320px] min-h-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col">
-        <div className="flex items-center justify-between px-5 h-12 border-b border-[rgba(0,0,0,0.12)] shrink-0">
-          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333]">
+      <aside className="relative flex-1 md:flex-none md:w-[320px] min-h-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col">
+        <div className="shrink-0 px-5 pt-6 pb-3">
+          <span className="text-[18px] font-medium text-wb-900 select-none">
             {t.apps.compress.name}
           </span>
-          <PushButton
-            size="sm"
-            variant="dark"
-            onClick={handleClear}
-            disabled={items.length === 0}
-          >
-            [ {t.compress.clearAll} ]
-          </PushButton>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
           {/* Format */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777]">
-              {t.compress.format}
-            </span>
+          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
             <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
-              <SelectTrigger>
+              <SelectTrigger label={t.compress.format}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -473,32 +461,32 @@ export default function CompressPage() {
 
           {/* Totals */}
           {doneItems.length > 0 && (
-            <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-2">
-              <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777]">
+            <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-2">
+              <span className="text-[15px] font-medium text-wb-900 select-none">
                 {t.compress.totals}
               </span>
-              <div className="flex justify-between text-[11px] font-mono text-[#444]">
-                <span className="uppercase tracking-[0.08em] text-[#777]">
+              <div className="flex justify-between text-[13px] text-wb-700">
+                <span className="text-wb-500">
                   {t.compress.before}
                 </span>
                 <span className="tabular-nums">{fmtBytes(totalOriginal)}</span>
               </div>
-              <div className="flex justify-between text-[11px] font-mono text-[#444]">
-                <span className="uppercase tracking-[0.08em] text-[#777]">
+              <div className="flex justify-between text-[13px] text-wb-700">
+                <span className="text-wb-500">
                   {t.compress.after}
                 </span>
                 <span className="tabular-nums">{fmtBytes(totalCompressed)}</span>
               </div>
               {allDone && (
-                <div className="flex justify-between text-[11px] font-mono font-bold pt-1 border-t border-[rgba(0,0,0,0.08)]">
-                  <span className="uppercase tracking-[0.08em] text-[#333]">
+                <div className="flex justify-between text-[13px] font-semibold pt-1 border-t border-wb-200">
+                  <span className="text-wb-900">
                     {t.compress.reduction}
                   </span>
                   <span
                     className={
                       totalReduction >= 0
-                        ? "text-[#1a8014] tabular-nums"
-                        : "text-[#b54e2c] tabular-nums"
+                        ? "text-wb-green tabular-nums"
+                        : "text-wb-600 tabular-nums"
                     }
                   >
                     {totalReduction >= 0 ? "−" : "+"}
@@ -511,24 +499,34 @@ export default function CompressPage() {
 
           {/* Privacy */}
           <div className="px-5 py-4 flex-1">
-            <p className="text-[10px] font-mono text-[#777] leading-relaxed">
+            <p className="text-[12px] text-wb-500 leading-relaxed">
               {t.compress.privacy}
             </p>
           </div>
         </div>
 
-        {/* Footer: download all */}
-        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] flex justify-end md:block">
-          <PushButton
-            variant="dark"
-            className="md:w-full md:text-center"
-            onClick={handleDownloadAll}
-            disabled={doneItems.length === 0 || isZipping}
-          >
-            [ {isZipping ? t.compress.zipping : t.compress.downloadAll} ]
-          </PushButton>
+        {/* Footer: reset + download all */}
+        <div className="absolute inset-x-0 bottom-0 flex flex-col p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
+          <div className="flex items-center gap-2">
+            <PushButton
+              variant="light"
+              className="shrink-0"
+              onClick={handleClear}
+              disabled={items.length === 0}
+            >
+              {t.compress.clearAll}
+            </PushButton>
+            <PushButton
+              variant="dark"
+              className="flex-1"
+              onClick={handleDownloadAll}
+              disabled={doneItems.length === 0 || isZipping}
+            >
+              {isZipping ? t.compress.zipping : t.compress.downloadAll}
+            </PushButton>
+          </div>
           {totalPending > 0 && (
-            <p className="text-[10px] font-mono text-[#777] text-center mt-2 uppercase tracking-[0.10em] tabular-nums">
+            <p className="text-[12px] text-wb-500 text-center mt-2 tabular-nums">
               {t.compress.processingProgress} {processedCount}/{items.length}
             </p>
           )}
@@ -564,9 +562,9 @@ function ItemRow({
   const larger = reduction !== null && reduction < 0;
 
   return (
-    <li className="flex items-center gap-3 p-2.5 rounded-[8px] bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] border border-[#bbbbbe] [box-shadow:inset_0_1px_0_rgba(255,255,255,0.6)]">
+    <li className="flex items-center gap-3 p-2.5 rounded-[10px] bg-wb-50 border border-wb-200">
       {/* Thumb */}
-      <div className="shrink-0 w-12 h-12 rounded-[4px] bg-[#1a1a1a] overflow-hidden border border-[rgba(0,0,0,0.3)]">
+      <div className="shrink-0 w-12 h-12 rounded-[8px] bg-wb-100 overflow-hidden border border-wb-200">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.thumbUrl}
@@ -578,20 +576,20 @@ function ItemRow({
 
       {/* Info */}
       <div className="flex-1 min-w-0 flex flex-col gap-1">
-        <p className="text-[11px] font-mono text-[#1a1a1a] truncate" title={item.file.name}>
+        <p className="text-[13px] text-wb-900 truncate" title={item.file.name}>
           {item.file.name}
         </p>
         {item.status === "error" ? (
-          <p className="text-[10px] font-mono text-[#b54e2c] truncate">{errorLabel}</p>
+          <p className="text-[12px] text-wb-600 truncate">{errorLabel}</p>
         ) : item.status === "done" ? (
-          <div className="flex items-baseline gap-2 text-[10px] font-mono text-[#555] tabular-nums">
+          <div className="flex items-baseline gap-2 text-[12px] text-wb-500 tabular-nums">
             <span>{fmtBytes(item.originalSize)}</span>
-            <span className="text-[#999]">→</span>
+            <span className="text-wb-400">→</span>
             <span>{fmtBytes(item.outputSize!)}</span>
             {reduction !== null && (
               <span
                 className={
-                  larger ? "ml-auto text-[#b54e2c]" : "ml-auto text-[#1a8014]"
+                  larger ? "ml-auto text-wb-600" : "ml-auto text-wb-green"
                 }
               >
                 {larger ? "+" : "−"}
@@ -601,7 +599,7 @@ function ItemRow({
             )}
           </div>
         ) : (
-          <p className="text-[10px] font-mono text-[#777] uppercase tracking-[0.10em]">
+          <p className="text-[12px] text-wb-500">
             {item.status === "processing" ? processingLabel : pendingLabel}
           </p>
         )}
@@ -610,18 +608,18 @@ function ItemRow({
       {/* Actions */}
       <div className="flex items-center gap-2 shrink-0">
         {item.status === "processing" && (
-          <div className="w-4 h-4 border-2 border-[#1a1a1a]/20 border-t-[#1a1a1a] rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-wb-300 border-t-wb-900 rounded-full animate-spin" />
         )}
         {item.status === "done" && (
           <PushButton size="sm" variant="dark" onClick={onDownload}>
-            [ ↓ ]
+            ↓
           </PushButton>
         )}
         <button
           type="button"
           onClick={onRemove}
           aria-label="Remove"
-          className="text-[#777] hover:text-[#b54e2c] text-[16px] leading-none font-mono px-1.5 select-none transition-colors"
+          className="text-wb-400 hover:text-wb-900 text-[16px] leading-none px-1.5 select-none transition-colors"
         >
           ×
         </button>

@@ -6,195 +6,140 @@
    0.5 → 2px    1 → 4px     1.5 → 6px    2 → 8px
    2.5 → 10px   3 → 12px    3.5 → 14px   4 → 16px
    5 → 20px     6 → 24px    7 → 28px     8 → 32px
-   9 → 36px    10 → 40px   11 → 44px    12 → 48px
-   14 → 56px   16 → 64px   20 → 80px    24 → 96px
-   28 → 112px  32 → 128px  36 → 144px   40 → 160px
-   44 → 176px  48 → 192px  52 → 208px   56 → 224px
-   60 → 240px  64 → 256px  72 → 288px   80 → 320px
-   96 → 384px
-   任意値: px-[18px], w-[600px] 等
+   10 → 40px   11 → 44px   12 → 48px    14 → 56px
    ============================================================ */
 
 /* ============================================================
-   Layer 1 — Primitive Scale (OKLCH, achromatic)
+   Layer 1 — Workbench Primitive Scale (zinc)
+   Source of truth: Figma "workbench" variable collection.
    ============================================================ */
 :root {
-  --gray-50:  oklch(0.985 0 0);
-  --gray-100: oklch(0.960 0 0);
-  --gray-200: oklch(0.900 0 0);
-  --gray-300: oklch(0.820 0 0);
-  --gray-400: oklch(0.640 0 0);
-  --gray-500: oklch(0.500 0 0);
-  --gray-600: oklch(0.400 0 0);
-  --gray-700: oklch(0.310 0 0);
-  --gray-800: oklch(0.210 0 0);
-  --gray-900: oklch(0.140 0 0);
-  --gray-950: oklch(0.070 0 0);
+  --wb-0:   #ffffff;
+  --wb-50:  #f3f4f4;
+  --wb-100: #e7e7e9;
+  --wb-200: #dcdce0;
+  --wb-300: #ceced3;
+  --wb-400: #9f9fa9;
+  --wb-500: #71717b;
+  --wb-600: #52525c;
+  --wb-700: #3f3f46;
+  --wb-800: #27272a;
+  --wb-900: #18181b;
+  --wb-950: #0c0c10;
+
+  /* Accent — toggle "on" / live indicator */
+  --wb-green: #0dca7a;
+
+  /* Ink alpha overlays (rgb of --wb-950 = 12,12,16) */
+  --ink-a50:  rgba(12, 12, 16, 0.05);
+  --ink-a100: rgba(12, 12, 16, 0.12);
+  --ink-a200: rgba(12, 12, 16, 0.20);
+  --ink-a300: rgba(12, 12, 16, 0.26);
+  --ink-a400: rgba(12, 12, 16, 0.46);
+  --ink-a500: rgba(12, 12, 16, 0.64);
+  --ink-a600: rgba(12, 12, 16, 0.72);
+  --ink-a700: rgba(12, 12, 16, 0.80);
+  --ink-a800: rgba(12, 12, 16, 0.88);
+  --ink-a900: rgba(12, 12, 16, 0.92);
+  --ink-a950: rgba(12, 12, 16, 0.96);
 }
 
 /* ============================================================
-   Layer 2 — shadcn Semantic Tokens (dark-first)
+   Layer 2 — shadcn Semantic Tokens (mapped to zinc, light only)
    ============================================================ */
 :root {
-  --background:       var(--gray-950);
-  --foreground:       var(--gray-50);
+  --background:       var(--wb-50);
+  --foreground:       var(--wb-900);
 
-  --card:             var(--gray-900);
-  --card-foreground:  var(--gray-50);
+  --card:             var(--wb-0);
+  --card-foreground:  var(--wb-900);
 
-  --popover:          var(--gray-900);
-  --popover-foreground: var(--gray-50);
+  --popover:          var(--wb-0);
+  --popover-foreground: var(--wb-900);
 
-  --primary:          var(--gray-50);
-  --primary-foreground: var(--gray-950);
+  --primary:          var(--wb-900);
+  --primary-foreground: var(--wb-0);
 
-  --secondary:        var(--gray-800);
-  --secondary-foreground: var(--gray-50);
+  --secondary:        var(--wb-50);
+  --secondary-foreground: var(--wb-900);
 
-  --muted:            var(--gray-800);
-  --muted-foreground: var(--gray-400);
+  --muted:            var(--wb-50);
+  --muted-foreground: var(--wb-500);
 
-  --accent:           var(--gray-800);
-  --accent-foreground: var(--gray-50);
+  --accent:           var(--wb-100);
+  --accent-foreground: var(--wb-900);
 
   --destructive:      oklch(0.55 0.20 27);
-  --destructive-foreground: var(--gray-50);
+  --destructive-foreground: var(--wb-0);
 
-  --border:           var(--gray-800);
-  --input:            var(--gray-800);
-  --ring:             var(--gray-300);
+  --border:           var(--wb-200);
+  --input:            var(--wb-200);
+  --ring:             var(--wb-900);
 
-  --radius: 0.75rem;
+  --radius: 0.625rem; /* 10px — pills, buttons, inputs */
 
-  --chart-1: oklch(0.70 0 0);
-  --chart-2: oklch(0.60 0 0);
-  --chart-3: oklch(0.50 0 0);
-  --chart-4: oklch(0.40 0 0);
-  --chart-5: oklch(0.30 0 0);
-
-  --sidebar-background:   var(--gray-950);
-  --sidebar-foreground:   var(--gray-200);
-  --sidebar-primary:      var(--gray-50);
-  --sidebar-primary-foreground: var(--gray-950);
-  --sidebar-accent:       var(--gray-800);
-  --sidebar-accent-foreground: var(--gray-200);
-  --sidebar-border:       var(--gray-800);
-  --sidebar-ring:         var(--gray-300);
-}
-
-/* Light mode (opt-in via .light class) */
-.light {
-  --background:       var(--gray-50);
-  --foreground:       var(--gray-950);
-
-  --card:             var(--gray-50);
-  --card-foreground:  var(--gray-950);
-
-  --popover:          var(--gray-50);
-  --popover-foreground: var(--gray-950);
-
-  --primary:          var(--gray-950);
-  --primary-foreground: var(--gray-50);
-
-  --secondary:        var(--gray-100);
-  --secondary-foreground: var(--gray-950);
-
-  --muted:            var(--gray-100);
-  --muted-foreground: var(--gray-500);
-
-  --accent:           var(--gray-100);
-  --accent-foreground: var(--gray-950);
-
-  --destructive:      oklch(0.55 0.20 27);
-  --destructive-foreground: var(--gray-50);
-
-  --border:           var(--gray-200);
-  --input:            var(--gray-200);
-  --ring:             var(--gray-950);
-
-  --chart-1: oklch(0.30 0 0);
-  --chart-2: oklch(0.40 0 0);
-  --chart-3: oklch(0.50 0 0);
-  --chart-4: oklch(0.60 0 0);
-  --chart-5: oklch(0.70 0 0);
-
-  --sidebar-background:   var(--gray-50);
-  --sidebar-foreground:   var(--gray-700);
-  --sidebar-primary:      var(--gray-950);
-  --sidebar-primary-foreground: var(--gray-50);
-  --sidebar-accent:       var(--gray-100);
-  --sidebar-accent-foreground: var(--gray-700);
-  --sidebar-border:       var(--gray-200);
-  --sidebar-ring:         var(--gray-950);
-}
-
-/* ============================================================
-   Layer 3 — Custom Semantic Tokens, Typography, Legacy Aliases
-   ============================================================ */
-:root {
-  /* ---- Status colors ---- */
-  --success:            oklch(0.60 0.15 145);
-  --success-foreground: var(--gray-50);
-  --warning:            oklch(0.70 0.15 85);
-  --warning-foreground: var(--gray-950);
-  --danger:             oklch(0.55 0.20 27);
-  --danger-foreground:  var(--gray-50);
-  --info:               oklch(0.60 0.15 245);
-  --info-foreground:    var(--gray-50);
+  --sidebar-background:   var(--wb-0);
+  --sidebar-foreground:   var(--wb-700);
+  --sidebar-primary:      var(--wb-900);
+  --sidebar-primary-foreground: var(--wb-0);
+  --sidebar-accent:       var(--wb-50);
+  --sidebar-accent-foreground: var(--wb-700);
+  --sidebar-border:       var(--wb-200);
+  --sidebar-ring:         var(--wb-900);
 
   /* ---- Typography ---- */
-  --font-sans: "SF Mono", "Fira Code", monospace;
-  --font-mono: "SF Mono", "Fira Code", monospace;
+  --font-sans: "Gen Interface JP", -apple-system, BlinkMacSystemFont,
+               "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Helvetica Neue",
+               Arial, sans-serif;
+  --font-display: "Gen Interface JP Display", "Gen Interface JP", var(--font-sans);
+  --font-mono: ui-monospace, "SF Mono", "Fira Code", "Roboto Mono", monospace;
 
-  /* ---- Legacy aliases (existing CSS Modules compatibility) ---- */
-  --color-bg:            var(--background);
-  --color-surface:       var(--card);
-  --color-surface-hover: var(--accent);
-  --color-border:        var(--border);
-  --color-text:          var(--foreground);
-  --color-text-muted:    var(--muted-foreground);
-  --color-primary:       var(--primary);
-  --color-primary-hover: var(--ring);
-  --radius1-sm:           calc(var(--radius1) - 4px);
+  /* ---- Legacy aliases — repointed to the new palette as a safety net.
+     Old code paths keep working and look on-brand until fully reskinned. ---- */
+  --led-green: var(--wb-green);
+  --ink-dark:  var(--wb-900);
+  --ink-subtle: var(--wb-500);
+  --cap-white: var(--wb-0);
+  --cap-orange: var(--wb-green);
 }
 
 /* ============================================================
-   Register tokens with Tailwind v4
+   Register tokens with Tailwind v4 (enables bg-wb-50, text-wb-900, …)
    ============================================================ */
 @theme inline {
+  --color-wb-0:   var(--wb-0);
+  --color-wb-50:  var(--wb-50);
+  --color-wb-100: var(--wb-100);
+  --color-wb-200: var(--wb-200);
+  --color-wb-300: var(--wb-300);
+  --color-wb-400: var(--wb-400);
+  --color-wb-500: var(--wb-500);
+  --color-wb-600: var(--wb-600);
+  --color-wb-700: var(--wb-700);
+  --color-wb-800: var(--wb-800);
+  --color-wb-900: var(--wb-900);
+  --color-wb-950: var(--wb-950);
+  --color-wb-green: var(--wb-green);
+
   --color-background:       var(--background);
   --color-foreground:       var(--foreground);
-
   --color-card:             var(--card);
   --color-card-foreground:  var(--card-foreground);
-
   --color-popover:          var(--popover);
   --color-popover-foreground: var(--popover-foreground);
-
   --color-primary:          var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-
   --color-secondary:        var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-
   --color-muted:            var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-
   --color-accent:           var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-
   --color-destructive:      var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-
   --color-border:           var(--border);
   --color-input:            var(--input);
   --color-ring:             var(--ring);
-
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
 
   --color-sidebar-background:        var(--sidebar-background);
   --color-sidebar-foreground:        var(--sidebar-foreground);
@@ -205,21 +150,13 @@
   --color-sidebar-border:            var(--sidebar-border);
   --color-sidebar-ring:              var(--sidebar-ring);
 
-  --color-success:          var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning:          var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-danger:           var(--danger);
-  --color-danger-foreground: var(--danger-foreground);
-  --color-info:             var(--info);
-  --color-info-foreground:  var(--info-foreground);
-
-  --radius1-sm:   calc(var(--radius1) - 4px);
-  --radius1-md:   var(--radius1);
-  --radius1-lg:   calc(var(--radius1) + 4px);
-  --radius1-xl:   calc(var(--radius1) + 8px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
 
   --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
   --font-mono: var(--font-mono);
 }
 
@@ -243,6 +180,7 @@
     background: var(--background);
     color: var(--foreground);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   a {
@@ -250,7 +188,6 @@
     text-decoration: none;
   }
 
-  /* Interactive elements — cursor & transitions */
   button,
   [role="button"],
   a,
@@ -275,40 +212,38 @@
     cursor: text;
   }
 
-  /* Focus-visible ring for keyboard navigation */
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
 
-  /* Selection highlight */
   ::selection {
-    background: var(--primary);
-    color: var(--primary-foreground);
+    background: var(--wb-900);
+    color: var(--wb-0);
   }
 
-  /* Color input swatch — physical push button style */
+  /* Color input swatch — 22px circle (Figma 1342:2894) */
   .color-swatch {
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
     padding: 0;
-    border: 1px solid rgba(0,0,0,0.28) !important;
-    border-radius: 50% !important;
+    border: 1px solid var(--ink-a100) !important;
+    border-radius: 9999px !important;
     cursor: pointer;
-    transition: transform 50ms ease;
+    transition: transform 80ms ease, box-shadow 80ms ease;
   }
   .color-swatch:active {
-    transform: translateY(3px);
+    transform: scale(0.92);
   }
   .color-swatch::-webkit-color-swatch-wrapper {
     padding: 0;
   }
   .color-swatch::-webkit-color-swatch {
     border: none;
-    border-radius: 50%;
+    border-radius: 9999px;
   }
 
-  /* UI Sample hover states */
+  /* UI Sample hover states (color app preview) */
   .ui-btn-primary:hover {
     background-color: var(--btn-bg-hover) !important;
     color: var(--btn-text-hover) !important;
@@ -325,98 +260,36 @@
 }
 
 /* ============================================================
-   Physical UI — Hardware aesthetic color palette
-   Teenage Engineering TE-DMX inspired
+   Utilities
    ============================================================ */
-:root {
-  --aluminum-light:  #e8e8e9;
-  --aluminum-mid:    #d8d8da;
-  --aluminum-dark:   #c8c8ca;
-  --aluminum-border: #bbbbbe;
-  --screen-bg:       #080808;
-  --cap-blue:        #1e3246;
-  --cap-ochre:       #b59257;
-  --cap-grey:        #858585;
-  --cap-orange:      #e84a1b;
-  --cap-white:       #f0f0f2;
-  --ink-dark:        #333333;
-  --ink-subtle:      #777777;
-  --socket-bg:       #d0d0d2;
-  --led-green:       #4af626;
-  --led-off:         #333;
+@layer utilities {
+  /* Hairline separator */
+  .groove {
+    height: 1px;
+    background: var(--ink-a100);
+  }
+
+  /* Hide scrollbars on control surfaces while keeping scroll */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--wb-300) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--wb-300);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
 /* ============================================================
-   Workbench UI — Industrial product aesthetic
-   Clean, functional, Teenage Engineering inspired
+   BMC widget — floating coffee button (bottom-left)
    ============================================================ */
-@layer utilities {
-
-  /* ---- Groove separator (light-source: top-left) ---- */
-  .groove {
-    height: 1px;
-    background: #242424;
-  }
-
-  /* ---- Form field: white well, gradient highlight border ---- */
-  .shadow-field {
-    box-shadow:
-      inset 0 1px 3px rgba(0, 0, 0, 0.12),
-      inset 0 1px 1px rgba(0, 0, 0, 0.06);
-  }
-  /* Gradient border wrapper — 1px padding, gradient from top-left white → transparent */
-  .field-wrap {
-    background: linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.85) 0%,
-      rgba(255, 255, 255, 0.25) 40%,
-      rgba(255, 255, 255, 0.04) 100%
-    );
-    padding: 1px;
-    border-radius: 13px;
-  }
-
-  /* ---- EP-133 key card (home page app cards) ---- */
-  .key-card {
-    border-radius: 20px;
-    border: 1px solid transparent;
-    background:
-      linear-gradient(#B1AEAD, #B1AEAD) padding-box,
-      linear-gradient(145deg, rgba(255,255,255,0.85) 0%, rgba(0,0,0,0.16) 100%) border-box;
-    box-shadow:
-      2px 2px 32px 0px rgba(0, 0, 0, 0.10) inset,
-      6px 6px 20px 0px rgba(0, 0, 0, 0.18);
-    padding: 20px;
-    transition: transform 80ms ease, box-shadow 80ms ease;
-  }
-  .key-card:active {
-    transform: translateY(2px);
-    box-shadow:
-      2px 2px 32px 0px rgba(0, 0, 0, 0.10) inset,
-      2px 2px 8px 0px rgba(0, 0, 0, 0.14);
-  }
-
-  /* ---- EP-133 dark key (export button etc.) ---- */
-  .key-dark {
-    border-radius: 20px;
-    border: 1px solid transparent;
-    background:
-      linear-gradient(#242323, #242323) padding-box,
-      linear-gradient(145deg, rgba(255,255,255,0.85) 0%, rgba(0,0,0,0.19) 100%) border-box;
-    box-shadow:
-      2px 2px 32px 0px rgba(0, 0, 0, 0.10) inset,
-      8px 8px 24px 0px rgba(0, 0, 0, 0.55);
-    transition: transform 80ms ease, box-shadow 80ms ease;
-  }
-  .key-dark:active {
-    transform: translateY(2px);
-    box-shadow:
-      2px 2px 32px 0px rgba(0, 0, 0, 0.10) inset,
-      2px 2px 8px 0px rgba(0, 0, 0, 0.40);
-  }
-}
-
-/* BMC widget: force all logo/icon paths to white so they're visible on the black button. */
 #bmc-wbtn img,
 #bmc-wbtn svg {
   filter: brightness(0) invert(1);
@@ -424,11 +297,9 @@
 #bmc-wbtn svg path {
   fill: #ffffff !important;
 }
-/* Shrink BMC widget on mobile so it doesn't crowd sidebar action buttons. */
 @media (max-width: 768px) {
   #bmc-wbtn {
-    transform: scale(0.65) !important;
+    transform: scale(0.62) !important;
     transform-origin: bottom left !important;
   }
 }
-

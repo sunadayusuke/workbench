@@ -394,7 +394,7 @@ function BezierEditor({
   };
 
   return (
-    <div ref={containerRef} className="w-full aspect-square">
+    <div ref={containerRef} className="w-full aspect-square rounded-[10px] overflow-hidden">
       <canvas
         ref={canvasRef}
         className="w-full h-full cursor-crosshair"
@@ -450,7 +450,7 @@ function PresetGrid({
     <div className="flex flex-col gap-3">
       {PRESET_CATEGORIES.map((category) => (
         <div key={category}>
-          <div className="text-[12px] font-mono uppercase tracking-[0.2em] text-[#242424] select-none mb-1.5">{category}</div>
+          <div className="text-[12px] font-semibold text-wb-700 select-none mb-1.5">{category}</div>
           <div className="flex flex-wrap gap-1">
             {EASING_PRESETS.filter((p) => p.category === category).map((preset) => (
               <button
@@ -458,12 +458,11 @@ function PresetGrid({
                 title={preset.name}
                 onClick={() => onSelect(preset.name, preset.value)}
                 className={[
-                  "p-[5px] rounded-[6px] cursor-pointer select-none",
-                  "border border-[rgba(0,0,0,0.18)]",
-                  "transition-[transform,box-shadow] duration-[50ms]",
+                  "p-[5px] rounded-[8px] cursor-pointer select-none",
+                  "border transition-colors duration-[120ms]",
                   activePreset === preset.name
-                    ? "translate-y-[3px] bg-[linear-gradient(180deg,#c8c8ca_0%,#d0d0d2_100%)] [box-shadow:0_0_0_#b8b8bc,inset_0_1px_4px_rgba(0,0,0,0.14)]"
-                    : "bg-[linear-gradient(180deg,#e8e8e9_0%,#d4d4d6_100%)] [box-shadow:0_3px_0_#b8b8bc,0_2px_4px_rgba(0,0,0,0.10),inset_0_1px_0_rgba(255,255,255,0.72)]",
+                    ? "bg-wb-200 border-wb-400"
+                    : "bg-wb-50 border-wb-200 hover:bg-wb-100",
                 ].join(" ")}
               >
                 <PresetMiniCurve points={preset.value} />
@@ -502,7 +501,7 @@ function ButtonScene({ easing, duration }: SceneProps) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4">
       <div
-        className="px-8 py-3 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] select-none cursor-pointer"
+        className="px-8 py-3 rounded-[10px] bg-wb-900 text-wb-0 text-[13px] font-medium select-none cursor-pointer"
         style={style}
         onPointerDown={() => setPressed(true)}
         onPointerUp={() => setPressed(false)}
@@ -529,17 +528,17 @@ function CardScene({ easing, duration }: SceneProps) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4">
       <div
-        className="bg-white border border-[#242424] overflow-hidden w-[220px] cursor-pointer"
+        className="bg-wb-0 border border-wb-200 rounded-[12px] overflow-hidden w-[220px] cursor-pointer"
         style={style}
         onPointerEnter={() => setHovered(true)}
         onPointerLeave={() => setHovered(false)}
         onTouchStart={() => setHovered(true)}
         onTouchEnd={() => setHovered(false)}
       >
-        <div className="h-[100px] bg-[#d2d2d2]" />
+        <div className="h-[100px] bg-wb-100" />
         <div className="p-4">
-          <div className="text-[12px] font-mono uppercase tracking-[0.12em] text-[#242424] mb-1">{t.easing.cardTitle}</div>
-          <div className="text-[12px] font-mono text-[#242424]/60">
+          <div className="text-[13px] font-semibold text-wb-900 mb-1">{t.easing.cardTitle}</div>
+          <div className="text-[12px] text-wb-500">
             {t.easing.hoverHint}
           </div>
         </div>
@@ -565,14 +564,14 @@ function ToggleControls({
       <button
         onClick={onOpen}
         disabled={isOpen}
-        className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] transition-all cursor-pointer hover:bg-[#333] disabled:opacity-30 disabled:cursor-default"
+        className="h-9 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[13px] font-medium transition-all cursor-pointer hover:bg-wb-800 disabled:opacity-30 disabled:cursor-default"
       >
         {t.easing.open}
       </button>
       <button
         onClick={onClose}
         disabled={!isOpen}
-        className="px-4 py-2 bg-white border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] transition-all cursor-pointer hover:bg-[#242424]/10 disabled:opacity-30 disabled:cursor-default"
+        className="h-9 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[13px] font-medium transition-all cursor-pointer hover:bg-wb-50 disabled:opacity-30 disabled:cursor-default"
       >
         {t.easing.close}
       </button>
@@ -607,18 +606,18 @@ function ModalScene({ easing, duration }: SceneProps) {
     <div className="flex items-center justify-center h-full relative">
       <div className="absolute inset-0 bg-black/40" style={overlayStyle} />
       <div
-        className="relative bg-white border border-[#242424] p-6 w-[280px]"
+        className="relative bg-wb-0 border border-wb-200 rounded-[12px] p-6 w-[280px]"
         style={modalStyle}
       >
-        <div className="text-[12px] font-mono uppercase tracking-[0.12em] text-[#242424] mb-2">{t.easing.confirm}</div>
-        <div className="text-[12px] font-mono text-[#242424]/60 mb-4">
+        <div className="text-[13px] font-semibold text-wb-900 mb-2">{t.easing.confirm}</div>
+        <div className="text-[12px] text-wb-500 mb-4">
           {t.easing.confirmQuestion}
         </div>
         <div className="flex gap-2 justify-end">
-          <div className="px-3 py-1.5 text-[12px] font-mono border border-[#242424] text-[#242424]">
+          <div className="px-3 py-1.5 rounded-[8px] text-[13px] font-medium border border-wb-200 text-wb-900">
             {t.cancel}
           </div>
-          <div className="px-3 py-1.5 text-[12px] font-mono bg-[#242424] text-white">
+          <div className="px-3 py-1.5 rounded-[8px] text-[13px] font-medium bg-wb-900 text-wb-0">
             {t.easing.confirm}
           </div>
         </div>
@@ -646,12 +645,12 @@ function ToastScene({ easing, duration }: SceneProps) {
   return (
     <div className="h-full relative overflow-hidden">
       <div className="absolute top-6 right-6" style={style}>
-        <div className="bg-white border border-[#242424] p-4 w-[240px]">
+        <div className="bg-wb-0 border border-wb-200 rounded-[12px] p-4 w-[240px]">
           <div className="flex items-start gap-3">
-            <div className="text-[18px]">✓</div>
+            <div className="text-[18px] text-wb-green">✓</div>
             <div>
-              <div className="text-[12px] font-mono uppercase tracking-[0.10em] text-[#242424]">{t.easing.saved}</div>
-              <div className="text-[12px] font-mono text-[#242424]/60 mt-0.5">
+              <div className="text-[13px] font-semibold text-wb-900">{t.easing.saved}</div>
+              <div className="text-[12px] text-wb-500 mt-0.5">
                 {t.easing.savedDesc}
               </div>
             </div>
@@ -692,14 +691,14 @@ function SidebarScene({ easing, duration }: SceneProps) {
         onClick={() => setIsOpen(false)}
       />
       <div
-        className="absolute inset-y-0 left-0 w-[200px] bg-white border-r border-[#242424] p-4"
+        className="absolute inset-y-0 left-0 w-[200px] bg-wb-0 border-r border-wb-200 p-4"
         style={sidebarStyle}
       >
-        <div className="text-[12px] font-mono uppercase tracking-[0.12em] text-[#242424] mb-4">{t.easing.menu}</div>
+        <div className="text-[13px] font-semibold text-wb-900 mb-4">{t.easing.menu}</div>
         {[t.easing.home, t.easing.profile, t.easing.settingsMenu, t.easing.help].map((item) => (
           <div
             key={item}
-            className="text-[12px] font-mono text-[#242424] py-2 px-2 hover:bg-[#242424]/5"
+            className="text-[13px] text-wb-700 py-2 px-2 rounded-[8px] hover:bg-wb-50"
           >
             {item}
           </div>
@@ -739,19 +738,19 @@ function DrawerScene({ easing, duration }: SceneProps) {
         onClick={() => setIsOpen(false)}
       />
       <div
-        className="absolute inset-x-0 bottom-0 bg-white border-t border-[#242424] p-5"
+        className="absolute inset-x-0 bottom-0 bg-wb-0 border-t border-wb-200 rounded-t-[12px] p-5"
         style={drawerStyle}
       >
-        <div className="w-10 h-px bg-[#242424]/30 mx-auto mb-4" />
-        <div className="text-[12px] font-mono uppercase tracking-[0.12em] text-[#242424] mb-2">{t.easing.share}</div>
-        <div className="text-[12px] font-mono text-[#242424]/60 mb-4">
+        <div className="w-10 h-1 rounded-full bg-wb-300 mx-auto mb-4" />
+        <div className="text-[13px] font-semibold text-wb-900 mb-2">{t.easing.share}</div>
+        <div className="text-[12px] text-wb-500 mb-4">
           {t.easing.shareQuestion}
         </div>
         <div className="flex gap-4">
           {[t.easing.copyLink, t.easing.email, t.easing.sns].map((item) => (
             <div
               key={item}
-              className="flex-1 py-2 text-center text-[12px] font-mono text-[#242424] border border-[#242424]"
+              className="flex-1 py-2 text-center text-[13px] font-medium text-wb-900 rounded-[8px] border border-wb-200"
             >
               {item}
             </div>
@@ -811,7 +810,7 @@ function GalleryScene({ easing, duration }: SceneProps) {
         {/* Prev arrow */}
         <button
           onClick={() => go("prev")}
-          className="w-8 h-8 bg-[#242424] text-white flex items-center justify-center cursor-pointer hover:bg-[#333] active:scale-95 transition-all shrink-0"
+          className="w-8 h-8 rounded-[8px] bg-wb-900 text-wb-0 flex items-center justify-center cursor-pointer hover:bg-wb-800 active:scale-95 transition-all shrink-0"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10 12L6 8l4-4" />
@@ -838,7 +837,7 @@ function GalleryScene({ easing, duration }: SceneProps) {
         {/* Next arrow */}
         <button
           onClick={() => go("next")}
-          className="w-8 h-8 bg-[#242424] text-white flex items-center justify-center cursor-pointer hover:bg-[#333] active:scale-95 transition-all shrink-0"
+          className="w-8 h-8 rounded-[8px] bg-wb-900 text-wb-0 flex items-center justify-center cursor-pointer hover:bg-wb-800 active:scale-95 transition-all shrink-0"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 4l4 4-4 4" />
@@ -914,13 +913,13 @@ function ExportDialog({
           <textarea
             readOnly
             value={code}
-            className="flex-1 min-h-[200px] rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)]"
+            className="flex-1 min-h-[200px] rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 font-mono text-[12px] leading-relaxed p-4 resize-none outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
           />
           <button
-            className="w-full py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
+            className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none"
             onClick={() => copy(code)}
           >
-            [ {copied ? t.copied : t.copy} ]
+            {copied ? t.copied : t.copy}
           </button>
         </div>
       </DialogContent>
@@ -974,7 +973,7 @@ export default function EasingPage() {
   const ActiveSceneComponent = SCENE_COMPONENTS[activeScene];
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d8d8da]">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-wb-50">
       {/* Main area */}
       <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0 flex flex-col">
         {/* Top bar */}
@@ -986,10 +985,10 @@ export default function EasingPage() {
             <button
               key={scene.key}
               onClick={() => setActiveScene(scene.key)}
-              className={`px-3 py-1.5 text-[12px] font-mono whitespace-nowrap transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[8px] text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
                 activeScene === scene.key
-                  ? "bg-[#242424] text-white"
-                  : "text-[#242424]/50 hover:text-[#242424] hover:bg-[#242424]/10"
+                  ? "bg-wb-900 text-wb-0"
+                  : "text-wb-500 hover:text-wb-900 hover:bg-wb-100"
               }`}
             >
               {t.easing.scenes[scene.key]}
@@ -998,7 +997,7 @@ export default function EasingPage() {
         </div>
 
         {/* Scene preview area */}
-        <div className="flex-1 relative mx-3 mb-3 md:mx-4 md:mb-4 border border-[#242424] overflow-hidden">
+        <div className="flex-1 relative mx-3 mb-3 md:mx-4 md:mb-4 rounded-[12px] border border-wb-200 overflow-hidden">
           <ActiveSceneComponent
             easing={easingCSS}
             duration={duration}
@@ -1007,19 +1006,18 @@ export default function EasingPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="flex-1 md:flex-none md:w-[320px] shrink-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col overflow-hidden">
+      <aside className="relative flex-1 md:flex-none md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
-          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.easing.name}</span>
-          <PushButton size="sm" variant="dark" onClick={handleReset}>[ {t.reset} ]</PushButton>
+        <div className="shrink-0 px-5 pt-6 pb-3">
+          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.easing.name}</span>
         </div>
 
         {/* Scrollable interior */}
-        <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
 
-          {/* Duration knob */}
-          <div className="flex items-center justify-center gap-8 px-4 py-5 border-b border-[rgba(0,0,0,0.08)]">
+          {/* Duration */}
+          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-[7px]">
             <DragParam
               label={t.easing.duration}
               value={duration}
@@ -1030,19 +1028,18 @@ export default function EasingPage() {
               accent="blue"
               defaultValue={DEFAULT_DURATION}
             />
-            <span className="text-[11px] font-mono text-[#555] select-none">{duration}ms</span>
           </div>
 
           {/* Bezier editor */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
-            <div className="text-[11px] text-[#555] font-mono select-none">{easingCSS}</div>
+          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
+            <div className="text-[12px] text-wb-500 font-mono select-none">{easingCSS}</div>
             <BezierEditor points={controlPoints} onChange={handlePointsChange} />
 
             {/* Numeric inputs */}
             <div className="grid grid-cols-4 gap-2 pt-1">
               {(["P1x", "P1y", "P2x", "P2y"] as const).map((label, i) => (
                 <div key={label} className="flex flex-col gap-1">
-                  <Label className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#555]">{label}</Label>
+                  <Label className="text-[12px] text-wb-500">{label}</Label>
                   <Input
                     type="number"
                     step={0.01}
@@ -1059,7 +1056,7 @@ export default function EasingPage() {
 
           {/* Presets */}
           <div className="flex-1 px-5 py-4 flex flex-col gap-2">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.easing.presets}</span>
+            <span className="text-[15px] font-medium text-wb-900 select-none">{t.easing.presets}</span>
             <PresetGrid
               activePreset={activePreset}
               onSelect={handlePresetSelect}
@@ -1068,10 +1065,13 @@ export default function EasingPage() {
 
         </div>
 
-        {/* Export button */}
-        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] flex justify-end md:block">
-          <PushButton variant="dark" className="md:w-full md:text-center" onClick={() => setShowExport(true)}>
-            [ {t.easing.exportCode} ]
+        {/* Footer */}
+        <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
+          <PushButton variant="light" onClick={handleReset} className="shrink-0">
+            {t.reset}
+          </PushButton>
+          <PushButton variant="dark" className="flex-1" onClick={() => setShowExport(true)}>
+            {t.easing.exportCode}
           </PushButton>
         </div>
       </aside>

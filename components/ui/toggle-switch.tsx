@@ -7,83 +7,52 @@ interface ToggleSwitchProps {
   label?: string;
 }
 
+/* Toggle — Figma 1342:2890 (track 36×20, white capsule thumb 20×16, green #0dca7a). */
 export function ToggleSwitch({ active, onClick, size = "md", label }: ToggleSwitchProps) {
-  // trackH - 2 (border top + bottom) - thumbD  must be >= 0 and even for gap
-  const trackW = size === "sm" ? 48 : 64;
-  const trackH = size === "sm" ? 24 : 32;
-  const thumbD = size === "sm" ? 20 : 28;
-  const ledD   = size === "sm" ?  8 : 10;
-  // position within the inner box (height = trackH - 2 due to border)
-  const gap = (trackH - 2 - thumbD) / 2; // 1px
+  const trackW = size === "sm" ? 32 : 36;
+  const trackH = size === "sm" ? 18 : 20;
+  const thumbW = size === "sm" ? 18 : 20;
+  const thumbH = size === "sm" ? 14 : 16;
+  const inset = 2;
+
+  const Switch = (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      style={{
+        position: "relative",
+        width: trackW,
+        height: trackH,
+        background: active ? "var(--wb-green)" : "var(--wb-300)",
+        borderRadius: 9999,
+        cursor: "pointer",
+        transition: "background 220ms ease",
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          top: inset,
+          left: active ? trackW - thumbW - inset : inset,
+          width: thumbW,
+          height: thumbH,
+          borderRadius: 9999,
+          background: "#ffffff",
+          boxShadow: "0 1px 2px rgba(12,12,16,0.22), 0 1px 3px rgba(12,12,16,0.10)",
+          transition: "left 240ms cubic-bezier(0.22,0.61,0.36,1)",
+        }}
+      />
+    </button>
+  );
+
+  if (!label) return <div className="inline-flex select-none">{Switch}</div>;
 
   return (
-    <div className="flex items-center gap-2.5 select-none">
-      <button
-        onClick={onClick}
-        style={{
-          position: "relative",
-          width: trackW,
-          height: trackH,
-          background: "linear-gradient(180deg, #1a1a1a 0%, #2c2c2c 100%)",
-          borderRadius: trackH / 2,
-          border: "1px solid rgba(0,0,0,0.6)",
-          boxShadow: active
-            ? `inset 0 2px 4px rgba(0,0,0,0.55), 0 0 10px rgba(74,246,38,0.35)`
-            : `inset 0 2px 4px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.05)`,
-          cursor: "pointer",
-          transition: "box-shadow 100ms ease",
-          flexShrink: 0,
-        }}
-      >
-        {/* Thumb */}
-        <div
-          style={{
-            position: "absolute",
-            top: gap,
-            // inner width = trackW - 2; ON: inner width - thumbD - gap
-            left: active ? trackW - 2 - thumbD - gap : gap,
-            width: thumbD,
-            height: thumbD,
-            borderRadius: "50%",
-            background: "linear-gradient(145deg, #f4f4f6 0%, #d4d4d6 100%)",
-            boxShadow: active
-              ? `0 0 6px var(--led-green), 0 1px 4px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.85)`
-              : `0 1px 4px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.85)`,
-            transition: "left 100ms ease, box-shadow 100ms ease",
-          }}
-        >
-          {/* LED dot */}
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: ledD,
-              height: ledD,
-              borderRadius: "50%",
-              background: active ? "var(--led-green)" : "#999",
-              boxShadow: active ? "0 0 5px var(--led-green)" : "none",
-              transition: "background 80ms ease, box-shadow 80ms ease",
-            }}
-          />
-        </div>
-      </button>
-
-      {label && (
-        <span
-          style={{
-            fontSize: 12,
-            fontFamily: "var(--font-mono, monospace)",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: "var(--ink-dark)",
-            lineHeight: 1,
-          }}
-        >
-          {label}
-        </span>
-      )}
+    <div className="flex h-10 w-full select-none items-center gap-1 rounded-[12px] border border-[rgba(12,12,16,0.05)] bg-wb-50 pl-4 pr-3.5 shadow-[0px_2px_2px_0px_rgba(0,0,0,0.02)]">
+      <span className="min-w-0 flex-1 truncate text-[14px] leading-normal text-[rgba(12,12,16,0.46)]">{label}</span>
+      {Switch}
     </div>
   );
 }

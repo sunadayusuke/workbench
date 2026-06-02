@@ -665,7 +665,7 @@ export default function AuroraPage() {
   }, [showOutputMenu]);
 
   return (
-    <div className="fixed inset-0 flex flex-col md:flex-row bg-[#d8d8da]">
+    <div className="fixed inset-0 flex flex-col md:flex-row bg-wb-50">
       {/* Canvas area */}
       <div
         ref={canvasAreaRef}
@@ -681,12 +681,12 @@ export default function AuroraPage() {
       >
         {isDragOver && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 border-2 border-dashed border-white/50 pointer-events-none">
-            <span className="text-white font-mono text-[14px] uppercase tracking-[0.2em]">{t.aurora.dropSvg}</span>
+            <span className="text-white text-[14px] font-medium">{t.aurora.dropSvg}</span>
           </div>
         )}
         {isRecording && (
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-center pb-4 z-10 pointer-events-none">
-            <span className="bg-black/60 text-white font-mono text-[12px] uppercase tracking-[0.18em] px-3 py-1.5 rounded-sm">
+            <span className="bg-black/60 text-white text-[12px] font-medium px-3 py-1.5 rounded-[8px]">
               ● REC {recordingDuration}s
             </span>
           </div>
@@ -695,20 +695,19 @@ export default function AuroraPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="flex-1 md:flex-none md:w-[320px] min-h-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col">
-        <div className="flex items-center justify-between px-5 h-12 border-b border-[rgba(0,0,0,0.12)]">
-          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333]">{t.apps.aurora.name}</span>
-          <PushButton size="sm" variant="dark" onClick={handleReset}>[ {t.reset} ]</PushButton>
+      <aside className="relative flex-1 md:flex-none md:w-[320px] min-h-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col">
+        <div className="shrink-0 px-5 pt-6 pb-3">
+          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.aurora.name}</span>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
 
           {/* Shape */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777]">{t.aurora.shape}</span>
+          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-[7px]">
+            <span className="text-[15px] font-medium text-wb-900 select-none">{t.aurora.shape}</span>
 
             <PushButton variant="dark" className="w-full text-center" onClick={() => fileInputRef.current?.click()}>
-              [ {t.aurora.upload} ]
+              {t.aurora.upload}
             </PushButton>
             <input
               ref={fileInputRef}
@@ -719,16 +718,16 @@ export default function AuroraPage() {
             />
 
             {/* Sample group */}
-            <div className="flex flex-col gap-2 py-2 border-y border-[rgba(0,0,0,0.08)]">
+            <div className="flex flex-col gap-2 py-2 border-y border-wb-100">
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-px bg-[rgba(0,0,0,0.08)]" />
-                <span className="text-[10px] font-mono text-[#aaa] uppercase tracking-[0.14em]">sample</span>
-                <div className="flex-1 h-px bg-[rgba(0,0,0,0.08)]" />
+                <div className="flex-1 h-px bg-wb-100" />
+                <span className="text-[11px] text-wb-400 select-none">sample</span>
+                <div className="flex-1 h-px bg-wb-100" />
               </div>
               <PushButton variant="light" className="w-full text-center" onClick={handleShuffle}>
-                [ {t.aurora.shuffle} ]
+                {t.aurora.shuffle}
               </PushButton>
-              <p className="text-[11px] font-mono text-[#999] tracking-[0.08em]">
+              <p className="text-[12px] text-wb-400">
                 {isLoadingIcon ? '...' : currentIconName}
               </p>
             </div>
@@ -739,10 +738,9 @@ export default function AuroraPage() {
           </div>
 
           {/* Mode */}
-          <div className="px-4 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-2">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777]">{t.shader.mode}</span>
+          <div className="px-4 py-4 border-b border-wb-200 flex flex-col gap-[7px]">
             <Select value={String(params.mode)} onValueChange={v => setParams({ mode: Number(v) })}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger label={t.shader.mode} className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -755,7 +753,7 @@ export default function AuroraPage() {
           </div>
 
           {/* Motion params */}
-          <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
+          <div className="flex flex-col gap-[7px] px-4 py-4 border-b border-wb-200">
             <DragParam label={t.shader.speed} value={params.speed} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.speed} onChange={v => setParams({ speed: v })} />
             <DragParam label={t.shader.noiseScale} value={params.noiseScale} min={0.1} max={4} step={0.1} defaultValue={DEFAULT_PARAMS.noiseScale} onChange={v => setParams({ noiseScale: v })} />
             <DragParam label={t.shader.distortion} value={params.warp} min={0.1} max={10} step={0.1} defaultValue={DEFAULT_PARAMS.warp} onChange={v => setParams({ warp: v })} />
@@ -765,14 +763,14 @@ export default function AuroraPage() {
           </div>
 
           {/* Colors */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-4">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777]">{t.colors}</span>
+          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-4">
+            <span className="text-[15px] font-medium text-wb-900 select-none">{t.colors}</span>
 
             <ColorRow label="BG" value={params.colorBg} onChange={v => setParams({ colorBg: v })} />
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-[7px]">
               <ColorRow label={t.shader.color1} value={params.color1} onChange={v => setParams({ color1: v })} />
-              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
+              <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-[7px]">
                 <DragParam label={t.shader.intensity} value={params.intensity1} min={0} max={5} step={0.1} onChange={v => setParams({ intensity1: v })} defaultValue={DEFAULT_PARAMS.intensity1} />
                 <DragParam label={t.shader.threshold} value={params.threshold1} min={-1} max={1} step={0.01} onChange={v => setParams({ threshold1: v })} defaultValue={DEFAULT_PARAMS.threshold1} />
               </div>
@@ -782,41 +780,41 @@ export default function AuroraPage() {
 
 
           {/* Background */}
-          <div className="px-5 py-4 flex flex-col gap-3">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777]">{t.aurora.background}</span>
+          <div className="px-5 py-4 flex flex-col gap-[7px]">
+            <span className="text-[15px] font-medium text-wb-900 select-none">{t.aurora.background}</span>
             <ColorRow label={t.shader.bgColor} value={params.canvasBg} onChange={v => setParams({ canvasBg: v })} />
-            <div className="flex items-center justify-between">
-              <span className="text-[12px] font-mono text-[#555]">{t.aurora.transparent}</span>
-              <ToggleSwitch active={params.transparentBg} onClick={() => setParams({ transparentBg: !params.transparentBg })} size="sm" />
-            </div>
+            <ToggleSwitch label={t.aurora.transparent} active={params.transparentBg} onClick={() => setParams({ transparentBg: !params.transparentBg })} />
           </div>
 
         </div>
 
         {/* Footer actions */}
-        <div ref={outputFooterRef} className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] relative flex justify-end md:block">
+        <div ref={outputFooterRef} className="absolute inset-x-0 bottom-0 flex items-center gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
+          <PushButton variant="light" onClick={handleReset} className="shrink-0">
+            {t.reset}
+          </PushButton>
           <PushButton
             variant="dark"
-            className="md:w-full md:text-center"
+            className="flex-1 text-center"
             onClick={() => setShowOutputMenu(v => !v)}
           >
-            [ {t.aurora.output} ]
+            {t.aurora.output}
           </PushButton>
           {showOutputMenu && (
-            <div className="absolute bottom-[calc(100%-4px)] left-5 right-5 bg-[#1e1e1e] border border-[rgba(255,255,255,0.1)] rounded-[6px] overflow-hidden [box-shadow:0_-4px_16px_rgba(0,0,0,0.4)]">
+            <div className="absolute bottom-[calc(100%+6px)] left-5 right-5 bg-wb-0 border border-wb-200 rounded-[12px] overflow-hidden shadow-[0_-4px_20px_rgba(12,12,16,0.14)]">
               <button
-                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none border-b border-[rgba(255,255,255,0.06)]"
+                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none border-b border-wb-200"
                 onClick={() => { setShowOutputMenu(false); handleDownload(); }}
               >
                 PNG — Image
               </button>
-              <div className="border-b border-[rgba(255,255,255,0.06)] px-4 py-2 flex items-center gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#777] shrink-0">Video</span>
+              <div className="border-b border-wb-200 px-4 py-2 flex items-center gap-2">
+                <span className="text-[12px] text-wb-500 shrink-0 select-none">Video</span>
                 <div className="flex gap-1.5 flex-1">
                   {([3, 5, 10] as const).map(sec => (
                     <button
                       key={sec}
-                      className="flex-1 py-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-[#e0e0e2] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.12)] rounded-[4px] transition-colors disabled:opacity-40"
+                      className="flex-1 py-1.5 text-[12px] text-wb-700 bg-wb-50 hover:bg-wb-100 rounded-[8px] transition-colors disabled:opacity-40"
                       disabled={isRecording}
                       onClick={() => { setShowOutputMenu(false); handleVideoExport(sec); }}
                     >
@@ -826,7 +824,7 @@ export default function AuroraPage() {
                 </div>
               </div>
               <button
-                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none"
+                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none"
                 onClick={() => { setShowOutputMenu(false); handleExport(); }}
               >
                 HTML — Code
@@ -843,19 +841,19 @@ export default function AuroraPage() {
             <DialogTitle>{t.aurora.exportCodeTitle}</DialogTitle>
           </DialogHeader>
           <textarea
-            className="flex-1 min-h-[300px] rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)]"
+            className="flex-1 min-h-[300px] rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 font-mono text-[12px] leading-relaxed p-4 resize-none outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
             value={exportCode}
             readOnly
           />
           <div className="flex justify-end gap-2 pt-2">
-            <button className="px-4 py-2 bg-transparent border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#242424]/5 transition-colors select-none" onClick={() => setShowExport(false)}>
-              [ {t.close} ]
+            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => setShowExport(false)}>
+              {t.close}
             </button>
-            <button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={() => { const b=new Blob([exportCode],{type:"text/html"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="aurora.html";a.click();URL.revokeObjectURL(u); }}>
-              [ .html ]
+            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => { const b=new Blob([exportCode],{type:"text/html"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="aurora.html";a.click();URL.revokeObjectURL(u); }}>
+              .html
             </button>
-            <button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={() => copy(exportCode)}>
-              [ {copied ? t.copied : t.copy} ]
+            <button className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none" onClick={() => copy(exportCode)}>
+              {copied ? t.copied : t.copy}
             </button>
           </div>
         </DialogContent>

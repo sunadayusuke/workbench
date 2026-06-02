@@ -555,7 +555,7 @@ function ColorInput({
 
   return (
     <div className={`flex flex-col gap-2 ${className ?? ""}`}>
-      {label && <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#242424]">{label}</Label>}
+      {label && <Label className="text-[13px] text-wb-700">{label}</Label>}
       <div className="flex items-center gap-2">
         <input
           type="color"
@@ -564,7 +564,7 @@ function ColorInput({
             onChangeHex(e.target.value);
             setDraft(e.target.value);
           }}
-          className="size-9 shrink-0 block cursor-pointer p-0 overflow-hidden color-swatch border border-[#242424]"
+          className="size-9 shrink-0 block cursor-pointer p-0 overflow-hidden color-swatch border border-wb-200"
         />
         <Input
           value={displayValue}
@@ -607,7 +607,7 @@ function ContrastResult({
     <div className="flex flex-col gap-3">
       {/* Preview */}
       <div
-        className="rounded-lg border border-[#242424] p-4 text-center"
+        className="rounded-lg border border-wb-200 p-4 text-center"
         style={{ backgroundColor: bgHex, color: fgHex }}
       >
         <p className="text-[22px] font-bold leading-tight">Aa</p>
@@ -616,8 +616,8 @@ function ContrastResult({
 
       {/* Ratio */}
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-mono uppercase tracking-[0.06em] text-[#242424]">{t.color.contrastRatio}</span>
-        <span className="text-[14px] font-bold font-mono tabular-nums">
+        <span className="text-[13px] text-wb-700">{t.color.contrastRatio}</span>
+        <span className="text-[14px] font-bold font-mono tabular-nums text-wb-900">
           {ratio.toFixed(2)}:1
         </span>
       </div>
@@ -628,10 +628,10 @@ function ContrastResult({
           <span
             key={c.label}
             className={[
-              "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium",
+              "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium",
               ratio >= c.threshold
-                ? "bg-[#22c55e] text-white"
-                : "border border-[#242424] text-[#242424]",
+                ? "bg-wb-green text-white"
+                : "border border-wb-300 text-wb-500",
             ].join(" ")}
           >
             {c.label} {ratio >= c.threshold ? "Pass" : "Fail"}
@@ -938,7 +938,7 @@ export default function ColorPage() {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d8d8da]">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-wb-50">
       {/* Main area */}
       <div className="h-[55vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0 relative bg-white">
         {/* Top bar */}
@@ -949,17 +949,17 @@ export default function ColorPage() {
           {/* Color preview */}
           <section className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
-              <div className="text-[12px] font-mono uppercase tracking-[0.2em] text-[#242424] whitespace-nowrap select-none">{t.color.preview}</div>
+              <div className="text-[13px] font-semibold text-wb-700 whitespace-nowrap select-none">{t.color.preview}</div>
               <div className="groove flex-1" />
             </div>
             <div className="flex gap-4 items-stretch">
               <div
-                className="w-32 h-32 rounded-3xl border border-[#242424] shrink-0"
+                className="w-32 h-32 rounded-3xl border border-wb-200 shrink-0"
                 style={{ backgroundColor: hex }}
               />
               <div className="flex flex-col justify-center gap-1 min-w-0">
-                <p className="text-[15px] font-bold font-mono">{hex}</p>
-                <p className="text-[13px] font-mono text-[#242424]">
+                <p className="text-[15px] font-bold font-mono text-wb-900">{hex}</p>
+                <p className="text-[13px] font-mono text-wb-600">
                   oklch({oklch[0].toFixed(3)} {oklch[1].toFixed(3)}{" "}
                   {oklch[2].toFixed(1)})
                 </p>
@@ -975,7 +975,7 @@ export default function ColorPage() {
           {/* Contrast checker */}
           <section className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
-              <div className="text-[12px] font-mono uppercase tracking-[0.2em] text-[#242424] whitespace-nowrap select-none">{t.color.contrastCheck}</div>
+              <div className="text-[13px] font-semibold text-wb-700 whitespace-nowrap select-none">{t.color.contrastCheck}</div>
               <div className="groove flex-1" />
             </div>
             <ColorInput
@@ -993,22 +993,22 @@ export default function ColorPage() {
           {/* Scale */}
           <section className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
-              <div className="text-[12px] font-mono uppercase tracking-[0.2em] text-[#242424] whitespace-nowrap select-none">{t.color.colorScale}</div>
+              <div className="text-[13px] font-semibold text-wb-700 whitespace-nowrap select-none">{t.color.colorScale}</div>
               <div className="groove flex-1" />
               <button
                 onClick={() => copySvg(generateSvgScale(scale))}
-                className="bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] px-2.5 py-1 hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none whitespace-nowrap"
+                className="h-8 px-3 rounded-[10px] bg-wb-900 text-wb-0 text-[13px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none whitespace-nowrap"
               >
-                [ {copiedSvg ? t.copied : t.color.copySvg} ]
+                {copiedSvg ? t.copied : t.color.copySvg}
               </button>
             </div>
             <div className="flex flex-col sm:flex-row -mx-4 md:-mx-6 -mb-6">
               <div className="flex-1 min-w-0 bg-white px-5 py-6 md:px-9 md:py-9">
-                <p className="text-[12px] font-mono uppercase tracking-[0.10em] text-black/40 mb-4">Light</p>
+                <p className="text-[12px] font-medium text-black/40 mb-4">Light</p>
                 <ScaleSwatch scale={scale} />
               </div>
               <div className="flex-1 min-w-0 bg-black px-5 py-6 md:px-9 md:py-9">
-                <p className="text-[12px] font-mono uppercase tracking-[0.10em] text-white/40 mb-4">Dark</p>
+                <p className="text-[12px] font-medium text-white/40 mb-4">Dark</p>
                 <ScaleSwatch scale={darkScale} />
               </div>
             </div>
@@ -1017,7 +1017,7 @@ export default function ColorPage() {
           {/* UI Samples */}
           <section className="flex flex-col gap-3 mt-12">
             <div className="flex items-center gap-3">
-              <div className="text-[12px] font-mono uppercase tracking-[0.2em] text-[#242424] whitespace-nowrap select-none">{t.color.uiSample}</div>
+              <div className="text-[13px] font-semibold text-wb-700 whitespace-nowrap select-none">{t.color.uiSample}</div>
               <div className="groove flex-1" />
             </div>
             <div className="flex flex-col sm:flex-row -mx-4 md:-mx-6 -mb-6">
@@ -1033,19 +1033,18 @@ export default function ColorPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="flex-1 md:flex-none w-full md:w-[320px] shrink-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col overflow-hidden">
+      <aside className="relative flex-1 md:flex-none w-full md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
-          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.color.name}</span>
-          <PushButton size="sm" variant="dark" onClick={() => { setHex('#2a6db6'); setOklch(hexToOklch('#2a6db6')); }}>[ {t.reset} ]</PushButton>
+        <div className="shrink-0 px-5 pt-6 pb-3">
+          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.color.name}</span>
         </div>
 
         {/* Scrollable interior */}
-        <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
 
           {/* Base color input */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)]">
+          <div className="px-5 py-4 border-b border-wb-200">
             <ColorInput
               label={t.color.baseColor}
               hex={hex}
@@ -1054,7 +1053,7 @@ export default function ColorPage() {
           </div>
 
           {/* OKLCH knobs: L / C / H */}
-          <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
+          <div className="flex flex-col gap-[7px] px-4 py-4 border-b border-wb-200">
             <DragParam
               label={t.color.oklchL}
               value={oklch[0]}
@@ -1083,24 +1082,31 @@ export default function ColorPage() {
 
           {/* Scale name */}
           <div className="px-5 py-4 flex flex-col gap-2">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.color.scaleName}</span>
+            <span className="text-[15px] font-medium text-wb-900 select-none">{t.color.scaleName}</span>
             <Input
               value={scaleName}
               onChange={(e) => setScaleName(e.target.value)}
               placeholder="brand"
               className="font-mono text-[12px]"
             />
-            <p className="text-[11px] font-mono text-[#777]">
+            <p className="text-[12px] text-wb-500">
               {t.color.scaleNameHint.replace("{name}", scaleName)}
             </p>
           </div>
 
         </div>
 
-        {/* Export button */}
-        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] flex justify-end md:block">
-          <PushButton variant="dark" className="md:w-full md:text-center" onClick={() => setShowCssDialog(true)}>
-            [ {t.exportCode} ]
+        {/* Footer */}
+        <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
+          <PushButton
+            variant="light"
+            onClick={() => { setHex('#2a6db6'); setOklch(hexToOklch('#2a6db6')); }}
+            className="shrink-0"
+          >
+            {t.reset}
+          </PushButton>
+          <PushButton variant="dark" className="flex-1" onClick={() => setShowCssDialog(true)}>
+            {t.exportCode}
           </PushButton>
         </div>
       </aside>
@@ -1113,9 +1119,8 @@ export default function ColorPage() {
           </DialogHeader>
           <div className="flex gap-2">
             <div className="flex flex-col gap-1.5 flex-1">
-              <Label className="text-[12px] text-[#242424]">{t.color.outputFormat}</Label>
               <Select value={outputFmt} onValueChange={(v) => setOutputFmt(v as OutputFmt)}>
-                <SelectTrigger className="cursor-pointer">
+                <SelectTrigger label={t.color.outputFormat} className="cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1127,9 +1132,8 @@ export default function ColorPage() {
               </Select>
             </div>
             <div className="flex flex-col gap-1.5 flex-1">
-              <Label className="text-[12px] text-[#242424]">{t.color.colorFormat}</Label>
               <Select value={colorFmt} onValueChange={(v) => setColorFmt(v as ColorFmt)}>
-                <SelectTrigger className="cursor-pointer">
+                <SelectTrigger label={t.color.colorFormat} className="cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1143,23 +1147,23 @@ export default function ColorPage() {
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
             <textarea
-              className="w-full h-full rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)]"
+              className="w-full h-full rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 font-mono text-[12px] leading-relaxed p-4 resize-none outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
               value={cssOutput}
               readOnly
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button
-              className="px-4 py-2 bg-transparent border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#242424]/5 transition-colors select-none"
+              className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none"
               onClick={() => setShowCssDialog(false)}
             >
-              [ {t.close} ]
+              {t.close}
             </button>
             <button
-              className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none"
+              className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none"
               onClick={() => copyCss(cssOutput)}
             >
-              [ {copied ? t.copied : t.copy} ]
+              {copied ? t.copied : t.copy}
             </button>
           </div>
         </DialogContent>

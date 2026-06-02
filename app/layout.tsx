@@ -32,6 +32,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja" className="light">
+      <head>
+        {/* Gen Interface JP — Inter × Noto Sans JP (yamatoiizuka/gen-interface-jp) */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gen-interface-jp@latest/cdn/400.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gen-interface-jp@latest/cdn/500.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gen-interface-jp@latest/cdn/600.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gen-interface-jp@latest/cdn/700.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gen-interface-jp@latest/cdn/display-700.css" />
+      </head>
       <body>
         <Providers>{children}</Providers>
         <Analytics />

@@ -13,6 +13,7 @@ import { useLanguage } from "@/lib/i18n";
 import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 import { AppTopBar } from "@/components/app-top-bar";
+import { ColorRow } from "@/components/ui/color-row";
 import { hexToRGB } from "@/lib/color-utils";
 import { downloadCanvas } from "@/lib/canvas-download";
 
@@ -728,7 +729,7 @@ export default function GradientPage() {
 
   /* --- Render --- */
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-[#d8d8da]">
+    <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-wb-50">
       {/* Canvas area */}
       <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0 bg-black">
         <div className="w-full h-full p-6">
@@ -769,19 +770,18 @@ export default function GradientPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="flex-1 md:flex-none md:w-[320px] shrink-0 bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] shadow-[0_-8px_24px_rgba(0,0,0,0.10)] md:shadow-none md:border-l md:border-[#bbbbbe] flex flex-col overflow-hidden">
+      <aside className="relative flex-1 md:flex-none md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 h-12 shrink-0 border-b border-[rgba(0,0,0,0.12)]">
-          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.gradient.name}</span>
-          <PushButton size="sm" variant="dark" onClick={handleReset}>[ {t.reset} ]</PushButton>
+        <div className="shrink-0 px-5 pt-6 pb-3">
+          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.gradient.name}</span>
         </div>
 
         {/* Scrollable interior */}
-        <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
 
           {/* Knob row: SPREAD / SCALE / NOISE / GRAIN */}
-          <div className="flex flex-col gap-2 px-4 py-4 border-b border-[rgba(0,0,0,0.08)]">
+          <div className="flex flex-col gap-[7px] px-4 py-4 border-b border-wb-200">
             <DragParam
               label={t.gradient.spread}
               value={params.spread}
@@ -817,9 +817,9 @@ export default function GradientPage() {
           </div>
 
           {/* Aspect ratio + Gradient type selects */}
-          <div className="px-5 py-4 flex flex-col gap-3 border-b border-[rgba(0,0,0,0.08)]">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.gradient.output}</span>
-            <div className="flex flex-col gap-2">
+          <div className="px-5 py-4 flex flex-col gap-3 border-b border-wb-200">
+            <span className="text-[15px] font-medium text-wb-900 select-none">{t.gradient.output}</span>
+            <div className="flex flex-col gap-[7px]">
               <Select
                 value={params.aspectPreset}
                 onValueChange={(v) => setParams((prev) => ({ ...prev, aspectPreset: v }))}
@@ -840,28 +840,28 @@ export default function GradientPage() {
               </Select>
             </div>
             {params.aspectPreset === "custom" && (
-              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-3">
+              <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-3">
                 <div className="flex items-center gap-2">
-                  <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#555] w-8">{t.gradient.width}</Label>
+                  <Label className="text-[12px] text-wb-600 w-8">{t.gradient.width}</Label>
                   <input
                     type="number"
                     value={params.customWidth}
                     onChange={(e) => setParams((prev) => ({ ...prev, customWidth: Math.max(1, Number(e.target.value) || 1) }))}
-                    className="flex-1 h-9 rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] px-3 font-mono text-[12px] outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)] focus:[box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35),0_0_0_1px_var(--led-green)]"
+                    className="flex-1 h-9 rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 px-3 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#555] w-8">{t.gradient.height}</Label>
+                  <Label className="text-[12px] text-wb-600 w-8">{t.gradient.height}</Label>
                   <input
                     type="number"
                     value={params.customHeight}
                     onChange={(e) => setParams((prev) => ({ ...prev, customHeight: Math.max(1, Number(e.target.value) || 1) }))}
-                    className="flex-1 h-9 rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] px-3 font-mono text-[12px] outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)] focus:[box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35),0_0_0_1px_var(--led-green)]"
+                    className="flex-1 h-9 rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 px-3 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
                   />
                 </div>
               </div>
             )}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-[7px]">
               <Select
                 value={String(params.gradientType)}
                 onValueChange={(v) => setParams((prev) => ({ ...prev, gradientType: Number(v) }))}
@@ -879,61 +879,48 @@ export default function GradientPage() {
               </Select>
             </div>
             {params.gradientType === 1 && (
-              <div className="pl-3 border-l-2 border-[#bbbbbe]">
+              <div className="pl-3 border-l-2 border-wb-100">
                 <DragParam label={t.gradient.angle} value={params.angle} min={0} max={360} step={1} defaultValue={DEFAULT_PARAMS.angle} onChange={(v) => setParams((prev) => ({ ...prev, angle: v }))} />
               </div>
             )}
           </div>
 
           {/* Colors */}
-          <div className="px-5 py-4 flex flex-col gap-3 border-b border-[rgba(0,0,0,0.08)]">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.colors}</span>
+          <div className="px-5 py-4 flex flex-col gap-3 border-b border-wb-200">
+            <div className="flex items-center justify-between">
+              <span className="text-[15px] font-medium text-wb-900 select-none">{t.colors}</span>
+              {params.colors.length < 8 && (
+                <button type="button" onClick={handleAddColor} className="flex size-7 shrink-0 items-center justify-center rounded-full border border-wb-100 bg-wb-0 text-[14px] font-semibold leading-none text-wb-900 shadow-[0px_2px_2px_0px_rgba(0,0,0,0.02)] transition-colors hover:bg-wb-50">＋</button>
+              )}
+            </div>
             <PushButton variant="dark" className="w-full text-center" onClick={handleShuffle}>
-              [ {t.gradient.shuffle} ]
+              {t.gradient.shuffle}
             </PushButton>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-[7px]">
               {params.colors.map((spot, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={spot.color}
-                    onChange={(e) => handleColorChange(i, e.target.value)}
-                    className="size-9 shrink-0 block border border-[#bbbbbe] cursor-pointer p-0 overflow-hidden color-swatch"
-                  />
-                  <span className="text-[12px] font-mono text-[#333] flex-1">
-                    {spot.color}
-                  </span>
-                  {params.colors.length > 2 && (
-                    <button
-                      onClick={() => handleRemoveColor(i)}
-                      className="text-[#777] hover:text-[#333] text-sm w-6 h-6 flex items-center justify-center rounded transition-colors"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
+                <ColorRow
+                  key={i}
+                  value={spot.color}
+                  onChange={(v) => handleColorChange(i, v)}
+                  onRemove={params.colors.length > 2 ? () => handleRemoveColor(i) : undefined}
+                />
               ))}
             </div>
-            {params.colors.length < 8 && (
-              <PushButton variant="light" className="w-full text-center" onClick={handleAddColor}>
-                [ {t.gradient.addColor} ]
-              </PushButton>
-            )}
           </div>
 
           {/* Effects (secondary) */}
           <div className="flex flex-col gap-3 px-5 py-4">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.gradient.effects}</span>
+            <span className="text-[15px] font-medium text-wb-900 select-none">{t.gradient.effects}</span>
             <DragParam label={t.gradient.particle} value={params.stipple} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.stipple} onChange={(v) => setParams((prev) => ({ ...prev, stipple: v }))} />
             {params.stipple > 0 && (
-              <div className="pl-3 border-l-2 border-[#bbbbbe]">
+              <div className="pl-3 border-l-2 border-wb-100">
                 <DragParam label={t.gradient.granularity} value={params.stippleSize} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.stippleSize} onChange={(v) => setParams((prev) => ({ ...prev, stippleSize: v }))} />
               </div>
             )}
             <DragParam label={t.gradient.halftone} value={params.halftone} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.halftone} onChange={(v) => setParams((prev) => ({ ...prev, halftone: v }))} />
             <DragParam label={t.gradient.rib} value={params.glassAmount} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassAmount} onChange={(v) => setParams((prev) => ({ ...prev, glassAmount: v }))} />
             {params.glassAmount > 0 && (
-              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
+              <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-[7px]">
                 <DragParam label={t.gradient.density} value={params.glassFreq} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassFreq} onChange={(v) => setParams((prev) => ({ ...prev, glassFreq: v }))} />
                 <DragParam label={t.gradient.shift} value={params.glassShift} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassShift} onChange={(v) => setParams((prev) => ({ ...prev, glassShift: v }))} />
               </div>
@@ -941,7 +928,7 @@ export default function GradientPage() {
             <DragParam label={t.gradient.chromaticAberration} value={params.chromatic} min={0} max={2} step={0.01} defaultValue={DEFAULT_PARAMS.chromatic} onChange={(v) => setParams((prev) => ({ ...prev, chromatic: v }))} />
             <DragParam label={t.gradient.wave} value={params.waveAmount} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.waveAmount} onChange={(v) => setParams((prev) => ({ ...prev, waveAmount: v }))} />
             {params.waveAmount > 0 && (
-              <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
+              <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-[7px]">
                 <DragParam label={t.gradient.frequency} value={params.waveFrequency} min={1} max={30} step={0.5} defaultValue={DEFAULT_PARAMS.waveFrequency} onChange={(v) => setParams((prev) => ({ ...prev, waveFrequency: v }))} />
                 <DragParam label={t.gradient.direction} value={params.waveAngle} min={0} max={360} step={1} defaultValue={DEFAULT_PARAMS.waveAngle} onChange={(v) => setParams((prev) => ({ ...prev, waveAngle: v }))} />
                 <DragParam label={t.gradient.random} value={params.waveRandom} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.waveRandom} onChange={(v) => setParams((prev) => ({ ...prev, waveRandom: v }))} />
@@ -951,10 +938,13 @@ export default function GradientPage() {
 
         </div>
 
-        {/* Download button */}
-        <div className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] flex justify-end md:block">
-          <PushButton variant="dark" className="md:w-full md:text-center" onClick={handleDownload}>
-            [ {t.download} ]
+        {/* Footer: reset + download */}
+        <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
+          <PushButton variant="light" onClick={handleReset} className="shrink-0">
+            {t.reset}
+          </PushButton>
+          <PushButton variant="dark" className="flex-1" onClick={handleDownload}>
+            {t.download}
           </PushButton>
         </div>
       </aside>

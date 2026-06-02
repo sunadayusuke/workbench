@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
-import { PushButton } from "@/components/ui/push-button";
+import { LangToggle } from "@/components/ui/lang-toggle";
+import { AppPreview } from "@/components/app-preview";
 
 const APP_KEYS = ["color", "shader", "image", "compress", "easing", "gradient", "particle", "dotmap", "signal", "aurora", "badge"] as const;
 
@@ -21,79 +22,72 @@ const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
 };
 
 export default function Home() {
-  const { lang, toggle, t } = useLanguage();
+  const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-[#d8d8da] text-[#242424] px-6 py-10 md:px-12 md:py-12">
+    <div className="min-h-screen bg-wb-50 text-wb-900">
+      <div className="px-5 pt-6 pb-20 md:px-8 md:pt-8 md:pb-20">
 
-      {/* Header */}
-      <header className="flex items-center justify-between mb-12 md:mb-16">
-        <img
-          src="/images/workbench_logo.svg"
-          alt="Workbench"
-          className="w-[110px] md:w-[130px]"
-          style={{ filter: "brightness(0)" }}
-        />
-        <div className="flex items-center gap-4">
-          <p className="text-[12px] font-mono uppercase tracking-[0.18em] text-[#242424] select-none hidden md:block">
-            {t.homeSubtitle}
-          </p>
-          <PushButton onClick={toggle} variant="dark" size="sm">
-            [ {lang === "ja" ? "EN" : "JA"} ]
-          </PushButton>
-          <a
-            href="https://x.com/YusukeSunada"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="opacity-70 hover:opacity-100 transition-opacity"
-          >
-            <img src="/images/x_logo.svg" alt="X" className="w-[14px]" style={{ filter: "brightness(0)" }} />
-          </a>
-        </div>
-      </header>
-
-      {/* Label */}
-      <p className="text-[12px] font-mono uppercase tracking-[0.28em] text-[#242424] mb-5 select-none">
-        Applications
-      </p>
-
-      {/* Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5 mb-14">
-        {APP_KEYS.map((key) => {
-          const href = APP_HREFS[key];
-          const app = t.apps[key];
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={[
-                "no-underline block relative overflow-hidden select-none",
-                "rounded-[14px]",
-                "bg-[linear-gradient(180deg,#e8e8e9_0%,#d4d4d6_100%)]",
-                "border border-[rgba(0,0,0,0.18)]",
-                "[box-shadow:0_3px_0_#b8b8bc,0_4px_8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.72)]",
-                "active:translate-y-[3px] active:[box-shadow:0_0_0_#b8b8bc,inset_0_1px_4px_rgba(0,0,0,0.1)]",
-                "transition-[transform,box-shadow] duration-[50ms]",
-                "h-28 md:h-32 p-4 pl-5 flex flex-col justify-between",
-              ].join(" ")}
+        {/* Header */}
+        <header className="mb-6 flex items-center justify-between md:mb-8">
+          <img
+            src="/images/workbench_logo.svg"
+            alt="Workbench"
+            className="w-[132px] md:w-[144px]"
+            style={{ filter: "brightness(0)" }}
+          />
+          <div className="flex items-center gap-3 md:gap-4">
+            <p className="hidden text-[14px] text-wb-500 md:block">{t.homeSubtitle}</p>
+            <a
+              href="https://x.com/YusukeSunada"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="X"
+              className="flex size-10 items-center justify-center opacity-70 transition-opacity hover:opacity-100"
             >
-              <div>
-                <p className="text-[12px] font-mono uppercase tracking-[0.08em] text-[#1a1a1a] font-bold mb-2">
-                  {app.name}
-                </p>
-                <p className="text-[10px] font-mono text-[#555] leading-relaxed">
-                  {app.description}
-                </p>
-              </div>
-              {/* Bottom-right label */}
-              <p className="text-[12px] font-mono uppercase tracking-[0.14em] text-[#aaa] text-right">
-                {key}
-              </p>
-            </Link>
-          );
-        })}
-      </div>
+              <img src="/images/x_logo.svg" alt="X" className="w-5" style={{ filter: "brightness(0)" }} />
+            </a>
+            <LangToggle />
+          </div>
+        </header>
 
+        {/* App grid */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {APP_KEYS.map((key) => {
+            const href = APP_HREFS[key];
+            const app = t.apps[key];
+            return (
+              <Link
+                key={href}
+                href={href}
+                className="group relative flex select-none flex-col gap-3 rounded-[16px] bg-wb-0 p-3 shadow-[0px_4px_20px_-8px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-[cubic-bezier(0.22,0.61,0.36,1)] will-change-transform hover:-translate-y-1 active:-translate-y-0.5 active:duration-150"
+              >
+                {/* hover shadow as an opacity crossfade — avoids box-shadow repaint jank */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-[16px] opacity-0 shadow-[0px_18px_40px_-12px_rgba(0,0,0,0.2)] transition-opacity duration-300 ease-out group-hover:opacity-100"
+                />
+                <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[10px] bg-wb-100 shadow-[0px_8px_10px_-4px_rgba(0,0,0,0.06)]">
+                  <AppPreview appKey={key} className="absolute inset-0 transition-transform duration-[450ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] will-change-transform group-hover:scale-[1.04]" />
+                </div>
+                <div className="relative flex w-full items-end gap-3 p-1">
+                  <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                    <p className="truncate text-[14px] font-medium text-wb-900">{app.name}</p>
+                    <p className="truncate text-[11px] text-wb-500">{app.description}</p>
+                  </div>
+                  <span
+                    aria-hidden
+                    className="shrink-0 text-[16px] leading-none text-wb-400 transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:translate-x-1 group-hover:text-wb-600"
+                  >
+                    →
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+      </div>
     </div>
   );
 }

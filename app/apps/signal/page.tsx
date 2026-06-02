@@ -5,6 +5,8 @@ import { useLanguage } from "@/lib/i18n";
 import { PushButton } from "@/components/ui/push-button";
 import { DragParam } from "@/components/ui/drag-param";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import { ButtonSelect } from "@/components/ui/button-select";
+import { ColorRow } from "@/components/ui/color-row";
 import { downloadCanvas } from "@/lib/canvas-download";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { AppTopBar } from "@/components/app-top-bar";
@@ -371,7 +373,7 @@ export default function SignalPage() {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col md:flex-row bg-[#d8d8da]">
+    <div className="fixed inset-0 flex flex-col md:flex-row bg-wb-50">
 
       {/* Canvas area */}
       <div className="h-[55vh] md:h-auto md:flex-1 relative overflow-hidden" style={{ background: params.transparentBg ? undefined : params.bgColor }}>
@@ -380,21 +382,19 @@ export default function SignalPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="md:w-[320px] bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] border-l border-[#bbbbbe] flex flex-col overflow-hidden">
+      <aside className="relative md:w-[320px] bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 h-12 border-b border-[rgba(0,0,0,0.12)] shrink-0">
-          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333]">{t.apps.signal.name}</span>
-          <PushButton size="sm" variant="dark" onClick={() => setParams(DEFAULT)}>[ {t.reset} ]</PushButton>
+        <div className="shrink-0 px-5 pt-6 pb-3">
+          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.signal.name}</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
 
           {/* Mode */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)]">
-            <p className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] mb-3">{t.signal.mode}</p>
+          <div className="px-5 py-4 border-b border-wb-200">
             <Select value={params.mode} onValueChange={v => update("mode", v as Mode)}>
-              <SelectTrigger className="w-full cursor-pointer">
+              <SelectTrigger label={t.signal.mode} className="w-full cursor-pointer">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -406,8 +406,8 @@ export default function SignalPage() {
           </div>
 
           {/* Grid */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
-            <p className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777]">{t.signal.grid}</p>
+          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
+            <p className="text-[15px] font-medium text-wb-900 select-none">{t.signal.grid}</p>
             <DragParam
               label={t.signal.gridSize}
               value={params.gridSize}
@@ -415,26 +415,19 @@ export default function SignalPage() {
               defaultValue={DEFAULT.gridSize}
               onChange={v => update("gridSize", v)}
             />
-            <div className="flex items-center justify-between">
-              <span className="text-[12px] font-mono uppercase tracking-[0.10em] text-[#666]">{t.signal.shape}</span>
-              <div className="flex gap-1">
-                {(["square", "circle"] as Shape[]).map(s => (
-                  <PushButton
-                    key={s}
-                    variant={params.shape === s ? "accent" : "light"}
-                    size="sm"
-                    onClick={() => update("shape", s)}
-                  >
-                    [ {s === "square" ? t.signal.square : t.signal.circle} ]
-                  </PushButton>
-                ))}
-              </div>
+            <div className="flex h-10 w-full items-center gap-1 rounded-[12px] border border-[rgba(12,12,16,0.05)] bg-wb-50 pl-4 pr-3.5 shadow-[0px_2px_2px_0px_rgba(0,0,0,0.02)]">
+              <span className="min-w-0 flex-1 truncate text-[14px] leading-normal text-[rgba(12,12,16,0.46)]">{t.signal.shape}</span>
+              <ButtonSelect
+                value={params.shape}
+                options={[{ value: "square", label: t.signal.square }, { value: "circle", label: t.signal.circle }]}
+                onChange={(v) => update("shape", v as Shape)}
+              />
             </div>
           </div>
 
           {/* Motion — params shown depend on mode */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
-            <p className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777]">{t.signal.motion}</p>
+          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
+            <p className="text-[15px] font-medium text-wb-900 select-none">{t.signal.motion}</p>
             <DragParam label={t.signal.speed}     value={params.speed}     min={0}  max={100} step={1} defaultValue={DEFAULT.speed}     onChange={v => update("speed", v)} />
             <DragParam label={t.signal.frequency} value={params.frequency} min={1}  max={100} step={1} defaultValue={DEFAULT.frequency} onChange={v => update("frequency", v)} />
             {(params.mode === "wave") && (
@@ -450,54 +443,51 @@ export default function SignalPage() {
           </div>
 
           {/* Colors */}
-          <div className="px-5 py-4 flex flex-col gap-3">
-            <p className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777]">{t.signal.colors}</p>
+          <div className="px-5 py-4 flex flex-col gap-[7px]">
+            <p className="text-[15px] font-medium text-wb-900 select-none">{t.signal.colors}</p>
             {([
               { key: "fgColor"  as const, label: t.signal.fgColor  },
               { key: "midColor" as const, label: t.signal.midColor },
               { key: "bgColor"  as const, label: t.signal.bgColor  },
             ] as const).map(({ key, label }) => (
-              <div key={key} className="flex items-center justify-between">
-                <span className="text-[12px] font-mono uppercase tracking-[0.10em] text-[#666]">{label}</span>
-                <input
-                  type="color"
-                  className="color-swatch"
-                  value={params[key] as string}
-                  onChange={e => update(key, e.target.value)}
-                />
-              </div>
-            ))}
-            <div className="flex items-center justify-between">
-              <span className="text-[12px] font-mono uppercase tracking-[0.10em] text-[#666]">{t.signal.transparentBg}</span>
-              <ToggleSwitch
-                active={params.transparentBg}
-                onClick={() => update("transparentBg", !params.transparentBg)}
-                size="sm"
+              <ColorRow
+                key={key}
+                label={label}
+                value={params[key] as string}
+                onChange={v => update(key, v)}
               />
-            </div>
+            ))}
+            <ToggleSwitch
+              label={t.signal.transparentBg}
+              active={params.transparentBg}
+              onClick={() => update("transparentBg", !params.transparentBg)}
+            />
           </div>
 
         </div>
 
         {/* Footer */}
-        <div ref={outputFooterRef} className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] relative flex justify-end md:block">
+        <div ref={outputFooterRef} className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
+          <PushButton variant="light" onClick={() => setParams(DEFAULT)} className="shrink-0">
+            {t.reset}
+          </PushButton>
           <PushButton
             variant="dark"
-            className="md:w-full md:text-center"
+            className="flex-1"
             onClick={() => setShowOutputMenu(v => !v)}
           >
-            [ {t.signal.output} ]
+            {t.signal.output}
           </PushButton>
           {showOutputMenu && (
-            <div className="absolute bottom-[calc(100%-4px)] left-5 right-5 bg-[#1e1e1e] border border-[rgba(255,255,255,0.1)] rounded-[6px] overflow-hidden [box-shadow:0_-4px_16px_rgba(0,0,0,0.4)]">
+            <div className="absolute bottom-[calc(100%+6px)] left-5 right-5 bg-wb-0 border border-wb-200 rounded-[12px] overflow-hidden shadow-[0_-4px_20px_rgba(12,12,16,0.14)]">
               <button
-                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none border-b border-[rgba(255,255,255,0.06)]"
+                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none border-b border-wb-200"
                 onClick={() => { setShowOutputMenu(false); handleDownload(); }}
               >
                 PNG — Image
               </button>
               <button
-                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none"
+                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none"
                 onClick={() => { setShowOutputMenu(false); handleExportCode(); }}
               >
                 HTML — Code
@@ -515,15 +505,15 @@ export default function SignalPage() {
           </DialogHeader>
           <textarea
             readOnly
-            className="flex-1 min-h-0 w-full resize-none font-mono text-[11px] leading-relaxed bg-[#1a1a1a] text-[#e0e0e2] border border-[rgba(0,0,0,0.5)] [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)] rounded p-3 outline-none"
+            className="flex-1 min-h-0 w-full resize-none font-mono text-[12px] leading-relaxed bg-wb-50 text-wb-900 border border-wb-200 rounded-[10px] p-4 outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
             value={exportCode}
           />
           <div className="flex justify-end gap-2 pt-1">
-            <button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={() => { const b=new Blob([exportCode],{type:"text/html"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="signal-noise.html";a.click();URL.revokeObjectURL(u); }}>
-              [ .html ]
+            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => { const b=new Blob([exportCode],{type:"text/html"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="signal-noise.html";a.click();URL.revokeObjectURL(u); }}>
+              .html
             </button>
-            <button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={() => copy(exportCode)}>
-              {copied ? `[ ${t.copied} ]` : `[ ${t.copy} ]`}
+            <button className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none" onClick={() => copy(exportCode)}>
+              {copied ? t.copied : t.copy}
             </button>
           </div>
         </DialogContent>

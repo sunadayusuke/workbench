@@ -5,6 +5,7 @@ import { AppTopBar } from "@/components/app-top-bar";
 import { PushButton } from "@/components/ui/push-button";
 import { DragParam } from "@/components/ui/drag-param";
 import { ColorRow } from "@/components/ui/color-row";
+import { ButtonSelect } from "@/components/ui/button-select";
 import { useLanguage } from "@/lib/i18n";
 import { downloadCanvas } from "@/lib/canvas-download";
 import { useClipboard } from "@/hooks/use-clipboard";
@@ -825,13 +826,13 @@ export default function BadgePage() {
   }, [showOutputMenu]);
 
   return (
-    <div className="fixed inset-0 flex flex-col md:flex-row bg-[#d8d8da]">
+    <div className="fixed inset-0 flex flex-col md:flex-row bg-wb-50">
       {/* canvas */}
       <div ref={mountRef} className="h-[55vh] md:h-auto md:flex-1 relative overflow-hidden bg-[#0a0a0a]">
         <AppTopBar />
         {!svgName && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/20 select-none">
+            <p className="text-[12px] text-white/30 select-none">
               {t.badge.uploadPrompt}
             </p>
           </div>
@@ -839,50 +840,52 @@ export default function BadgePage() {
         {svgName && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
             <PushButton variant="dark" size="sm" onClick={handleFrontView} disabled={frontAnim}>
-              [ {t.badge.frontView} ]
+              {t.badge.frontView}
             </PushButton>
           </div>
         )}
       </div>
 
       {/* sidebar */}
-      <aside className="md:w-[320px] bg-[linear-gradient(180deg,#e8e8e9,#d8d8da)] border-l border-[#bbbbbe] flex flex-col overflow-hidden">
+      <aside className="relative flex-1 md:flex-none md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
         {/* header */}
-        <div className="flex items-center justify-between px-5 h-12 border-b border-[rgba(0,0,0,0.12)] shrink-0">
-          <span className="text-[14px] font-mono uppercase tracking-[0.22em] text-[#333] select-none">{t.apps.badge.name}</span>
-          <PushButton size="sm" variant="dark" onClick={handleReset}>[ {t.reset} ]</PushButton>
+        <div className="shrink-0 px-5 pt-6 pb-3">
+          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.badge.name}</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
 
           {/* Shape */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.badge.shape}</span>
+          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
+            <span className="text-[15px] font-medium text-wb-900 select-none">{t.badge.shape}</span>
             <PushButton variant="dark" className="w-full text-center" onClick={() => fileInputRef.current?.click()}>
-              [ {svgName ?? t.badge.uploadSvg} ]
+              {svgName ?? t.badge.uploadSvg}
             </PushButton>
             <input ref={fileInputRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
           </div>
 
           {/* Customize */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.badge.customize}</span>
+          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
+            <span className="text-[15px] font-medium text-wb-900 select-none">{t.badge.customize}</span>
             <ColorRow label={t.shader.bgColor} value={bgColor} onChange={updateBgColor} />
             <DragParam label={t.badge.exposure}   value={exposure}  min={0.1} max={4} step={0.05} defaultValue={DEF.exposure}  onChange={updateExposure} />
             <DragParam label={t.badge.saturation} value={globalSat} min={0}   max={3} step={0.05} defaultValue={DEF.globalSat} onChange={updateGlobalSat} />
             <DragParam label={t.badge.tile} value={tile} min={1} max={30} step={1} defaultValue={DEF.tile} onChange={updateTile} />
 
             {/* Color / Bump with global ↔ paths toggle */}
-            <div className="border-t border-[rgba(0,0,0,0.08)] -mx-5" />
-            <div className="flex flex-col gap-1.5">
-              <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-[#999] select-none">Color / Bump</span>
-              {pathInfos.length > 0 && (
-                <div className="flex gap-1">
-                  <PushButton size="sm" variant={colorBumpMode === "global" ? "accent" : "light"} onClick={() => switchColorBumpMode("global")}>[ {t.badge.global} ]</PushButton>
-                  <PushButton size="sm" variant={colorBumpMode === "paths"  ? "accent" : "light"} onClick={() => switchColorBumpMode("paths")}>[ {t.badge.paths} ]</PushButton>
-                </div>
-              )}
-            </div>
+            <div className="py-3"><div className="h-px w-full bg-wb-200" /></div>
+            {pathInfos.length > 0 ? (
+              <div className="flex h-10 w-full items-center gap-1 rounded-[12px] border border-[rgba(12,12,16,0.05)] bg-wb-50 pl-4 pr-3.5 shadow-[0px_2px_2px_0px_rgba(0,0,0,0.02)]">
+                <span className="min-w-0 flex-1 truncate text-[14px] leading-normal text-[rgba(12,12,16,0.46)]">Color / Bump</span>
+                <ButtonSelect
+                  value={colorBumpMode}
+                  options={[{ value: "global", label: t.badge.global }, { value: "paths", label: t.badge.paths }]}
+                  onChange={(v) => switchColorBumpMode(v as ColorBumpMode)}
+                />
+              </div>
+            ) : (
+              <span className="text-[15px] font-medium text-wb-900 select-none">Color / Bump</span>
+            )}
 
             {colorBumpMode === "global" ? (
               <>
@@ -896,8 +899,8 @@ export default function BadgePage() {
               <div className="flex flex-col gap-3">
                 {pathInfos.map((info, pi) => (
                   <div key={pi} className="flex flex-col gap-1.5">
-                    <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#666] select-none truncate">{info.name}</span>
-                    <div className="pl-3 border-l-2 border-[#bbbbbe] flex flex-col gap-2">
+                    <span className="text-[12px] text-wb-600 select-none truncate">{info.name}</span>
+                    <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-[7px]">
                       <ColorRow label={t.shader.color1}
                         value={pathOverrides[pi]?.color ?? color}
                         onChange={v => updatePathOverride(pi, "color", v)} />
@@ -927,8 +930,8 @@ export default function BadgePage() {
           </div>
 
           {/* Matcap */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col gap-3">
-            <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[#777] select-none">{t.badge.matcap}</span>
+          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
+            <span className="text-[15px] font-medium text-wb-900 select-none">{t.badge.matcap}</span>
             <DragParam label={t.badge.rotation}   value={rotation}   min={0}   max={360} step={1}    defaultValue={DEF.rotation}   onChange={updateRotation} />
             <DragParam label={t.badge.brightness}  value={brightness} min={0.1} max={3}   step={0.05} defaultValue={DEF.brightness} onChange={updateBrightness} />
             <DragParam label={t.badge.contrast}    value={contrast}   min={0.1} max={3}   step={0.05} defaultValue={DEF.contrast}   onChange={updateContrast} />
@@ -939,32 +942,33 @@ export default function BadgePage() {
         </div>
 
         {/* footer */}
-        <div ref={outputFooterRef} className="shrink-0 px-5 py-4 border-t border-[rgba(0,0,0,0.12)] relative flex justify-end md:block">
+        <div ref={outputFooterRef} className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
+          <PushButton variant="light" onClick={handleReset} className="shrink-0">{t.reset}</PushButton>
           <PushButton
             variant="dark"
-            className="md:w-full md:text-center"
+            className="flex-1 text-center"
             disabled={!svgName}
             onClick={() => setShowOutputMenu(v => !v)}
           >
-            [ {t.badge.output} ]
+            {t.badge.output}
           </PushButton>
           {showOutputMenu && (
-            <div className="absolute bottom-[calc(100%-4px)] left-5 right-5 bg-[#1e1e1e] border border-[rgba(255,255,255,0.1)] rounded-[6px] overflow-hidden [box-shadow:0_-4px_16px_rgba(0,0,0,0.4)]">
+            <div className="absolute bottom-[calc(100%+6px)] left-5 right-5 bg-wb-0 border border-wb-200 rounded-[12px] overflow-hidden shadow-[0_-4px_20px_rgba(12,12,16,0.14)]">
               <button
-                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none border-b border-[rgba(255,255,255,0.06)]"
+                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none border-b border-wb-200"
                 onClick={() => { setShowOutputMenu(false); handleDownload(); }}
               >
                 PNG — Image
               </button>
               <button
-                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none disabled:opacity-40 border-b border-[rgba(255,255,255,0.06)]"
+                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none disabled:opacity-40 border-b border-wb-200"
                 disabled={isExporting}
                 onClick={() => { setShowOutputMenu(false); handleExportCopy(); }}
               >
                 {isExporting ? "..." : "HTML — Code"}
               </button>
               <button
-                className="w-full px-4 py-3 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-[#e0e0e2] hover:bg-[rgba(255,255,255,0.08)] transition-colors select-none disabled:opacity-40"
+                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none disabled:opacity-40"
                 disabled={isExportingGLB}
                 onClick={() => { setShowOutputMenu(false); handleExportGLB(); }}
               >
@@ -982,19 +986,19 @@ export default function BadgePage() {
             <DialogTitle>{t.apps.badge.name} — Export</DialogTitle>
           </DialogHeader>
           <textarea
-            className="flex-1 min-h-[300px] rounded-[3px] border border-[rgba(0,0,0,0.5)] bg-[#1a1a1a] text-[#e0e0e2] font-mono text-[12px] leading-relaxed p-4 resize-none outline-none [box-shadow:inset_0_1px_4px_rgba(0,0,0,0.35)]"
+            className="flex-1 min-h-[300px] rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 font-mono text-[12px] leading-relaxed p-4 resize-none outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
             value={exportCode}
             readOnly
           />
           <div className="flex justify-end gap-2 pt-2">
-            <button className="px-4 py-2 bg-transparent border border-[#242424] text-[#242424] font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#242424]/5 transition-colors select-none" onClick={() => setShowExport(false)}>
-              [ {t.close} ]
+            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => setShowExport(false)}>
+              {t.close}
             </button>
-            <button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={() => handleExportDownload()}>
-              [ .html ]
+            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => handleExportDownload()}>
+              .html
             </button>
-            <button className="px-4 py-2 bg-[#242424] text-white font-mono text-[12px] uppercase tracking-[0.10em] hover:bg-[#333] active:bg-[#1a1a1a] transition-colors select-none" onClick={() => copy(exportCode)}>
-              [ {copied ? t.copied : t.copy} ]
+            <button className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none" onClick={() => copy(exportCode)}>
+              {copied ? t.copied : t.copy}
             </button>
           </div>
         </DialogContent>

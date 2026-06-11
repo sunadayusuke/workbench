@@ -374,7 +374,7 @@ export default function ShaderPage() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-wb-50">
       {/* Canvas area */}
-      <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0">
+      <div className="h-[35vh] md:h-auto md:flex-1 relative min-w-0 shrink-0">
         <div ref={containerRef} className="w-full h-full" />
         <AppTopBar />
       </div>

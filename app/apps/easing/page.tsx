@@ -918,7 +918,7 @@ export default function EasingPage() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-wb-50">
       {/* Main area */}
-      <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0 flex flex-col">
+      <div className="h-[35vh] md:h-auto md:flex-1 relative min-w-0 shrink-0 flex flex-col">
         {/* Top bar */}
         <AppTopBar />
 

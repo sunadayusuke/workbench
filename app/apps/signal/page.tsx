@@ -361,7 +361,7 @@ export default function SignalPage() {
     <div className="fixed inset-0 flex flex-col md:flex-row bg-wb-50">
 
       {/* Canvas area */}
-      <div className="h-[55vh] md:h-auto md:flex-1 relative overflow-hidden" style={{ background: params.transparentBg ? undefined : params.bgColor }}>
+      <div className="h-[35vh] md:h-auto md:flex-1 relative overflow-hidden" style={{ background: params.transparentBg ? undefined : params.bgColor }}>
         <canvas ref={canvasRef} className="w-full h-full block" />
         <AppTopBar />
       </div>

@@ -48,6 +48,9 @@ interface QrParams {
   logoDataUrl: string | null;
   logoScale: number;
   logoPad: number;
+  logoRadius: number;
+  /** Intrinsic width/height of the uploaded logo (1 until measured). */
+  logoAspect: number;
   pngSize: PngSize;
 }
 
@@ -68,6 +71,8 @@ const DEFAULTS: QrParams = {
   logoDataUrl: null,
   logoScale: 20,
   logoPad: 1,
+  logoRadius: 0,
+  logoAspect: 1,
   pngSize: "1024",
 };
 
@@ -119,6 +124,8 @@ interface BuildOpts {
   logoDataUrl: string | null;
   logoScale: number;
   logoPad: number;
+  logoRadius: number;
+  logoAspect: number;
 }
 
 /** Top-left coords of the three finder-pattern 7×7 boxes (in module space). */
@@ -184,19 +191,32 @@ function buildQrSvg(matrix: BitMatrixLike, opts: BuildOpts): string {
   const margin = opts.margin;
   const total = size + margin * 2;
 
-  // Logo knockout zone (cell space, incl. margin). Modules whose 1×1 cell rect
-  // overlaps this centered square are dropped so the void shows the background.
+  // Logo rendered rect (cell space, incl. margin). logoScale sets the bounding
+  // box side; the rect inside it honors the logo's aspect ratio (centered), so
+  // wide/tall logos aren't forced into a square.
+  let logoRect: { x: number; y: number; w: number; h: number } | null = null;
+  if (opts.logoDataUrl) {
+    const boxSide = (size * opts.logoScale) / 100;
+    const aspect = opts.logoAspect > 0 ? opts.logoAspect : 1;
+    let w = boxSide;
+    let h = boxSide;
+    if (aspect >= 1) h = boxSide / aspect;
+    else w = boxSide * aspect;
+    logoRect = { x: total / 2 - w / 2, y: total / 2 - h / 2, w, h };
+  }
+
+  // Knockout zone = rendered rect + padding. Modules whose 1×1 cell rect
+  // overlaps it are dropped so the void shows the background.
   let zx1 = 0;
   let zy1 = 0;
   let zx2 = 0;
   let zy2 = 0;
   let hasZone = false;
-  if (opts.logoDataUrl) {
-    const zoneSide = (size * opts.logoScale) / 100 + opts.logoPad * 2;
-    zx1 = total / 2 - zoneSide / 2;
-    zy1 = total / 2 - zoneSide / 2;
-    zx2 = zx1 + zoneSide;
-    zy2 = zy1 + zoneSide;
+  if (logoRect) {
+    zx1 = logoRect.x - opts.logoPad;
+    zy1 = logoRect.y - opts.logoPad;
+    zx2 = logoRect.x + logoRect.w + opts.logoPad;
+    zy2 = logoRect.y + logoRect.h + opts.logoPad;
     hasZone = true;
   }
 
@@ -292,15 +312,24 @@ function buildQrSvg(matrix: BitMatrixLike, opts: BuildOpts): string {
   }
 
   // --- Logo (centered; modules under it are knocked out, so no pad rect) ---
-  if (opts.logoDataUrl) {
-    const box = (size * opts.logoScale) / 100;
-    const cx = total / 2;
-    const cy = total / 2;
-    parts.push(
-      `<image x="${(cx - box / 2).toFixed(3)}" y="${(cy - box / 2).toFixed(3)}" ` +
-        `width="${box.toFixed(3)}" height="${box.toFixed(3)}" ` +
-        `href="${opts.logoDataUrl}" preserveAspectRatio="xMidYMid meet"/>`
-    );
+  if (logoRect) {
+    const { x, y, w, h } = logoRect;
+    const image =
+      `<image x="${x.toFixed(3)}" y="${y.toFixed(3)}" ` +
+      `width="${w.toFixed(3)}" height="${h.toFixed(3)}" ` +
+      `href="${opts.logoDataUrl}" preserveAspectRatio="xMidYMid meet"/>`;
+    // logoRadius is a % of the shorter side (50% → circle / stadium).
+    const minSide = Math.min(w, h);
+    const rPx = Math.min((minSide * opts.logoRadius) / 100, minSide / 2);
+    if (rPx > 0) {
+      const clip = roundedRectPath(x, y, w, h, rPx);
+      parts.push(
+        `<clipPath id="logoClip"><path d="${clip}"/></clipPath>` +
+          `<g clip-path="url(#logoClip)">${image}</g>`
+      );
+    } else {
+      parts.push(image);
+    }
   }
 
   parts.push("</svg>");
@@ -343,6 +372,8 @@ export default function QrPage() {
         logoDataUrl: params.logoDataUrl,
         logoScale: params.logoScale,
         logoPad: params.logoPad,
+        logoRadius: params.logoRadius,
+        logoAspect: params.logoAspect,
       });
       lastSvgRef.current = next;
       return { svg: next, error: false };
@@ -363,12 +394,25 @@ export default function QrPage() {
       setLogoName(file.name);
       const reader = new FileReader();
       reader.onload = () => {
-        update("logoDataUrl", reader.result as string);
+        const dataUrl = reader.result as string;
+        // Measure intrinsic aspect so wide/tall logos render undistorted.
+        const img = new Image();
+        img.onload = () => {
+          const aspect =
+            img.naturalWidth && img.naturalHeight
+              ? img.naturalWidth / img.naturalHeight
+              : 1;
+          setParams((prev) => ({ ...prev, logoDataUrl: dataUrl, logoAspect: aspect }));
+        };
+        img.onerror = () => {
+          setParams((prev) => ({ ...prev, logoDataUrl: dataUrl, logoAspect: 1 }));
+        };
+        img.src = dataUrl;
       };
       reader.readAsDataURL(file);
       e.target.value = "";
     },
-    [update]
+    []
   );
 
   const removeLogo = useCallback(() => {
@@ -612,6 +656,15 @@ export default function QrPage() {
                   step={0.5}
                   defaultValue={DEFAULTS.logoPad}
                   onChange={(v) => update("logoPad", v)}
+                />
+                <DragParam
+                  label={t.qr.logoRadius}
+                  value={params.logoRadius}
+                  min={0}
+                  max={50}
+                  step={1}
+                  defaultValue={DEFAULTS.logoRadius}
+                  onChange={(v) => update("logoRadius", v)}
                 />
               </NestedGroup>
               {logoEcWeak && (

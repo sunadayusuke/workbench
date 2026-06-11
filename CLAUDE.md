@@ -47,6 +47,9 @@ app/
     easing/page.tsx   — ベジェカーブエディター＆アニメーションプレビュー
     signal/page.tsx   — ディザリングシグナルノイズジェネレーター（Canvas 2D + Bayer dither）
     aurora/page.tsx   — シェイプシェーダー × SVGマスク合成ツール（Three.js + GLSL + MediaRecorder）
+    badge/page.tsx    — SVG→3Dバッジジェネレーター（Three.js + matcap）
+    compress/page.tsx — 画像圧縮・形式変換ツール（UPNG + JSZip、全処理クライアントサイド）
+    qr/page.tsx       — スタイルドQRコードジェネレーター（qrcode + 自前SVGレンダラー、jsQRで読取検証済み）
 components/
   app-top-bar.tsx     — 全アプリ共通トップバー（← 戻る ピル + <LangToggle>）`useLanguage()` 使用
   app-preview.tsx     — ホームカード用ライブキャンバスプレビュー（IntersectionObserver で遅延マウント。shader/gradient/aurora は実 GLSL、他は FPS 制限 Canvas2D）
@@ -202,6 +205,7 @@ import { FlatButton } from "@/components/ui/flat-button";
 - **Three.js ブレンドモード**: `SubtractiveBlending`（3）と `MultiplyBlending`（4）は `material.premultipliedAlpha = true` が必須（未設定だとコンソールエラー）。`NormalBlending`（1）と `AdditiveBlending`（2）は不要
 - **Three.js AdditiveBlending と明るい背景**: `AdditiveBlending` は `bg + particle > 1.0` でクランプされ白くなる。明るい背景と組み合わせる場合は `NormalBlending` をデフォルトにする
 - **シグナルノイズ波のキャンセル**: 複数レイヤーの位相オフセットに `(l / layers) * Math.PI * 2` を使うと `layers=2` で `sin(x) + sin(x+π) = 0` となり完全キャンセル。無理数オフセット `l * 0.9` を使うことで回避
+- **QRドットモジュールの読み取り耐性**: ドット形状の基準半径はセル比 `r=0.5`（隣接円が接する）。サイズ変化（ジッター）はデータ/ECモジュールのみに適用し、**機能パターン（タイミング・アライメント・フォーマット情報）は `matrix.isReserved(row,col)` で常に r=0.5 を維持**（縮めるとデコーダがグリッドを見失う）。実測: jsQR（厳格）は変化 0.5（r≥0.39）まで、ZXing（実機相当）は変化 1.0（r≥0.28）でも読取可 → スライダーは 0–1 とし 0.6 超で注意ヒント表示。ロゴは上に被せず**交差モジュールをくり抜く**（knockout）方式 — パッド矩形は廃止済み、透過背景でもクリーンな空白になる。「QRコード」は商標 → 画面に「(株)デンソーウェーブの登録商標です」表記を常設（`t.qr.trademark`）
 
 ## Aurora固有の注意点
 - **GLSL 9-tap ブラー**: `uBlur` uniform で `getShaderCol()` を9点サンプリングし `mask` との合成前に適用。CSS `canvas.style.filter` をシェーダーエフェクトに使うとマスク輪郭まで滲むので GLSL 内で処理する

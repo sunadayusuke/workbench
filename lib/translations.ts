@@ -27,6 +27,7 @@ export interface Translations {
     aurora: { name: string; description: string };
     badge: { name: string; description: string };
     compress: { name: string; description: string };
+    qr: { name: string; description: string };
   };
 
   // Signal page
@@ -339,6 +340,38 @@ export interface Translations {
     errorTooManyFiles: string;
   };
 
+  // QR page
+  qr: {
+    content: string;
+    ecLevel: string;
+    style: string;
+    moduleShape: string;
+    square: string;
+    rounded: string;
+    dot: string;
+    dotVariation: string;
+    variationHint: string;
+    circle: string;
+    eyeShape: string;
+    quietZone: string;
+    fgColor: string;
+    bgColor: string;
+    transparentBg: string;
+    eyeColorToggle: string;
+    eyeColor: string;
+    logo: string;
+    uploadLogo: string;
+    removeLogo: string;
+    logoSize: string;
+    logoPad: string;
+    logoEcHint: string;
+    export: string;
+    pngSize: string;
+    output: string;
+    tooLong: string;
+    trademark: string;
+  };
+
   // Easing page
   easing: {
     duration: string;
@@ -402,6 +435,7 @@ const ja: Translations = {
     aurora: { name: "シェイプシェーダー", description: "SVGシェイプにシェーダーを合成するツール" },
     badge: { name: "バッジジェネレーター", description: "SVGを3Dバッジに変換するツール" },
     compress: { name: "コンプレッサー", description: "画像の圧縮・形式変換ツール" },
+    qr: { name: "QRコード", description: "スタイルドQRコードジェネレーター" },
   },
 
   color: {
@@ -703,6 +737,37 @@ const ja: Translations = {
     errorTooManyFiles: "ファイル数上限（50枚）に達しました",
   },
 
+  qr: {
+    content: "コンテンツ",
+    ecLevel: "誤り訂正",
+    style: "スタイル",
+    moduleShape: "モジュール",
+    square: "四角",
+    rounded: "角丸",
+    dot: "ドット",
+    dotVariation: "サイズ変化",
+    variationHint: "サイズ変化が強いと一部のリーダーで読み取りにくくなる場合があります",
+    circle: "丸",
+    eyeShape: "目",
+    quietZone: "余白",
+    fgColor: "前景色",
+    bgColor: "背景色",
+    transparentBg: "背景透過",
+    eyeColorToggle: "目を別色",
+    eyeColor: "目の色",
+    logo: "ロゴ",
+    uploadLogo: "ロゴをアップロード",
+    removeLogo: "削除",
+    logoSize: "ロゴサイズ",
+    logoPad: "ロゴ余白",
+    logoEcHint: "ロゴ入りは誤り訂正 H 推奨",
+    export: "書き出し",
+    pngSize: "PNGサイズ",
+    output: "出力",
+    tooLong: "内容が長すぎます",
+    trademark: "「QRコード」は(株)デンソーウェーブの登録商標です",
+  },
+
   easing: {
     duration: "デュレーション",
     presets: "プリセット",
@@ -765,6 +830,7 @@ const en: Translations = {
     aurora: { name: "Shape Shader", description: "Shader compositor over SVG shapes" },
     badge: { name: "Badge Generator", description: "Convert SVG to 3D badge" },
     compress: { name: "Compress", description: "Image compression & format converter" },
+    qr: { name: "QR Code", description: "Styled QR code generator" },
   },
 
   color: {
@@ -1064,6 +1130,37 @@ const en: Translations = {
     errorDecodeFailed: "Decode failed",
     errorEncodeFailed: "Encode failed",
     errorTooManyFiles: "Max files reached (50)",
+  },
+
+  qr: {
+    content: "Content",
+    ecLevel: "Error correction",
+    style: "Style",
+    moduleShape: "Modules",
+    square: "Square",
+    rounded: "Rounded",
+    dot: "Dots",
+    dotVariation: "Size variation",
+    variationHint: "High variation may reduce readability on some scanners",
+    circle: "Circle",
+    eyeShape: "Eyes",
+    quietZone: "Quiet zone",
+    fgColor: "Foreground",
+    bgColor: "Background",
+    transparentBg: "Transparent BG",
+    eyeColorToggle: "Custom eye color",
+    eyeColor: "Eye color",
+    logo: "Logo",
+    uploadLogo: "Upload logo",
+    removeLogo: "Remove",
+    logoSize: "Logo size",
+    logoPad: "Logo padding",
+    logoEcHint: "Use EC level H with a logo",
+    export: "Export",
+    pngSize: "PNG size",
+    output: "Output",
+    tooLong: "Content too long",
+    trademark: "QR Code is a registered trademark of DENSO WAVE INCORPORATED.",
   },
 
   easing: {

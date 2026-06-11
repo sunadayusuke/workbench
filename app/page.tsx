@@ -5,7 +5,7 @@ import { useLanguage } from "@/lib/i18n";
 import { LangToggle } from "@/components/ui/lang-toggle";
 import { AppPreview } from "@/components/app-preview";
 
-const APP_KEYS = ["color", "shader", "image", "compress", "easing", "gradient", "particle", "dotmap", "signal", "aurora", "badge"] as const;
+const APP_KEYS = ["color", "shader", "image", "compress", "easing", "gradient", "particle", "dotmap", "signal", "aurora", "badge", "qr"] as const;
 
 const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
   color:    "/apps/color",
@@ -19,6 +19,7 @@ const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
   signal:   "/apps/signal",
   aurora:   "/apps/aurora",
   badge:    "/apps/badge",
+  qr:       "/apps/qr",
 };
 
 export default function Home() {

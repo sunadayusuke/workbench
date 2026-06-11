@@ -480,7 +480,7 @@ export default function QrPage() {
         </div>
 
         {/* Trademark notice */}
-        <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] text-wb-400 select-none text-center">
+        <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] text-wb-400 select-none text-center">
           {t.qr.trademark}
         </p>
 

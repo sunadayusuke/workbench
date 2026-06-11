@@ -48,6 +48,7 @@ interface QrParams {
   logoDataUrl: string | null;
   logoScale: number;
   logoPad: number;
+  logoRadius: number;
   pngSize: PngSize;
 }
 
@@ -68,6 +69,7 @@ const DEFAULTS: QrParams = {
   logoDataUrl: null,
   logoScale: 20,
   logoPad: 1,
+  logoRadius: 0,
   pngSize: "1024",
 };
 
@@ -119,6 +121,7 @@ interface BuildOpts {
   logoDataUrl: string | null;
   logoScale: number;
   logoPad: number;
+  logoRadius: number;
 }
 
 /** Top-left coords of the three finder-pattern 7×7 boxes (in module space). */
@@ -296,11 +299,23 @@ function buildQrSvg(matrix: BitMatrixLike, opts: BuildOpts): string {
     const box = (size * opts.logoScale) / 100;
     const cx = total / 2;
     const cy = total / 2;
-    parts.push(
-      `<image x="${(cx - box / 2).toFixed(3)}" y="${(cy - box / 2).toFixed(3)}" ` +
-        `width="${box.toFixed(3)}" height="${box.toFixed(3)}" ` +
-        `href="${opts.logoDataUrl}" preserveAspectRatio="xMidYMid meet"/>`
-    );
+    const lx = cx - box / 2;
+    const ly = cy - box / 2;
+    const image =
+      `<image x="${lx.toFixed(3)}" y="${ly.toFixed(3)}" ` +
+      `width="${box.toFixed(3)}" height="${box.toFixed(3)}" ` +
+      `href="${opts.logoDataUrl}" preserveAspectRatio="xMidYMid meet"/>`;
+    // logoRadius is a % of the box (50% → circle for square logos).
+    const rPx = Math.min((box * opts.logoRadius) / 100, box / 2);
+    if (rPx > 0) {
+      const clip = roundedRectPath(lx, ly, box, box, rPx);
+      parts.push(
+        `<clipPath id="logoClip"><path d="${clip}"/></clipPath>` +
+          `<g clip-path="url(#logoClip)">${image}</g>`
+      );
+    } else {
+      parts.push(image);
+    }
   }
 
   parts.push("</svg>");
@@ -343,6 +358,7 @@ export default function QrPage() {
         logoDataUrl: params.logoDataUrl,
         logoScale: params.logoScale,
         logoPad: params.logoPad,
+        logoRadius: params.logoRadius,
       });
       lastSvgRef.current = next;
       return { svg: next, error: false };
@@ -612,6 +628,15 @@ export default function QrPage() {
                   step={0.5}
                   defaultValue={DEFAULTS.logoPad}
                   onChange={(v) => update("logoPad", v)}
+                />
+                <DragParam
+                  label={t.qr.logoRadius}
+                  value={params.logoRadius}
+                  min={0}
+                  max={50}
+                  step={1}
+                  defaultValue={DEFAULTS.logoRadius}
+                  onChange={(v) => update("logoRadius", v)}
                 />
               </NestedGroup>
               {logoEcWeak && (

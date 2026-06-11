@@ -364,6 +364,7 @@ export interface Translations {
     removeLogo: string;
     logoSize: string;
     logoPad: string;
+    logoRadius: string;
     logoEcHint: string;
     export: string;
     pngSize: string;
@@ -760,6 +761,7 @@ const ja: Translations = {
     removeLogo: "削除",
     logoSize: "ロゴサイズ",
     logoPad: "ロゴ余白",
+    logoRadius: "ロゴ角丸",
     logoEcHint: "ロゴ入りは誤り訂正 H 推奨",
     export: "書き出し",
     pngSize: "PNGサイズ",
@@ -1155,6 +1157,7 @@ const en: Translations = {
     removeLogo: "Remove",
     logoSize: "Logo size",
     logoPad: "Logo padding",
+    logoRadius: "Logo radius",
     logoEcHint: "Use EC level H with a logo",
     export: "Export",
     pngSize: "PNG size",

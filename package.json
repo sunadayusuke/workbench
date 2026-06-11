@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "fresh": "rm -rf .next && next dev --turbopack",
-    "build": "next build",
+    "build": "node scripts/ds-lint.mjs && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:ds": "node scripts/ds-lint.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.18",

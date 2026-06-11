@@ -1,14 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n";
-import { useClipboard } from "@/hooks/use-clipboard";
 import {
   Select,
   SelectContent,
@@ -21,6 +14,12 @@ import { PushButton } from "@/components/ui/push-button";
 import { ColorRow } from "@/components/ui/color-row";
 import { AppTopBar } from "@/components/app-top-bar";
 import { downloadCanvas } from "@/lib/canvas-download";
+import { ControlPanel } from "@/components/ui/control-panel";
+import { PanelSection } from "@/components/ui/panel-section";
+import { NestedGroup } from "@/components/ui/nested-group";
+import { CircleButton } from "@/components/ui/circle-button";
+import { OutputMenu, OutputMenuItem } from "@/components/ui/output-menu";
+import { ExportDialog } from "@/components/ui/export-dialog";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -230,9 +229,6 @@ export default function ShaderPage() {
   const [params, setParams] = useState<ShaderParams>({ ...DEFAULT_PARAMS, colors: [...DEFAULT_PARAMS.colors] });
   const [showExport, setShowExport] = useState(false);
   const [exportCode, setExportCode] = useState("");
-  const [showOutputMenu, setShowOutputMenu] = useState(false);
-  const outputFooterRef = useRef<HTMLDivElement>(null);
-  const { copy, copied } = useClipboard();
 
   const updateParam = useCallback(<K extends keyof ShaderParams>(key: K, value: ShaderParams[K]) => {
     setParams((prev) => ({ ...prev, [key]: value }));
@@ -375,16 +371,6 @@ export default function ShaderPage() {
     if (canvas) downloadCanvas(canvas as HTMLCanvasElement, "shader.png");
   }, []);
 
-  useEffect(() => {
-    if (!showOutputMenu) return;
-    const handler = (e: PointerEvent) => {
-      if (outputFooterRef.current?.contains(e.target as Node)) return;
-      setShowOutputMenu(false);
-    };
-    document.addEventListener("pointerdown", handler);
-    return () => document.removeEventListener("pointerdown", handler);
-  }, [showOutputMenu]);
-
   return (
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-wb-50">
       {/* Canvas area */}
@@ -394,131 +380,89 @@ export default function ShaderPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="relative flex-1 md:flex-none md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
+      <ControlPanel
+        title={t.apps.shader.name}
+        footer={
+          <>
+            <PushButton
+              variant="light"
+              onClick={() => setParams({ ...DEFAULT_PARAMS, colors: [...DEFAULT_PARAMS.colors] })}
+              className="shrink-0"
+            >
+              {t.reset}
+            </PushButton>
+            <OutputMenu label={t.shader.output}>
+              <OutputMenuItem onSelect={handleDownload}>PNG — Image</OutputMenuItem>
+              <OutputMenuItem onSelect={handleExport}>HTML — Code</OutputMenuItem>
+            </OutputMenu>
+          </>
+        }
+      >
+        {/* Mode */}
+        <PanelSection>
+          <Select value={String(params.mode)} onValueChange={(v) => updateParam("mode", Number(v))}>
+            <SelectTrigger label={t.shader.mode} className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">{t.shader.flow}</SelectItem>
+              <SelectItem value="1">{t.shader.wave}</SelectItem>
+              <SelectItem value="2">{t.shader.ripple}</SelectItem>
+              <SelectItem value="3">{t.shader.morph}</SelectItem>
+            </SelectContent>
+          </Select>
+        </PanelSection>
 
-        {/* Header band */}
-        <div className="shrink-0 px-5 pt-6 pb-3">
-          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.shader.name}</span>
-        </div>
+        {/* Motion params */}
+        <PanelSection>
+          <DragParam label={t.shader.speed} value={params.speed} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.speed} onChange={(v) => updateParam("speed", v)} />
+          <DragParam label={t.shader.noiseScale} value={params.noiseScale} min={0.1} max={4} step={0.1} defaultValue={DEFAULT_PARAMS.noiseScale} onChange={(v) => updateParam("noiseScale", v)} />
+          <DragParam label={t.shader.distortion} value={params.warp} min={0.1} max={10} step={0.1} defaultValue={DEFAULT_PARAMS.warp} onChange={(v) => updateParam("warp", v)} />
+          <DragParam label={t.shader.aberration} value={params.aberration} min={0} max={0.1} step={0.001} defaultValue={DEFAULT_PARAMS.aberration} onChange={(v) => updateParam("aberration", v)} />
+          <DragParam label={t.shader.blur} value={params.blur} min={0} max={1} step={0.05} defaultValue={DEFAULT_PARAMS.blur} onChange={(v) => updateParam("blur", v)} />
+          <DragParam label={t.shader.grain} value={params.grain} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.grain} onChange={(v) => updateParam("grain", v)} />
+        </PanelSection>
 
-        {/* Scrollable interior */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
+        {/* Colors */}
+        <PanelSection
+          title={t.colors}
+          titleAction={
+            params.colors.length < MAX_COLORS ? (
+              <CircleButton onClick={addColor}>＋</CircleButton>
+            ) : undefined
+          }
+          border={false}
+          className="gap-3.5"
+        >
+          {/* BG */}
+          <ColorRow label="BG" value={params.colorBg} onChange={(v) => updateParam("colorBg", v)} />
 
-          {/* Mode */}
-          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-[7px]">
-            <Select value={String(params.mode)} onValueChange={(v) => updateParam("mode", Number(v))}>
-              <SelectTrigger label={t.shader.mode} className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">{t.shader.flow}</SelectItem>
-                <SelectItem value="1">{t.shader.wave}</SelectItem>
-                <SelectItem value="2">{t.shader.ripple}</SelectItem>
-                <SelectItem value="3">{t.shader.morph}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Motion params */}
-          <div className="flex flex-col gap-[7px] px-5 py-4 border-b border-wb-200">
-            <DragParam label={t.shader.speed} value={params.speed} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.speed} onChange={(v) => updateParam("speed", v)} />
-            <DragParam label={t.shader.noiseScale} value={params.noiseScale} min={0.1} max={4} step={0.1} defaultValue={DEFAULT_PARAMS.noiseScale} onChange={(v) => updateParam("noiseScale", v)} />
-            <DragParam label={t.shader.distortion} value={params.warp} min={0.1} max={10} step={0.1} defaultValue={DEFAULT_PARAMS.warp} onChange={(v) => updateParam("warp", v)} />
-            <DragParam label={t.shader.aberration} value={params.aberration} min={0} max={0.1} step={0.001} defaultValue={DEFAULT_PARAMS.aberration} onChange={(v) => updateParam("aberration", v)} />
-            <DragParam label={t.shader.blur} value={params.blur} min={0} max={1} step={0.05} defaultValue={DEFAULT_PARAMS.blur} onChange={(v) => updateParam("blur", v)} />
-            <DragParam label={t.shader.grain} value={params.grain} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.grain} onChange={(v) => updateParam("grain", v)} />
-          </div>
-
-          {/* Colors */}
-          <div className="px-5 py-4 flex flex-col gap-3.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[15px] font-medium text-wb-900 select-none">{t.colors}</span>
-              {params.colors.length < MAX_COLORS && (
-                <button type="button" onClick={addColor} className="flex size-7 shrink-0 items-center justify-center rounded-full border border-wb-100 bg-wb-0 text-[14px] font-semibold leading-none text-wb-900 shadow-[0px_2px_2px_0px_rgba(0,0,0,0.02)] transition-colors hover:bg-wb-50">＋</button>
-              )}
+          {/* Dynamic color stops */}
+          {params.colors.map((stop, i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <ColorRow
+                label={`${t.shader.colorLabel} ${i + 1}`}
+                value={stop.color}
+                onChange={(v) => updateColor(i, "color", v)}
+                onRemove={params.colors.length > 1 ? () => removeColor(i) : undefined}
+              />
+              <NestedGroup>
+                <DragParam label={t.shader.intensity} value={stop.intensity} min={0} max={5} step={0.1} onChange={(v) => updateColor(i, "intensity", v)} defaultValue={1.0} />
+                <DragParam label={t.shader.threshold} value={stop.threshold} min={-1} max={1} step={0.01} onChange={(v) => updateColor(i, "threshold", v)} defaultValue={-0.3} />
+              </NestedGroup>
             </div>
-
-            {/* BG */}
-            <ColorRow label="BG" value={params.colorBg} onChange={(v) => updateParam("colorBg", v)} />
-
-            {/* Dynamic color stops */}
-            {params.colors.map((stop, i) => (
-              <div key={i} className="flex flex-col gap-2">
-                <ColorRow
-                  label={`${t.shader.colorLabel} ${i + 1}`}
-                  value={stop.color}
-                  onChange={(v) => updateColor(i, "color", v)}
-                  onRemove={params.colors.length > 1 ? () => removeColor(i) : undefined}
-                />
-                <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-[7px]">
-                  <DragParam label={t.shader.intensity} value={stop.intensity} min={0} max={5} step={0.1} onChange={(v) => updateColor(i, "intensity", v)} defaultValue={1.0} />
-                  <DragParam label={t.shader.threshold} value={stop.threshold} min={-1} max={1} step={0.01} onChange={(v) => updateColor(i, "threshold", v)} defaultValue={-0.3} />
-                </div>
-              </div>
-            ))}
-          </div>
-
-        </div>
-
-        {/* footer */}
-        <div ref={outputFooterRef} className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
-          <PushButton
-            variant="light"
-            onClick={() => setParams({ ...DEFAULT_PARAMS, colors: [...DEFAULT_PARAMS.colors] })}
-            className="shrink-0"
-          >
-            {t.reset}
-          </PushButton>
-          <PushButton
-            variant="dark"
-            className="flex-1"
-            onClick={() => setShowOutputMenu(v => !v)}
-          >
-            {t.shader.output}
-          </PushButton>
-          {showOutputMenu && (
-            <div className="absolute bottom-[calc(100%+6px)] left-5 right-5 bg-wb-0 border border-wb-200 rounded-[12px] overflow-hidden shadow-[0_-4px_20px_rgba(12,12,16,0.14)]">
-              <button
-                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none border-b border-wb-200"
-                onClick={() => { setShowOutputMenu(false); handleDownload(); }}
-              >
-                PNG — Image
-              </button>
-              <button
-                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none"
-                onClick={() => { setShowOutputMenu(false); handleExport(); }}
-              >
-                HTML — Code
-              </button>
-            </div>
-          )}
-        </div>
-      </aside>
+          ))}
+        </PanelSection>
+      </ControlPanel>
 
       {/* Export dialog */}
-      <Dialog open={showExport} onOpenChange={setShowExport}>
-        <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
-          <DialogHeader>
-            <DialogTitle>{t.shader.exportCodeTitle}</DialogTitle>
-          </DialogHeader>
-          <textarea
-            className="flex-1 min-h-[300px] rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 font-mono text-[12px] leading-relaxed p-4 resize-none outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
-            value={exportCode}
-            readOnly
-          />
-          <div className="flex justify-end gap-2 pt-2">
-            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => setShowExport(false)}>
-              {t.close}
-            </button>
-            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => { const b=new Blob([exportCode],{type:"text/html"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="shader.html";a.click();URL.revokeObjectURL(u); }}>
-              .html
-            </button>
-            <button className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none" onClick={() => copy(exportCode)}>
-              {copied ? t.copied : t.copy}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ExportDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+        title={t.shader.exportCodeTitle}
+        code={exportCode}
+        filename="shader.html"
+      />
     </div>
   );
 }

@@ -8,8 +8,12 @@ import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { ColorRow } from "@/components/ui/color-row";
 import { downloadCanvas } from "@/lib/canvas-download";
-import { useClipboard } from "@/hooks/use-clipboard";
 import { AppTopBar } from "@/components/app-top-bar";
+import { ControlPanel } from "@/components/ui/control-panel";
+import { PanelSection } from "@/components/ui/panel-section";
+import { ControlRow } from "@/components/ui/control-row";
+import { OutputMenu, OutputMenuItem } from "@/components/ui/output-menu";
+import { ExportDialog } from "@/components/ui/export-dialog";
 import {
   Select,
   SelectContent,
@@ -17,12 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 // 4×4 Bayer ordered dither matrix
 const BAYER: number[][] = [
@@ -265,9 +263,6 @@ export default function SignalPage() {
   const [params, setParams]       = useState<Params>(DEFAULT);
   const [showExport, setShowExport] = useState(false);
   const [exportCode, setExportCode] = useState("");
-  const [showOutputMenu, setShowOutputMenu] = useState(false);
-  const outputFooterRef = useRef<HTMLDivElement>(null);
-  const { copy, copied } = useClipboard();
 
   useEffect(() => { paramsRef.current = params; }, [params]);
 
@@ -354,16 +349,6 @@ export default function SignalPage() {
     setShowExport(true);
   };
 
-  useEffect(() => {
-    if (!showOutputMenu) return;
-    const handler = (e: PointerEvent) => {
-      if (outputFooterRef.current?.contains(e.target as Node)) return;
-      setShowOutputMenu(false);
-    };
-    document.addEventListener("pointerdown", handler);
-    return () => document.removeEventListener("pointerdown", handler);
-  }, [showOutputMenu]);
-
   const MODES: Mode[] = ["wave", "ripple", "random", "plasma"];
   const modeLabel: Record<Mode, string> = {
     wave:   t.signal.wave,
@@ -382,142 +367,100 @@ export default function SignalPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="relative md:w-[320px] bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
+      <ControlPanel
+        title={t.apps.signal.name}
+        footer={
+          <>
+            <PushButton variant="light" onClick={() => setParams(DEFAULT)} className="shrink-0">
+              {t.reset}
+            </PushButton>
+            <OutputMenu label={t.signal.output}>
+              <OutputMenuItem onSelect={handleDownload}>PNG — Image</OutputMenuItem>
+              <OutputMenuItem onSelect={handleExportCode}>HTML — Code</OutputMenuItem>
+            </OutputMenu>
+          </>
+        }
+      >
 
-        {/* Header */}
-        <div className="shrink-0 px-5 pt-6 pb-3">
-          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.signal.name}</span>
-        </div>
+        {/* Mode */}
+        <PanelSection>
+          <Select value={params.mode} onValueChange={v => update("mode", v as Mode)}>
+            <SelectTrigger label={t.signal.mode} className="w-full cursor-pointer">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MODES.map(m => (
+                <SelectItem key={m} value={m}>{modeLabel[m]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </PanelSection>
 
-        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
-
-          {/* Mode */}
-          <div className="px-5 py-4 border-b border-wb-200">
-            <Select value={params.mode} onValueChange={v => update("mode", v as Mode)}>
-              <SelectTrigger label={t.signal.mode} className="w-full cursor-pointer">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MODES.map(m => (
-                  <SelectItem key={m} value={m}>{modeLabel[m]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Grid */}
-          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
-            <p className="text-[15px] font-medium text-wb-900 select-none">{t.signal.grid}</p>
-            <DragParam
-              label={t.signal.gridSize}
-              value={params.gridSize}
-              min={2} max={20} step={1}
-              defaultValue={DEFAULT.gridSize}
-              onChange={v => update("gridSize", v)}
+        {/* Grid */}
+        <PanelSection title={t.signal.grid}>
+          <DragParam
+            label={t.signal.gridSize}
+            value={params.gridSize}
+            min={2} max={20} step={1}
+            defaultValue={DEFAULT.gridSize}
+            onChange={v => update("gridSize", v)}
+          />
+          <ControlRow label={t.signal.shape}>
+            <ButtonSelect
+              value={params.shape}
+              options={[{ value: "square", label: t.signal.square }, { value: "circle", label: t.signal.circle }]}
+              onChange={(v) => update("shape", v as Shape)}
             />
-            <div className="flex h-10 w-full items-center gap-1 rounded-[12px] border border-[rgba(12,12,16,0.05)] bg-wb-50 pl-4 pr-3.5 shadow-[0px_2px_2px_0px_rgba(0,0,0,0.02)]">
-              <span className="min-w-0 flex-1 truncate text-[14px] leading-normal text-[rgba(12,12,16,0.46)]">{t.signal.shape}</span>
-              <ButtonSelect
-                value={params.shape}
-                options={[{ value: "square", label: t.signal.square }, { value: "circle", label: t.signal.circle }]}
-                onChange={(v) => update("shape", v as Shape)}
-              />
-            </div>
-          </div>
+          </ControlRow>
+        </PanelSection>
 
-          {/* Motion — params shown depend on mode */}
-          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
-            <p className="text-[15px] font-medium text-wb-900 select-none">{t.signal.motion}</p>
-            <DragParam label={t.signal.speed}     value={params.speed}     min={0}  max={100} step={1} defaultValue={DEFAULT.speed}     onChange={v => update("speed", v)} />
-            <DragParam label={t.signal.frequency} value={params.frequency} min={1}  max={100} step={1} defaultValue={DEFAULT.frequency} onChange={v => update("frequency", v)} />
-            {(params.mode === "wave") && (
-              <DragParam label={t.signal.amplitude} value={params.amplitude} min={1} max={100} step={1} defaultValue={DEFAULT.amplitude} onChange={v => update("amplitude", v)} />
-            )}
-            {(params.mode === "wave" || params.mode === "ripple") && (
-              <DragParam label={t.signal.spread} value={params.spread} min={1} max={100} step={1} defaultValue={DEFAULT.spread} onChange={v => update("spread", v)} />
-            )}
-            <DragParam label={t.signal.noise}     value={params.noise}     min={0}  max={100} step={1} defaultValue={DEFAULT.noise}     onChange={v => update("noise", v)} />
-            {(params.mode === "wave" || params.mode === "ripple" || params.mode === "plasma") && (
-              <DragParam label={t.signal.layers} value={params.layers} min={1} max={4} step={1} defaultValue={DEFAULT.layers} onChange={v => update("layers", v)} />
-            )}
-          </div>
-
-          {/* Colors */}
-          <div className="px-5 py-4 flex flex-col gap-[7px]">
-            <p className="text-[15px] font-medium text-wb-900 select-none">{t.signal.colors}</p>
-            {([
-              { key: "fgColor"  as const, label: t.signal.fgColor  },
-              { key: "midColor" as const, label: t.signal.midColor },
-              { key: "bgColor"  as const, label: t.signal.bgColor  },
-            ] as const).map(({ key, label }) => (
-              <ColorRow
-                key={key}
-                label={label}
-                value={params[key] as string}
-                onChange={v => update(key, v)}
-              />
-            ))}
-            <ToggleSwitch
-              label={t.signal.transparentBg}
-              active={params.transparentBg}
-              onClick={() => update("transparentBg", !params.transparentBg)}
-            />
-          </div>
-
-        </div>
-
-        {/* Footer */}
-        <div ref={outputFooterRef} className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
-          <PushButton variant="light" onClick={() => setParams(DEFAULT)} className="shrink-0">
-            {t.reset}
-          </PushButton>
-          <PushButton
-            variant="dark"
-            className="flex-1"
-            onClick={() => setShowOutputMenu(v => !v)}
-          >
-            {t.signal.output}
-          </PushButton>
-          {showOutputMenu && (
-            <div className="absolute bottom-[calc(100%+6px)] left-5 right-5 bg-wb-0 border border-wb-200 rounded-[12px] overflow-hidden shadow-[0_-4px_20px_rgba(12,12,16,0.14)]">
-              <button
-                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none border-b border-wb-200"
-                onClick={() => { setShowOutputMenu(false); handleDownload(); }}
-              >
-                PNG — Image
-              </button>
-              <button
-                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none"
-                onClick={() => { setShowOutputMenu(false); handleExportCode(); }}
-              >
-                HTML — Code
-              </button>
-            </div>
+        {/* Motion — params shown depend on mode */}
+        <PanelSection title={t.signal.motion}>
+          <DragParam label={t.signal.speed}     value={params.speed}     min={0}  max={100} step={1} defaultValue={DEFAULT.speed}     onChange={v => update("speed", v)} />
+          <DragParam label={t.signal.frequency} value={params.frequency} min={1}  max={100} step={1} defaultValue={DEFAULT.frequency} onChange={v => update("frequency", v)} />
+          {(params.mode === "wave") && (
+            <DragParam label={t.signal.amplitude} value={params.amplitude} min={1} max={100} step={1} defaultValue={DEFAULT.amplitude} onChange={v => update("amplitude", v)} />
           )}
-        </div>
-      </aside>
+          {(params.mode === "wave" || params.mode === "ripple") && (
+            <DragParam label={t.signal.spread} value={params.spread} min={1} max={100} step={1} defaultValue={DEFAULT.spread} onChange={v => update("spread", v)} />
+          )}
+          <DragParam label={t.signal.noise}     value={params.noise}     min={0}  max={100} step={1} defaultValue={DEFAULT.noise}     onChange={v => update("noise", v)} />
+          {(params.mode === "wave" || params.mode === "ripple" || params.mode === "plasma") && (
+            <DragParam label={t.signal.layers} value={params.layers} min={1} max={4} step={1} defaultValue={DEFAULT.layers} onChange={v => update("layers", v)} />
+          )}
+        </PanelSection>
+
+        {/* Colors */}
+        <PanelSection title={t.signal.colors} border={false}>
+          {([
+            { key: "fgColor"  as const, label: t.signal.fgColor  },
+            { key: "midColor" as const, label: t.signal.midColor },
+            { key: "bgColor"  as const, label: t.signal.bgColor  },
+          ] as const).map(({ key, label }) => (
+            <ColorRow
+              key={key}
+              label={label}
+              value={params[key] as string}
+              onChange={v => update(key, v)}
+            />
+          ))}
+          <ToggleSwitch
+            label={t.signal.transparentBg}
+            active={params.transparentBg}
+            onClick={() => update("transparentBg", !params.transparentBg)}
+          />
+        </PanelSection>
+
+      </ControlPanel>
 
       {/* Export dialog */}
-      <Dialog open={showExport} onOpenChange={setShowExport}>
-        <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
-          <DialogHeader>
-            <DialogTitle>{t.exportCodeTitle}</DialogTitle>
-          </DialogHeader>
-          <textarea
-            readOnly
-            className="flex-1 min-h-0 w-full resize-none font-mono text-[12px] leading-relaxed bg-wb-50 text-wb-900 border border-wb-200 rounded-[10px] p-4 outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
-            value={exportCode}
-          />
-          <div className="flex justify-end gap-2 pt-1">
-            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => { const b=new Blob([exportCode],{type:"text/html"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="signal-noise.html";a.click();URL.revokeObjectURL(u); }}>
-              .html
-            </button>
-            <button className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none" onClick={() => copy(exportCode)}>
-              {copied ? t.copied : t.copy}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ExportDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+        title={t.exportCodeTitle}
+        code={exportCode}
+        filename="signal-noise.html"
+      />
     </div>
   );
 }

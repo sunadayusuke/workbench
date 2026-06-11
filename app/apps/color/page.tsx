@@ -21,6 +21,11 @@ import { useLanguage } from "@/lib/i18n";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
+import { ControlPanel } from "@/components/ui/control-panel";
+import { PanelSection } from "@/components/ui/panel-section";
+import { FlatButton } from "@/components/ui/flat-button";
+import { CodeField } from "@/components/ui/code-field";
+import { ColorSwatch } from "@/components/ui/color-swatch";
 
 /* ================================================================== */
 /*  Color conversion utilities (no external library)                   */
@@ -557,14 +562,14 @@ function ColorInput({
     <div className={`flex flex-col gap-2 ${className ?? ""}`}>
       {label && <Label className="text-[13px] text-wb-700">{label}</Label>}
       <div className="flex items-center gap-2">
-        <input
-          type="color"
+        <ColorSwatch
+          size={36}
           value={hex}
-          onChange={(e) => {
-            onChangeHex(e.target.value);
-            setDraft(e.target.value);
+          onChange={(v) => {
+            onChangeHex(v);
+            setDraft(v);
           }}
-          className="size-9 shrink-0 block cursor-pointer p-0 overflow-hidden color-swatch border border-wb-200"
+          className="shrink-0 border border-wb-200"
         />
         <Input
           value={displayValue}
@@ -1033,83 +1038,73 @@ export default function ColorPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="relative flex-1 md:flex-none w-full md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
+      <ControlPanel
+        title={t.apps.color.name}
+        footer={
+          <>
+            <PushButton
+              variant="light"
+              onClick={() => { setHex('#2a6db6'); setOklch(hexToOklch('#2a6db6')); }}
+              className="shrink-0"
+            >
+              {t.reset}
+            </PushButton>
+            <PushButton variant="dark" className="flex-1" onClick={() => setShowCssDialog(true)}>
+              {t.exportCode}
+            </PushButton>
+          </>
+        }
+      >
+        {/* Base color input */}
+        <PanelSection>
+          <ColorInput
+            label={t.color.baseColor}
+            hex={hex}
+            onChangeHex={updateFromHex}
+          />
+        </PanelSection>
 
-        {/* Header */}
-        <div className="shrink-0 px-5 pt-6 pb-3">
-          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.color.name}</span>
-        </div>
+        {/* OKLCH knobs: L / C / H */}
+        <PanelSection className="px-4">
+          <DragParam
+            label={t.color.oklchL}
+            value={oklch[0]}
+            min={0} max={1} step={0.001}
+            onChange={(v) => updateFromOklch(0, v)}
+            accent="white"
+            defaultValue={0.5}
+          />
+          <DragParam
+            label={t.color.oklchC}
+            value={oklch[1]}
+            min={0} max={0.4} step={0.001}
+            onChange={(v) => updateFromOklch(1, v)}
+            accent="blue"
+            defaultValue={0.1}
+          />
+          <DragParam
+            label={t.color.oklchH}
+            value={oklch[2]}
+            min={0} max={360} step={0.1}
+            onChange={(v) => updateFromOklch(2, v)}
+            accent="ochre"
+            defaultValue={220}
+          />
+        </PanelSection>
 
-        {/* Scrollable interior */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
-
-          {/* Base color input */}
-          <div className="px-5 py-4 border-b border-wb-200">
-            <ColorInput
-              label={t.color.baseColor}
-              hex={hex}
-              onChangeHex={updateFromHex}
-            />
-          </div>
-
-          {/* OKLCH knobs: L / C / H */}
-          <div className="flex flex-col gap-[7px] px-4 py-4 border-b border-wb-200">
-            <DragParam
-              label={t.color.oklchL}
-              value={oklch[0]}
-              min={0} max={1} step={0.001}
-              onChange={(v) => updateFromOklch(0, v)}
-              accent="white"
-              defaultValue={0.5}
-            />
-            <DragParam
-              label={t.color.oklchC}
-              value={oklch[1]}
-              min={0} max={0.4} step={0.001}
-              onChange={(v) => updateFromOklch(1, v)}
-              accent="blue"
-              defaultValue={0.1}
-            />
-            <DragParam
-              label={t.color.oklchH}
-              value={oklch[2]}
-              min={0} max={360} step={0.1}
-              onChange={(v) => updateFromOklch(2, v)}
-              accent="ochre"
-              defaultValue={220}
-            />
-          </div>
-
-          {/* Scale name */}
-          <div className="px-5 py-4 flex flex-col gap-2">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.color.scaleName}</span>
-            <Input
-              value={scaleName}
-              onChange={(e) => setScaleName(e.target.value)}
-              placeholder="brand"
-              className="font-mono text-[12px]"
-            />
-            <p className="text-[12px] text-wb-500">
-              {t.color.scaleNameHint.replace("{name}", scaleName)}
-            </p>
-          </div>
-
-        </div>
-
-        {/* Footer */}
-        <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
-          <PushButton
-            variant="light"
-            onClick={() => { setHex('#2a6db6'); setOklch(hexToOklch('#2a6db6')); }}
-            className="shrink-0"
-          >
-            {t.reset}
-          </PushButton>
-          <PushButton variant="dark" className="flex-1" onClick={() => setShowCssDialog(true)}>
-            {t.exportCode}
-          </PushButton>
-        </div>
-      </aside>
+        {/* Scale name */}
+        <PanelSection title={t.color.scaleName} border={false}>
+          <Input
+            value={scaleName}
+            onChange={(e) => setScaleName(e.target.value)}
+            placeholder="brand"
+            className="font-mono text-[12px]"
+          />
+          <p className="text-[12px] text-wb-500">
+            {t.color.scaleNameHint.replace("{name}", scaleName)}
+          </p>
+        </PanelSection>
+      </ControlPanel>
 
       {/* Export dialog */}
       <Dialog open={showCssDialog} onOpenChange={setShowCssDialog}>
@@ -1146,25 +1141,19 @@ export default function ColorPage() {
             </div>
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
-            <textarea
-              className="w-full h-full rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 font-mono text-[12px] leading-relaxed p-4 resize-none outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
+            <CodeField
+              className="w-full h-full"
               value={cssOutput}
               readOnly
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button
-              className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none"
-              onClick={() => setShowCssDialog(false)}
-            >
+            <FlatButton variant="outline" onClick={() => setShowCssDialog(false)}>
               {t.close}
-            </button>
-            <button
-              className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none"
-              onClick={() => copyCss(cssOutput)}
-            >
+            </FlatButton>
+            <FlatButton onClick={() => copyCss(cssOutput)}>
               {copied ? t.copied : t.copy}
-            </button>
+            </FlatButton>
           </div>
         </DialogContent>
       </Dialog>

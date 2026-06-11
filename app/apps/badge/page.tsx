@@ -8,8 +8,12 @@ import { ColorRow } from "@/components/ui/color-row";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { useLanguage } from "@/lib/i18n";
 import { downloadCanvas } from "@/lib/canvas-download";
-import { useClipboard } from "@/hooks/use-clipboard";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ControlPanel } from "@/components/ui/control-panel";
+import { PanelSection, SectionTitle } from "@/components/ui/panel-section";
+import { ControlRow } from "@/components/ui/control-row";
+import { NestedGroup } from "@/components/ui/nested-group";
+import { OutputMenu, OutputMenuItem } from "@/components/ui/output-menu";
+import { ExportDialog } from "@/components/ui/export-dialog";
 
 /* ── defaults ─────────────────────────────────── */
 const DEF = {
@@ -227,10 +231,7 @@ export default function BadgePage() {
   const [isExporting, setIsExporting] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [exportCode, setExportCode] = useState("");
-  const { copy, copied } = useClipboard();
-  const [showOutputMenu, setShowOutputMenu] = useState(false);
   const [isExportingGLB, setIsExportingGLB] = useState(false);
-  const outputFooterRef = useRef<HTMLDivElement>(null);
 
   colorRef.current    = color;
   bumpRef.current     = bump;
@@ -815,16 +816,6 @@ export default function BadgePage() {
     }
   }, [svgName]);
 
-  useEffect(() => {
-    if (!showOutputMenu) return;
-    const handler = (e: PointerEvent) => {
-      if (outputFooterRef.current?.contains(e.target as Node)) return;
-      setShowOutputMenu(false);
-    };
-    document.addEventListener("pointerdown", handler);
-    return () => document.removeEventListener("pointerdown", handler);
-  }, [showOutputMenu]);
-
   return (
     <div className="fixed inset-0 flex flex-col md:flex-row bg-wb-50">
       {/* canvas */}
@@ -847,162 +838,114 @@ export default function BadgePage() {
       </div>
 
       {/* sidebar */}
-      <aside className="relative flex-1 md:flex-none md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
-        {/* header */}
-        <div className="shrink-0 px-5 pt-6 pb-3">
-          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.badge.name}</span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
-
-          {/* Shape */}
-          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.badge.shape}</span>
-            <PushButton variant="dark" className="w-full text-center" onClick={() => fileInputRef.current?.click()}>
-              {svgName ?? t.badge.uploadSvg}
-            </PushButton>
-            <input ref={fileInputRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
-          </div>
-
-          {/* Customize */}
-          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.badge.customize}</span>
-            <ColorRow label={t.shader.bgColor} value={bgColor} onChange={updateBgColor} />
-            <DragParam label={t.badge.exposure}   value={exposure}  min={0.1} max={4} step={0.05} defaultValue={DEF.exposure}  onChange={updateExposure} />
-            <DragParam label={t.badge.saturation} value={globalSat} min={0}   max={3} step={0.05} defaultValue={DEF.globalSat} onChange={updateGlobalSat} />
-            <DragParam label={t.badge.tile} value={tile} min={1} max={30} step={1} defaultValue={DEF.tile} onChange={updateTile} />
-
-            {/* Color / Bump with global ↔ paths toggle */}
-            <div className="py-3"><div className="h-px w-full bg-wb-200" /></div>
-            {pathInfos.length > 0 ? (
-              <div className="flex h-10 w-full items-center gap-1 rounded-[12px] border border-[rgba(12,12,16,0.05)] bg-wb-50 pl-4 pr-3.5 shadow-[0px_2px_2px_0px_rgba(0,0,0,0.02)]">
-                <span className="min-w-0 flex-1 truncate text-[14px] leading-normal text-[rgba(12,12,16,0.46)]">Color / Bump</span>
-                <ButtonSelect
-                  value={colorBumpMode}
-                  options={[{ value: "global", label: t.badge.global }, { value: "paths", label: t.badge.paths }]}
-                  onChange={(v) => switchColorBumpMode(v as ColorBumpMode)}
-                />
-              </div>
-            ) : (
-              <span className="text-[15px] font-medium text-wb-900 select-none">Color / Bump</span>
-            )}
-
-            {colorBumpMode === "global" ? (
-              <>
-                <ColorRow label={t.shader.color1} value={color} onChange={updateColor} />
-                <DragParam label={t.badge.bump}   value={bump}      min={0}   max={1.5} step={0.05} defaultValue={DEF.bump}      onChange={updateBump} />
-                <DragParam label={t.badge.depth}  value={depth}     min={0.5} max={10}  step={0.1}  defaultValue={DEF.depth}     onChange={updateDepth} />
-                <DragParam label={t.badge.bevel}  value={bevel}     min={0}   max={2}   step={0.05} defaultValue={DEF.bevel}     onChange={updateBevel} />
-                {hasLayers && <DragParam label={t.badge.layer} value={layerStep} min={-1} max={1} step={0.01} defaultValue={DEF.layerStep} onChange={updateLayerStep} />}
-              </>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {pathInfos.map((info, pi) => (
-                  <div key={pi} className="flex flex-col gap-1.5">
-                    <span className="text-[12px] text-wb-600 select-none truncate">{info.name}</span>
-                    <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-[7px]">
-                      <ColorRow label={t.shader.color1}
-                        value={pathOverrides[pi]?.color ?? color}
-                        onChange={v => updatePathOverride(pi, "color", v)} />
-                      <DragParam label={t.badge.bump}
-                        value={pathOverrides[pi]?.bump ?? bump}
-                        min={0} max={1.5} step={0.05} defaultValue={DEF.bump}
-                        onChange={v => updatePathOverride(pi, "bump", v)} />
-                      <DragParam label={t.badge.depth}
-                        value={pathOverrides[pi]?.depth ?? depth}
-                        min={0.5} max={10} step={0.1} defaultValue={DEF.depth}
-                        onChange={v => updatePathOverride(pi, "depth", v)} />
-                      <DragParam label={t.badge.bevel}
-                        value={pathOverrides[pi]?.bevel ?? bevel}
-                        min={0} max={2} step={0.05} defaultValue={DEF.bevel}
-                        onChange={v => updatePathOverride(pi, "bevel", v)} />
-                      {hasLayers && (
-                        <DragParam label={t.badge.layer}
-                          value={pathOverrides[pi]?.layerStep ?? layerStep}
-                          min={-1} max={1} step={0.01} defaultValue={DEF.layerStep}
-                          onChange={v => updatePathOverride(pi, "layerStep", v)} />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Matcap */}
-          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.badge.matcap}</span>
-            <DragParam label={t.badge.rotation}   value={rotation}   min={0}   max={360} step={1}    defaultValue={DEF.rotation}   onChange={updateRotation} />
-            <DragParam label={t.badge.brightness}  value={brightness} min={0.1} max={3}   step={0.05} defaultValue={DEF.brightness} onChange={updateBrightness} />
-            <DragParam label={t.badge.contrast}    value={contrast}   min={0.1} max={3}   step={0.05} defaultValue={DEF.contrast}   onChange={updateContrast} />
-            <DragParam label={t.badge.saturation}  value={saturation} min={0}   max={3}   step={0.05} defaultValue={DEF.saturation} onChange={updateSaturation} />
-            <DragParam label={t.badge.warp}        value={warp}       min={0}   max={1}   step={0.02} defaultValue={DEF.warp}       onChange={updateWarp} />
-          </div>
-
-        </div>
-
-        {/* footer */}
-        <div ref={outputFooterRef} className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
-          <PushButton variant="light" onClick={handleReset} className="shrink-0">{t.reset}</PushButton>
-          <PushButton
-            variant="dark"
-            className="flex-1 text-center"
-            disabled={!svgName}
-            onClick={() => setShowOutputMenu(v => !v)}
-          >
-            {t.badge.output}
-          </PushButton>
-          {showOutputMenu && (
-            <div className="absolute bottom-[calc(100%+6px)] left-5 right-5 bg-wb-0 border border-wb-200 rounded-[12px] overflow-hidden shadow-[0_-4px_20px_rgba(12,12,16,0.14)]">
-              <button
-                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none border-b border-wb-200"
-                onClick={() => { setShowOutputMenu(false); handleDownload(); }}
-              >
-                PNG — Image
-              </button>
-              <button
-                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none disabled:opacity-40 border-b border-wb-200"
-                disabled={isExporting}
-                onClick={() => { setShowOutputMenu(false); handleExportCopy(); }}
-              >
+      <ControlPanel
+        title={t.apps.badge.name}
+        footer={
+          <>
+            <PushButton variant="light" onClick={handleReset} className="shrink-0">{t.reset}</PushButton>
+            <OutputMenu label={t.badge.output} disabled={!svgName}>
+              <OutputMenuItem onSelect={handleDownload}>PNG — Image</OutputMenuItem>
+              <OutputMenuItem onSelect={handleExportCopy} disabled={isExporting}>
                 {isExporting ? "..." : "HTML — Code"}
-              </button>
-              <button
-                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none disabled:opacity-40"
-                disabled={isExportingGLB}
-                onClick={() => { setShowOutputMenu(false); handleExportGLB(); }}
-              >
+              </OutputMenuItem>
+              <OutputMenuItem onSelect={handleExportGLB} disabled={isExportingGLB}>
                 {isExportingGLB ? "..." : "GLB — 3D"}
-              </button>
+              </OutputMenuItem>
+            </OutputMenu>
+          </>
+        }
+      >
+
+        {/* Shape */}
+        <PanelSection title={t.badge.shape}>
+          <PushButton variant="dark" className="w-full text-center" onClick={() => fileInputRef.current?.click()}>
+            {svgName ?? t.badge.uploadSvg}
+          </PushButton>
+          <input ref={fileInputRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
+        </PanelSection>
+
+        {/* Customize */}
+        <PanelSection title={t.badge.customize}>
+          <ColorRow label={t.shader.bgColor} value={bgColor} onChange={updateBgColor} />
+          <DragParam label={t.badge.exposure}   value={exposure}  min={0.1} max={4} step={0.05} defaultValue={DEF.exposure}  onChange={updateExposure} />
+          <DragParam label={t.badge.saturation} value={globalSat} min={0}   max={3} step={0.05} defaultValue={DEF.globalSat} onChange={updateGlobalSat} />
+          <DragParam label={t.badge.tile} value={tile} min={1} max={30} step={1} defaultValue={DEF.tile} onChange={updateTile} />
+
+          {/* Color / Bump with global ↔ paths toggle */}
+          <div className="py-3"><div className="h-px w-full bg-wb-200" /></div>
+          {pathInfos.length > 0 ? (
+            <ControlRow label="Color / Bump">
+              <ButtonSelect
+                value={colorBumpMode}
+                options={[{ value: "global", label: t.badge.global }, { value: "paths", label: t.badge.paths }]}
+                onChange={(v) => switchColorBumpMode(v as ColorBumpMode)}
+              />
+            </ControlRow>
+          ) : (
+            <SectionTitle>Color / Bump</SectionTitle>
+          )}
+
+          {colorBumpMode === "global" ? (
+            <>
+              <ColorRow label={t.shader.color1} value={color} onChange={updateColor} />
+              <DragParam label={t.badge.bump}   value={bump}      min={0}   max={1.5} step={0.05} defaultValue={DEF.bump}      onChange={updateBump} />
+              <DragParam label={t.badge.depth}  value={depth}     min={0.5} max={10}  step={0.1}  defaultValue={DEF.depth}     onChange={updateDepth} />
+              <DragParam label={t.badge.bevel}  value={bevel}     min={0}   max={2}   step={0.05} defaultValue={DEF.bevel}     onChange={updateBevel} />
+              {hasLayers && <DragParam label={t.badge.layer} value={layerStep} min={-1} max={1} step={0.01} defaultValue={DEF.layerStep} onChange={updateLayerStep} />}
+            </>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {pathInfos.map((info, pi) => (
+                <div key={pi} className="flex flex-col gap-1.5">
+                  <span className="text-[12px] text-wb-600 select-none truncate">{info.name}</span>
+                  <NestedGroup>
+                    <ColorRow label={t.shader.color1}
+                      value={pathOverrides[pi]?.color ?? color}
+                      onChange={v => updatePathOverride(pi, "color", v)} />
+                    <DragParam label={t.badge.bump}
+                      value={pathOverrides[pi]?.bump ?? bump}
+                      min={0} max={1.5} step={0.05} defaultValue={DEF.bump}
+                      onChange={v => updatePathOverride(pi, "bump", v)} />
+                    <DragParam label={t.badge.depth}
+                      value={pathOverrides[pi]?.depth ?? depth}
+                      min={0.5} max={10} step={0.1} defaultValue={DEF.depth}
+                      onChange={v => updatePathOverride(pi, "depth", v)} />
+                    <DragParam label={t.badge.bevel}
+                      value={pathOverrides[pi]?.bevel ?? bevel}
+                      min={0} max={2} step={0.05} defaultValue={DEF.bevel}
+                      onChange={v => updatePathOverride(pi, "bevel", v)} />
+                    {hasLayers && (
+                      <DragParam label={t.badge.layer}
+                        value={pathOverrides[pi]?.layerStep ?? layerStep}
+                        min={-1} max={1} step={0.01} defaultValue={DEF.layerStep}
+                        onChange={v => updatePathOverride(pi, "layerStep", v)} />
+                    )}
+                  </NestedGroup>
+                </div>
+              ))}
             </div>
           )}
-        </div>
-      </aside>
+        </PanelSection>
+
+        {/* Matcap */}
+        <PanelSection title={t.badge.matcap}>
+          <DragParam label={t.badge.rotation}   value={rotation}   min={0}   max={360} step={1}    defaultValue={DEF.rotation}   onChange={updateRotation} />
+          <DragParam label={t.badge.brightness}  value={brightness} min={0.1} max={3}   step={0.05} defaultValue={DEF.brightness} onChange={updateBrightness} />
+          <DragParam label={t.badge.contrast}    value={contrast}   min={0.1} max={3}   step={0.05} defaultValue={DEF.contrast}   onChange={updateContrast} />
+          <DragParam label={t.badge.saturation}  value={saturation} min={0}   max={3}   step={0.05} defaultValue={DEF.saturation} onChange={updateSaturation} />
+          <DragParam label={t.badge.warp}        value={warp}       min={0}   max={1}   step={0.02} defaultValue={DEF.warp}       onChange={updateWarp} />
+        </PanelSection>
+
+      </ControlPanel>
 
       {/* Export dialog */}
-      <Dialog open={showExport} onOpenChange={setShowExport}>
-        <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
-          <DialogHeader>
-            <DialogTitle>{t.apps.badge.name} — Export</DialogTitle>
-          </DialogHeader>
-          <textarea
-            className="flex-1 min-h-[300px] rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 font-mono text-[12px] leading-relaxed p-4 resize-none outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
-            value={exportCode}
-            readOnly
-          />
-          <div className="flex justify-end gap-2 pt-2">
-            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => setShowExport(false)}>
-              {t.close}
-            </button>
-            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => handleExportDownload()}>
-              .html
-            </button>
-            <button className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none" onClick={() => copy(exportCode)}>
-              {copied ? t.copied : t.copy}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ExportDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+        title={`${t.apps.badge.name} — Export`}
+        code={exportCode}
+        onDownloadHtml={handleExportDownload}
+      />
 
     </div>
   );

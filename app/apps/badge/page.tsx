@@ -819,7 +819,7 @@ export default function BadgePage() {
   return (
     <div className="fixed inset-0 flex flex-col md:flex-row bg-wb-50">
       {/* canvas */}
-      <div ref={mountRef} className="h-[55vh] md:h-auto md:flex-1 relative overflow-hidden bg-[#0a0a0a]">
+      <div ref={mountRef} className="h-[30vh] md:h-auto md:flex-1 relative overflow-hidden bg-[#0a0a0a]">
         <AppTopBar />
         {!svgName && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

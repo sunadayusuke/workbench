@@ -176,7 +176,7 @@ export default function XxxApp() {
   return (
     <div className="fixed inset-0 flex flex-col md:flex-row bg-wb-50">
       {/* キャンバスエリア */}
-      <div className="h-[55vh] md:h-auto md:flex-1 relative">  {/* aurora のみ 40vh */}
+      <div className="h-[30vh] md:h-auto md:flex-1 relative">  {/* モバイルは view 3 / aside 7 で全アプリ統一 */}
         {/* Three.js canvas / SVG preview */}
         <AppTopBar />
       </div>

@@ -141,7 +141,7 @@ import { PushButton } from "@/components/ui/push-button";
 
 <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-wb-50">
   {/* キャンバスエリア */}
-  <div className="h-[55vh] md:h-auto md:flex-1 relative min-w-0 shrink-0">  {/* aurora のみ 40vh */}
+  <div className="h-[30vh] md:h-auto md:flex-1 relative min-w-0 shrink-0">  {/* モバイル: view 3 / aside 7 で全アプリ統一 */}
     {/* Three.js canvas / SVG preview */}
     <AppTopBar />
   </div>

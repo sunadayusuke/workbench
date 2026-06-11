@@ -945,7 +945,7 @@ export default function ColorPage() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-wb-50">
       {/* Main area */}
-      <div className="h-[30vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0 relative bg-white">
+      <div className="h-[35vh] md:h-auto md:flex-1 min-w-0 flex flex-col overflow-hidden shrink-0 relative bg-white">
         {/* Top bar */}
         <AppTopBar />
 

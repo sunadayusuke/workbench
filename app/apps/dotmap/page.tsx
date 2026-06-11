@@ -15,6 +15,8 @@ import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 import { ColorRow } from "@/components/ui/color-row";
 import { AppTopBar } from "@/components/app-top-bar";
+import { ControlPanel } from "@/components/ui/control-panel";
+import { PanelSection } from "@/components/ui/panel-section";
 
 /* ------------------------------------------------------------------ */
 /*  Types & Constants                                                  */
@@ -463,141 +465,130 @@ export default function DotMapPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="relative flex-1 md:flex-none md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
+      <ControlPanel
+        title={t.apps.dotmap.name}
+        footer={
+          <>
+            <PushButton variant="light" onClick={handleReset} className="shrink-0">
+              {t.reset}
+            </PushButton>
+            <PushButton variant="dark" className="flex-1" onClick={handleDownload}>
+              {t.dotmap.svgDownload}
+            </PushButton>
+          </>
+        }
+      >
+        {/* Knob row: ROWS / RADIUS / OFFSET */}
+        <PanelSection className="px-4">
+          <DragParam
+            label={t.dotmap.density}
+            value={params.rows}
+            min={20} max={250} step={1}
+            onChange={(v) => updateParam("rows", v)}
+            accent="blue"
+            defaultValue={DEFAULT_PARAMS.rows}
+          />
+          <DragParam
+            label={t.dotmap.dotRadius}
+            value={params.dotRadius}
+            min={0.1} max={0.6} step={0.05}
+            onChange={(v) => updateParam("dotRadius", v)}
+            accent="ochre"
+            defaultValue={DEFAULT_PARAMS.dotRadius}
+          />
+          <DragParam
+            label={t.dotmap.lngShift}
+            value={params.lngOffset}
+            min={-180} max={180} step={1}
+            onChange={(v) => updateParam("lngOffset", v)}
+            accent="grey"
+            defaultValue={0}
+          />
+        </PanelSection>
 
-        {/* Header */}
-        <div className="shrink-0 px-5 pt-6 pb-3">
-          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.dotmap.name}</span>
-        </div>
+        {/* Shape / pattern / background selects */}
+        <PanelSection className="px-4">
+          {/* SHAPE */}
+          <Select value={params.shape} onValueChange={(v) => updateParam("shape", v as "circle" | "hexagon")}>
+            <SelectTrigger size="sm" label={t.dotmap.shape}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="circle">{t.dotmap.circle}</SelectItem>
+              <SelectItem value="hexagon">{t.dotmap.hexagon}</SelectItem>
+            </SelectContent>
+          </Select>
+          {/* GRID */}
+          <Select value={params.gridPattern} onValueChange={(v) => updateParam("gridPattern", v as "vertical" | "diagonal")}>
+            <SelectTrigger size="sm" label={t.dotmap.gridPattern}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="vertical">{t.dotmap.vertical}</SelectItem>
+              <SelectItem value="diagonal">{t.dotmap.diagonal}</SelectItem>
+            </SelectContent>
+          </Select>
+          {/* BG */}
+          <Select
+            value={params.bgTransparent ? "transparent" : "solid"}
+            onValueChange={(v) => updateParam("bgTransparent", v === "transparent")}
+          >
+            <SelectTrigger size="sm" label={t.dotmap.bgColor}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="solid">{t.dotmap.solid}</SelectItem>
+              <SelectItem value="transparent">{t.dotmap.transparentBg}</SelectItem>
+            </SelectContent>
+          </Select>
+        </PanelSection>
 
-        {/* Scrollable interior */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
-
-          {/* Knob row: ROWS / RADIUS / OFFSET */}
-          <div className="flex flex-col gap-[7px] px-4 py-4 border-b border-wb-200">
-            <DragParam
-              label={t.dotmap.density}
-              value={params.rows}
-              min={20} max={250} step={1}
-              onChange={(v) => updateParam("rows", v)}
-              accent="blue"
-              defaultValue={DEFAULT_PARAMS.rows}
-            />
-            <DragParam
-              label={t.dotmap.dotRadius}
-              value={params.dotRadius}
-              min={0.1} max={0.6} step={0.05}
-              onChange={(v) => updateParam("dotRadius", v)}
-              accent="ochre"
-              defaultValue={DEFAULT_PARAMS.dotRadius}
-            />
-            <DragParam
-              label={t.dotmap.lngShift}
-              value={params.lngOffset}
-              min={-180} max={180} step={1}
-              onChange={(v) => updateParam("lngOffset", v)}
-              accent="grey"
-              defaultValue={0}
-            />
-          </div>
-
-          {/* Shape / pattern / background selects */}
-          <div className="flex flex-col gap-3 px-4 py-4 border-b border-wb-200">
-            {/* SHAPE */}
-            <Select value={params.shape} onValueChange={(v) => updateParam("shape", v as "circle" | "hexagon")}>
-              <SelectTrigger size="sm" label={t.dotmap.shape}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="circle">{t.dotmap.circle}</SelectItem>
-                <SelectItem value="hexagon">{t.dotmap.hexagon}</SelectItem>
-              </SelectContent>
-            </Select>
-            {/* GRID */}
-            <Select value={params.gridPattern} onValueChange={(v) => updateParam("gridPattern", v as "vertical" | "diagonal")}>
-              <SelectTrigger size="sm" label={t.dotmap.gridPattern}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="vertical">{t.dotmap.vertical}</SelectItem>
-                <SelectItem value="diagonal">{t.dotmap.diagonal}</SelectItem>
-              </SelectContent>
-            </Select>
-            {/* BG */}
-            <Select
-              value={params.bgTransparent ? "transparent" : "solid"}
-              onValueChange={(v) => updateParam("bgTransparent", v === "transparent")}
-            >
-              <SelectTrigger size="sm" label={t.dotmap.bgColor}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="solid">{t.dotmap.solid}</SelectItem>
-                <SelectItem value="transparent">{t.dotmap.transparentBg}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Color section */}
-          <div className="px-5 py-4 flex flex-col gap-3 border-b border-wb-200">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.colors}</span>
+        {/* Color section */}
+        <PanelSection title={t.colors}>
+          <ColorRow
+            label={t.dotmap.dotColor}
+            value={params.dotColor}
+            onChange={(v) => updateParam("dotColor", v)}
+          />
+          {!params.bgTransparent && (
             <ColorRow
-              label={t.dotmap.dotColor}
-              value={params.dotColor}
-              onChange={(v) => updateParam("dotColor", v)}
+              label={t.dotmap.bgColor}
+              value={params.backgroundColor}
+              onChange={(v) => updateParam("backgroundColor", v)}
             />
-            {!params.bgTransparent && (
-              <ColorRow
-                label={t.dotmap.bgColor}
-                value={params.backgroundColor}
-                onChange={(v) => updateParam("backgroundColor", v)}
-              />
-            )}
-          </div>
+          )}
+        </PanelSection>
 
-          {/* Country highlight */}
-          <div className="flex-1 px-5 py-4 flex flex-col gap-3">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.dotmap.countries}</span>
+        {/* Country highlight */}
+        <PanelSection border={false} className="flex-1" title={t.dotmap.countries}>
+          {availableCountries.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <Label className="text-[12px] text-wb-500">{t.dotmap.addCountry}</Label>
+              <Select onValueChange={addCountry} value="">
+                <SelectTrigger className="cursor-pointer">
+                  <SelectValue placeholder={t.dotmap.selectCountry} />
+                </SelectTrigger>
+                <SelectContent className="max-h-[240px]">
+                  {availableCountries.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-            {availableCountries.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <Label className="text-[12px] text-wb-500">{t.dotmap.addCountry}</Label>
-                <Select onValueChange={addCountry} value="">
-                  <SelectTrigger className="cursor-pointer">
-                    <SelectValue placeholder={t.dotmap.selectCountry} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[240px]">
-                    {availableCountries.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+          {params.highlightedCountries.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {params.highlightedCountries.map((hc) => (
+                <ColorRow
+                  key={hc.code}
+                  label={hc.name}
+                  value={hc.color}
+                  onChange={(v) => updateCountryColor(hc.code, v)}
+                  onRemove={() => removeCountry(hc.code)}
+                />
+              ))}
+            </div>
+          )}
+        </PanelSection>
 
-            {params.highlightedCountries.length > 0 && (
-              <div className="flex flex-col gap-[7px]">
-                {params.highlightedCountries.map((hc) => (
-                  <ColorRow
-                    key={hc.code}
-                    label={hc.name}
-                    value={hc.color}
-                    onChange={(v) => updateCountryColor(hc.code, v)}
-                    onRemove={() => removeCountry(hc.code)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-        </div>
-
-        {/* Download button */}
-        <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
-          <PushButton variant="light" onClick={handleReset} className="shrink-0">
-            {t.reset}
-          </PushButton>
-          <PushButton variant="dark" className="flex-1" onClick={handleDownload}>
-            {t.dotmap.svgDownload}
-          </PushButton>
-        </div>
-      </aside>
+      </ControlPanel>
     </div>
   );
 }

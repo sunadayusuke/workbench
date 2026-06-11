@@ -16,6 +16,11 @@ import { AppTopBar } from "@/components/app-top-bar";
 import { ColorRow } from "@/components/ui/color-row";
 import { hexToRGB } from "@/lib/color-utils";
 import { downloadCanvas } from "@/lib/canvas-download";
+import { ControlPanel } from "@/components/ui/control-panel";
+import { PanelSection } from "@/components/ui/panel-section";
+import { NestedGroup } from "@/components/ui/nested-group";
+import { CircleButton } from "@/components/ui/circle-button";
+import { TextField } from "@/components/ui/code-field";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -770,184 +775,176 @@ export default function GradientPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="relative flex-1 md:flex-none md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
-
-        {/* Header */}
-        <div className="shrink-0 px-5 pt-6 pb-3">
-          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.gradient.name}</span>
-        </div>
-
-        {/* Scrollable interior */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
-
-          {/* Knob row: SPREAD / SCALE / NOISE / GRAIN */}
-          <div className="flex flex-col gap-[7px] px-4 py-4 border-b border-wb-200">
-            <DragParam
-              label={t.gradient.spread}
-              value={params.spread}
-              min={0.1} max={1.0} step={0.01}
-              onChange={(v) => setParams((prev) => ({ ...prev, spread: v }))}
-              accent="blue"
-              defaultValue={0.8}
-            />
-            <DragParam
-              label={t.gradient.scale}
-              value={params.scale}
-              min={0.5} max={3.0} step={0.01}
-              onChange={(v) => setParams((prev) => ({ ...prev, scale: v }))}
-              accent="ochre"
-              defaultValue={1.0}
-            />
-            <DragParam
-              label={t.gradient.noise}
-              value={params.noise}
-              min={0} max={1} step={0.01}
-              onChange={(v) => setParams((prev) => ({ ...prev, noise: v }))}
-              accent="grey"
-              defaultValue={0}
-            />
-            <DragParam
-              label={t.gradient.grain}
-              value={params.grain}
-              min={0} max={1} step={0.01}
-              onChange={(v) => setParams((prev) => ({ ...prev, grain: v }))}
-              accent="orange"
-              defaultValue={0}
-            />
-          </div>
-
-          {/* Aspect ratio + Gradient type selects */}
-          <div className="px-5 py-4 flex flex-col gap-3 border-b border-wb-200">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.gradient.output}</span>
-            <div className="flex flex-col gap-[7px]">
-              <Select
-                value={params.aspectPreset}
-                onValueChange={(v) => setParams((prev) => ({ ...prev, aspectPreset: v }))}
-              >
-                <SelectTrigger className="cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ASPECT_PRESET_KEYS.map((p) => {
-                    const labels: Record<string, string> = {
-                      "9:16": t.gradient.phone, "16:9": t.gradient.desktop,
-                      "1:1": t.gradient.square, "4:3": "4:3", "3:2": "3:2",
-                      "custom": t.gradient.custom,
-                    };
-                    return <SelectItem key={p.key} value={p.key}>{labels[p.key]}</SelectItem>;
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            {params.aspectPreset === "custom" && (
-              <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <Label className="text-[12px] text-wb-600 w-8">{t.gradient.width}</Label>
-                  <input
-                    type="number"
-                    value={params.customWidth}
-                    onChange={(e) => setParams((prev) => ({ ...prev, customWidth: Math.max(1, Number(e.target.value) || 1) }))}
-                    className="flex-1 h-9 rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 px-3 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-[12px] text-wb-600 w-8">{t.gradient.height}</Label>
-                  <input
-                    type="number"
-                    value={params.customHeight}
-                    onChange={(e) => setParams((prev) => ({ ...prev, customHeight: Math.max(1, Number(e.target.value) || 1) }))}
-                    className="flex-1 h-9 rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 px-3 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
-                  />
-                </div>
-              </div>
-            )}
-            <div className="flex flex-col gap-[7px]">
-              <Select
-                value={String(params.gradientType)}
-                onValueChange={(v) => setParams((prev) => ({ ...prev, gradientType: Number(v) }))}
-              >
-                <SelectTrigger className="cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {GRADIENT_TYPE_VALUES.map((v, i) => (
-                    <SelectItem key={v} value={v}>
-                      {[t.gradient.mesh, t.gradient.linear, t.gradient.radial][i]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {params.gradientType === 1 && (
-              <div className="pl-3 border-l-2 border-wb-100">
-                <DragParam label={t.gradient.angle} value={params.angle} min={0} max={360} step={1} defaultValue={DEFAULT_PARAMS.angle} onChange={(v) => setParams((prev) => ({ ...prev, angle: v }))} />
-              </div>
-            )}
-          </div>
-
-          {/* Colors */}
-          <div className="px-5 py-4 flex flex-col gap-3 border-b border-wb-200">
-            <div className="flex items-center justify-between">
-              <span className="text-[15px] font-medium text-wb-900 select-none">{t.colors}</span>
-              {params.colors.length < 8 && (
-                <button type="button" onClick={handleAddColor} className="flex size-7 shrink-0 items-center justify-center rounded-full border border-wb-100 bg-wb-0 text-[14px] font-semibold leading-none text-wb-900 shadow-[0px_2px_2px_0px_rgba(0,0,0,0.02)] transition-colors hover:bg-wb-50">＋</button>
-              )}
-            </div>
-            <PushButton variant="dark" className="w-full text-center" onClick={handleShuffle}>
-              {t.gradient.shuffle}
+      <ControlPanel
+        title={t.apps.gradient.name}
+        footer={
+          <>
+            <PushButton variant="light" onClick={handleReset} className="shrink-0">
+              {t.reset}
             </PushButton>
-            <div className="flex flex-col gap-[7px]">
-              {params.colors.map((spot, i) => (
-                <ColorRow
-                  key={i}
-                  value={spot.color}
-                  onChange={(v) => handleColorChange(i, v)}
-                  onRemove={params.colors.length > 2 ? () => handleRemoveColor(i) : undefined}
+            <PushButton variant="dark" className="flex-1" onClick={handleDownload}>
+              {t.download}
+            </PushButton>
+          </>
+        }
+      >
+
+        {/* Knob row: SPREAD / SCALE / NOISE / GRAIN */}
+        <PanelSection className="px-4">
+          <DragParam
+            label={t.gradient.spread}
+            value={params.spread}
+            min={0.1} max={1.0} step={0.01}
+            onChange={(v) => setParams((prev) => ({ ...prev, spread: v }))}
+            accent="blue"
+            defaultValue={0.8}
+          />
+          <DragParam
+            label={t.gradient.scale}
+            value={params.scale}
+            min={0.5} max={3.0} step={0.01}
+            onChange={(v) => setParams((prev) => ({ ...prev, scale: v }))}
+            accent="ochre"
+            defaultValue={1.0}
+          />
+          <DragParam
+            label={t.gradient.noise}
+            value={params.noise}
+            min={0} max={1} step={0.01}
+            onChange={(v) => setParams((prev) => ({ ...prev, noise: v }))}
+            accent="grey"
+            defaultValue={0}
+          />
+          <DragParam
+            label={t.gradient.grain}
+            value={params.grain}
+            min={0} max={1} step={0.01}
+            onChange={(v) => setParams((prev) => ({ ...prev, grain: v }))}
+            accent="orange"
+            defaultValue={0}
+          />
+        </PanelSection>
+
+        {/* Aspect ratio + Gradient type selects */}
+        <PanelSection title={t.gradient.output}>
+          <div className="flex flex-col gap-2">
+            <Select
+              value={params.aspectPreset}
+              onValueChange={(v) => setParams((prev) => ({ ...prev, aspectPreset: v }))}
+            >
+              <SelectTrigger className="cursor-pointer">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ASPECT_PRESET_KEYS.map((p) => {
+                  const labels: Record<string, string> = {
+                    "9:16": t.gradient.phone, "16:9": t.gradient.desktop,
+                    "1:1": t.gradient.square, "4:3": "4:3", "3:2": "3:2",
+                    "custom": t.gradient.custom,
+                  };
+                  return <SelectItem key={p.key} value={p.key}>{labels[p.key]}</SelectItem>;
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          {params.aspectPreset === "custom" && (
+            <NestedGroup>
+              <div className="flex items-center gap-2">
+                <Label className="text-[12px] text-wb-600 w-8">{t.gradient.width}</Label>
+                <TextField
+                  type="number"
+                  value={params.customWidth}
+                  onChange={(e) => setParams((prev) => ({ ...prev, customWidth: Math.max(1, Number(e.target.value) || 1) }))}
+                  className="flex-1 text-[12px]"
                 />
-              ))}
-            </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-[12px] text-wb-600 w-8">{t.gradient.height}</Label>
+                <TextField
+                  type="number"
+                  value={params.customHeight}
+                  onChange={(e) => setParams((prev) => ({ ...prev, customHeight: Math.max(1, Number(e.target.value) || 1) }))}
+                  className="flex-1 text-[12px]"
+                />
+              </div>
+            </NestedGroup>
+          )}
+          <div className="flex flex-col gap-2">
+            <Select
+              value={String(params.gradientType)}
+              onValueChange={(v) => setParams((prev) => ({ ...prev, gradientType: Number(v) }))}
+            >
+              <SelectTrigger className="cursor-pointer">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {GRADIENT_TYPE_VALUES.map((v, i) => (
+                  <SelectItem key={v} value={v}>
+                    {[t.gradient.mesh, t.gradient.linear, t.gradient.radial][i]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          {params.gradientType === 1 && (
+            <NestedGroup>
+              <DragParam label={t.gradient.angle} value={params.angle} min={0} max={360} step={1} defaultValue={DEFAULT_PARAMS.angle} onChange={(v) => setParams((prev) => ({ ...prev, angle: v }))} />
+            </NestedGroup>
+          )}
+        </PanelSection>
 
-          {/* Effects (secondary) */}
-          <div className="flex flex-col gap-3 px-5 py-4">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.gradient.effects}</span>
-            <DragParam label={t.gradient.particle} value={params.stipple} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.stipple} onChange={(v) => setParams((prev) => ({ ...prev, stipple: v }))} />
-            {params.stipple > 0 && (
-              <div className="pl-3 border-l-2 border-wb-100">
-                <DragParam label={t.gradient.granularity} value={params.stippleSize} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.stippleSize} onChange={(v) => setParams((prev) => ({ ...prev, stippleSize: v }))} />
-              </div>
-            )}
-            <DragParam label={t.gradient.halftone} value={params.halftone} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.halftone} onChange={(v) => setParams((prev) => ({ ...prev, halftone: v }))} />
-            <DragParam label={t.gradient.rib} value={params.glassAmount} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassAmount} onChange={(v) => setParams((prev) => ({ ...prev, glassAmount: v }))} />
-            {params.glassAmount > 0 && (
-              <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-[7px]">
-                <DragParam label={t.gradient.density} value={params.glassFreq} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassFreq} onChange={(v) => setParams((prev) => ({ ...prev, glassFreq: v }))} />
-                <DragParam label={t.gradient.shift} value={params.glassShift} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassShift} onChange={(v) => setParams((prev) => ({ ...prev, glassShift: v }))} />
-              </div>
-            )}
-            <DragParam label={t.gradient.chromaticAberration} value={params.chromatic} min={0} max={2} step={0.01} defaultValue={DEFAULT_PARAMS.chromatic} onChange={(v) => setParams((prev) => ({ ...prev, chromatic: v }))} />
-            <DragParam label={t.gradient.wave} value={params.waveAmount} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.waveAmount} onChange={(v) => setParams((prev) => ({ ...prev, waveAmount: v }))} />
-            {params.waveAmount > 0 && (
-              <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-[7px]">
-                <DragParam label={t.gradient.frequency} value={params.waveFrequency} min={1} max={30} step={0.5} defaultValue={DEFAULT_PARAMS.waveFrequency} onChange={(v) => setParams((prev) => ({ ...prev, waveFrequency: v }))} />
-                <DragParam label={t.gradient.direction} value={params.waveAngle} min={0} max={360} step={1} defaultValue={DEFAULT_PARAMS.waveAngle} onChange={(v) => setParams((prev) => ({ ...prev, waveAngle: v }))} />
-                <DragParam label={t.gradient.random} value={params.waveRandom} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.waveRandom} onChange={(v) => setParams((prev) => ({ ...prev, waveRandom: v }))} />
-              </div>
-            )}
+        {/* Colors */}
+        <PanelSection
+          title={t.colors}
+          titleAction={
+            params.colors.length < 8 ? (
+              <CircleButton onClick={handleAddColor} aria-label="Add color">＋</CircleButton>
+            ) : undefined
+          }
+        >
+          <PushButton variant="dark" className="w-full text-center" onClick={handleShuffle}>
+            {t.gradient.shuffle}
+          </PushButton>
+          <div className="flex flex-col gap-2">
+            {params.colors.map((spot, i) => (
+              <ColorRow
+                key={i}
+                value={spot.color}
+                onChange={(v) => handleColorChange(i, v)}
+                onRemove={params.colors.length > 2 ? () => handleRemoveColor(i) : undefined}
+              />
+            ))}
           </div>
+        </PanelSection>
 
-        </div>
+        {/* Effects (secondary) */}
+        <PanelSection title={t.gradient.effects} border={false}>
+          <DragParam label={t.gradient.particle} value={params.stipple} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.stipple} onChange={(v) => setParams((prev) => ({ ...prev, stipple: v }))} />
+          {params.stipple > 0 && (
+            <NestedGroup>
+              <DragParam label={t.gradient.granularity} value={params.stippleSize} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.stippleSize} onChange={(v) => setParams((prev) => ({ ...prev, stippleSize: v }))} />
+            </NestedGroup>
+          )}
+          <DragParam label={t.gradient.halftone} value={params.halftone} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.halftone} onChange={(v) => setParams((prev) => ({ ...prev, halftone: v }))} />
+          <DragParam label={t.gradient.rib} value={params.glassAmount} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassAmount} onChange={(v) => setParams((prev) => ({ ...prev, glassAmount: v }))} />
+          {params.glassAmount > 0 && (
+            <NestedGroup>
+              <DragParam label={t.gradient.density} value={params.glassFreq} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassFreq} onChange={(v) => setParams((prev) => ({ ...prev, glassFreq: v }))} />
+              <DragParam label={t.gradient.shift} value={params.glassShift} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.glassShift} onChange={(v) => setParams((prev) => ({ ...prev, glassShift: v }))} />
+            </NestedGroup>
+          )}
+          <DragParam label={t.gradient.chromaticAberration} value={params.chromatic} min={0} max={2} step={0.01} defaultValue={DEFAULT_PARAMS.chromatic} onChange={(v) => setParams((prev) => ({ ...prev, chromatic: v }))} />
+          <DragParam label={t.gradient.wave} value={params.waveAmount} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.waveAmount} onChange={(v) => setParams((prev) => ({ ...prev, waveAmount: v }))} />
+          {params.waveAmount > 0 && (
+            <NestedGroup>
+              <DragParam label={t.gradient.frequency} value={params.waveFrequency} min={1} max={30} step={0.5} defaultValue={DEFAULT_PARAMS.waveFrequency} onChange={(v) => setParams((prev) => ({ ...prev, waveFrequency: v }))} />
+              <DragParam label={t.gradient.direction} value={params.waveAngle} min={0} max={360} step={1} defaultValue={DEFAULT_PARAMS.waveAngle} onChange={(v) => setParams((prev) => ({ ...prev, waveAngle: v }))} />
+              <DragParam label={t.gradient.random} value={params.waveRandom} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.waveRandom} onChange={(v) => setParams((prev) => ({ ...prev, waveRandom: v }))} />
+            </NestedGroup>
+          )}
+        </PanelSection>
 
-        {/* Footer: reset + download */}
-        <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
-          <PushButton variant="light" onClick={handleReset} className="shrink-0">
-            {t.reset}
-          </PushButton>
-          <PushButton variant="dark" className="flex-1" onClick={handleDownload}>
-            {t.download}
-          </PushButton>
-        </div>
-      </aside>
+      </ControlPanel>
     </div>
   );
 }

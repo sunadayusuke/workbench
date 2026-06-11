@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/lib/i18n";
 import { AppTopBar } from "@/components/app-top-bar";
 import { PushButton } from "@/components/ui/push-button";
+import { ControlPanel } from "@/components/ui/control-panel";
+import { PanelSection } from "@/components/ui/panel-section";
 import {
   Select,
   SelectContent,
@@ -436,102 +438,94 @@ export default function CompressPage() {
       </div>
 
       {/* Control panel */}
-      <aside className="relative flex-1 md:flex-none md:w-[320px] min-h-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col">
-        <div className="shrink-0 px-5 pt-6 pb-3">
-          <span className="text-[18px] font-medium text-wb-900 select-none">
-            {t.apps.compress.name}
-          </span>
-        </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
-          {/* Format */}
-          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
-            <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
-              <SelectTrigger label={t.compress.format}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="original">{t.compress.formatOriginal}</SelectItem>
-                <SelectItem value="webp">WebP</SelectItem>
-                <SelectItem value="jpeg">JPEG</SelectItem>
-                <SelectItem value="png">PNG</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Totals */}
-          {doneItems.length > 0 && (
-            <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-2">
-              <span className="text-[15px] font-medium text-wb-900 select-none">
-                {t.compress.totals}
-              </span>
-              <div className="flex justify-between text-[13px] text-wb-700">
-                <span className="text-wb-500">
-                  {t.compress.before}
-                </span>
-                <span className="tabular-nums">{fmtBytes(totalOriginal)}</span>
-              </div>
-              <div className="flex justify-between text-[13px] text-wb-700">
-                <span className="text-wb-500">
-                  {t.compress.after}
-                </span>
-                <span className="tabular-nums">{fmtBytes(totalCompressed)}</span>
-              </div>
-              {allDone && (
-                <div className="flex justify-between text-[13px] font-semibold pt-1 border-t border-wb-200">
-                  <span className="text-wb-900">
-                    {t.compress.reduction}
-                  </span>
-                  <span
-                    className={
-                      totalReduction >= 0
-                        ? "text-wb-green tabular-nums"
-                        : "text-wb-600 tabular-nums"
-                    }
-                  >
-                    {totalReduction >= 0 ? "−" : "+"}
-                    {Math.abs(totalReduction).toFixed(1)}%
-                  </span>
-                </div>
-              )}
+      <ControlPanel
+        title={t.apps.compress.name}
+        footerClassName="flex-col items-stretch gap-0"
+        footer={
+          <>
+            <div className="flex items-center gap-2">
+              <PushButton
+                variant="light"
+                className="shrink-0"
+                onClick={handleClear}
+                disabled={items.length === 0}
+              >
+                {t.compress.clearAll}
+              </PushButton>
+              <PushButton
+                variant="dark"
+                className="flex-1"
+                onClick={handleDownloadAll}
+                disabled={doneItems.length === 0 || isZipping}
+              >
+                {isZipping ? t.compress.zipping : t.compress.downloadAll}
+              </PushButton>
             </div>
-          )}
+            {totalPending > 0 && (
+              <p className="text-[12px] text-wb-500 text-center mt-2 tabular-nums">
+                {t.compress.processingProgress} {processedCount}/{items.length}
+              </p>
+            )}
+          </>
+        }
+      >
+        {/* Format */}
+        <PanelSection>
+          <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
+            <SelectTrigger label={t.compress.format}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="original">{t.compress.formatOriginal}</SelectItem>
+              <SelectItem value="webp">WebP</SelectItem>
+              <SelectItem value="jpeg">JPEG</SelectItem>
+              <SelectItem value="png">PNG</SelectItem>
+            </SelectContent>
+          </Select>
+        </PanelSection>
 
-          {/* Privacy */}
-          <div className="px-5 py-4 flex-1">
-            <p className="text-[12px] text-wb-500 leading-relaxed">
-              {t.compress.privacy}
-            </p>
-          </div>
-        </div>
+        {/* Totals */}
+        {doneItems.length > 0 && (
+          <PanelSection title={t.compress.totals}>
+            <div className="flex justify-between text-[13px] text-wb-700">
+              <span className="text-wb-500">
+                {t.compress.before}
+              </span>
+              <span className="tabular-nums">{fmtBytes(totalOriginal)}</span>
+            </div>
+            <div className="flex justify-between text-[13px] text-wb-700">
+              <span className="text-wb-500">
+                {t.compress.after}
+              </span>
+              <span className="tabular-nums">{fmtBytes(totalCompressed)}</span>
+            </div>
+            {allDone && (
+              <div className="flex justify-between text-[13px] font-semibold pt-1 border-t border-wb-200">
+                <span className="text-wb-900">
+                  {t.compress.reduction}
+                </span>
+                <span
+                  className={
+                    totalReduction >= 0
+                      ? "text-wb-green tabular-nums"
+                      : "text-wb-600 tabular-nums"
+                  }
+                >
+                  {totalReduction >= 0 ? "−" : "+"}
+                  {Math.abs(totalReduction).toFixed(1)}%
+                </span>
+              </div>
+            )}
+          </PanelSection>
+        )}
 
-        {/* Footer: reset + download all */}
-        <div className="absolute inset-x-0 bottom-0 flex flex-col p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
-          <div className="flex items-center gap-2">
-            <PushButton
-              variant="light"
-              className="shrink-0"
-              onClick={handleClear}
-              disabled={items.length === 0}
-            >
-              {t.compress.clearAll}
-            </PushButton>
-            <PushButton
-              variant="dark"
-              className="flex-1"
-              onClick={handleDownloadAll}
-              disabled={doneItems.length === 0 || isZipping}
-            >
-              {isZipping ? t.compress.zipping : t.compress.downloadAll}
-            </PushButton>
-          </div>
-          {totalPending > 0 && (
-            <p className="text-[12px] text-wb-500 text-center mt-2 tabular-nums">
-              {t.compress.processingProgress} {processedCount}/{items.length}
-            </p>
-          )}
-        </div>
-      </aside>
+        {/* Privacy */}
+        <PanelSection border={false} className="flex-1">
+          <p className="text-[12px] text-wb-500 leading-relaxed">
+            {t.compress.privacy}
+          </p>
+        </PanelSection>
+      </ControlPanel>
     </div>
   );
 }

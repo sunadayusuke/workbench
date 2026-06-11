@@ -9,21 +9,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n";
 import { DragParam } from "@/components/ui/drag-param";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { PushButton } from "@/components/ui/push-button";
 import { hexToRGB } from "@/lib/color-utils";
 import { downloadCanvas } from "@/lib/canvas-download";
-import { useClipboard } from "@/hooks/use-clipboard";
 import { ColorRow } from "@/components/ui/color-row";
 import { AppTopBar } from "@/components/app-top-bar";
+import { ControlPanel } from "@/components/ui/control-panel";
+import { PanelSection } from "@/components/ui/panel-section";
+import { NestedGroup } from "@/components/ui/nested-group";
+import { TextField } from "@/components/ui/code-field";
+import { CircleButton } from "@/components/ui/circle-button";
+import { OutputMenu, OutputMenuItem } from "@/components/ui/output-menu";
+import { ExportDialog } from "@/components/ui/export-dialog";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -598,9 +598,6 @@ export default function ParticlePage() {
   const [debouncedText, setDebouncedText] = useState("");
   const [showExport, setShowExport] = useState(false);
   const [exportCode, setExportCode] = useState("");
-  const [showOutputMenu, setShowOutputMenu] = useState(false);
-  const outputFooterRef = useRef<HTMLDivElement>(null);
-  const { copy, copied } = useClipboard();
   const [svgFileName, setSvgFileName] = useState("");
   const svgInputRef = useRef<HTMLInputElement>(null);
   const svgImageRef = useRef<HTMLImageElement | null>(null);
@@ -952,16 +949,6 @@ export default function ParticlePage() {
     setShowExport(true);
   }, [params]);
 
-  useEffect(() => {
-    if (!showOutputMenu) return;
-    const handler = (e: PointerEvent) => {
-      if (outputFooterRef.current?.contains(e.target as Node)) return;
-      setShowOutputMenu(false);
-    };
-    document.addEventListener("pointerdown", handler);
-    return () => document.removeEventListener("pointerdown", handler);
-  }, [showOutputMenu]);
-
   return (
     <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-wb-50">
       {/* Canvas area */}
@@ -973,296 +960,244 @@ export default function ParticlePage() {
       </div>
 
       {/* Control surface */}
-      <aside className="relative flex-1 md:flex-none md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
+      <ControlPanel
+        title={t.apps.particle.name}
+        footer={
+          <>
+            <PushButton
+              variant="light"
+              onClick={handleReset}
+              className="shrink-0"
+            >
+              {t.reset}
+            </PushButton>
+            <OutputMenu label={t.particle.output}>
+              <OutputMenuItem onSelect={handleDownload}>PNG — Image</OutputMenuItem>
+              <OutputMenuItem onSelect={handleExport}>HTML — Code</OutputMenuItem>
+            </OutputMenu>
+          </>
+        }
+      >
 
-        {/* Header band */}
-        <div className="shrink-0 px-5 pt-6 pb-3">
-          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.particle.name}</span>
-        </div>
-
-        {/* Scrollable interior */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
-
-          {/* Formation section */}
-          <div className="px-5 py-4 flex flex-col gap-3 border-b border-wb-200">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.particle.formation}</span>
-            <div className="flex flex-col gap-[7px]">
-              <Select
-                value={String(params.formationMode)}
-                onValueChange={(v) => updateParam("formationMode", Number(v))}
-              >
-                <SelectTrigger className="cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FORMATION_MODE_VALUES.map((m) => {
-                    const labels: Record<string, string> = {
-                      "0": t.particle.free, "1": t.particle.sphere, "2": t.particle.cube,
-                      "4": t.particle.ring, "5": t.particle.text, "6": t.particle.svg,
-                    };
-                    return <SelectItem key={m.value} value={m.value}>{labels[m.value]}</SelectItem>;
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            {params.formationMode === 5 && (
-              <div className="pl-3 border-l-2 border-wb-100">
-                <div className="flex flex-col gap-2">
-                  <Label className="text-[12px] text-wb-600">{t.particle.text}</Label>
-                  <input
-                    type="text"
-                    value={params.inputText}
-                    onChange={(e) => updateParam("inputText", e.target.value)}
-                    placeholder={t.particle.enterText}
-                    className="h-9 w-full rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 px-3 text-[14px] outline-none focus-visible:ring-2 focus-visible:ring-wb-900 placeholder:text-wb-400"
-                  />
-                </div>
-              </div>
-            )}
-            {params.formationMode === 6 && (
-              <div className="pl-3 border-l-2 border-wb-100">
-                <div className="flex flex-col gap-2">
-                  <input
-                    ref={svgInputRef}
-                    type="file"
-                    accept=".svg,image/svg+xml"
-                    onChange={handleSvgUpload}
-                    className="hidden"
-                  />
-                  <button
-                    className="w-full py-2 px-4 rounded-[10px] bg-transparent border border-dashed border-wb-300 text-wb-500 text-[12px] hover:bg-wb-50 transition-colors select-none"
-                    onClick={() => svgInputRef.current?.click()}
-                  >
-                    {t.particle.selectSvg}
-                  </button>
-                  {svgFileName && (
-                    <p className="text-[12px] text-wb-600 truncate">{svgFileName}</p>
-                  )}
-                </div>
-              </div>
-            )}
-            <div className="flex flex-col gap-[7px]">
-              <Select
-                value={String(params.particleCount)}
-                onValueChange={(v) => updateParam("particleCount", Number(v))}
-              >
-                <SelectTrigger className="cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PARTICLE_COUNT_VALUES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {lang === "ja" ? c.ja : c.en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* ANIM MODE: select */}
-          <div className="px-4 py-4 border-b border-wb-200 flex flex-col gap-3">
-            <Select value={String(params.animMode)} onValueChange={(v) => updateParam("animMode", Number(v))}>
-              <SelectTrigger label={t.particle.mode} className="w-full">
+        {/* Formation section */}
+        <PanelSection title={t.particle.formation}>
+          <div className="flex flex-col gap-2">
+            <Select
+              value={String(params.formationMode)}
+              onValueChange={(v) => updateParam("formationMode", Number(v))}
+            >
+              <SelectTrigger className="cursor-pointer">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">{t.particle.flow.toUpperCase()}</SelectItem>
-                <SelectItem value="1">{t.particle.wave.toUpperCase()}</SelectItem>
-                <SelectItem value="2">{t.particle.diffusion.toUpperCase()}</SelectItem>
+                {FORMATION_MODE_VALUES.map((m) => {
+                  const labels: Record<string, string> = {
+                    "0": t.particle.free, "1": t.particle.sphere, "2": t.particle.cube,
+                    "4": t.particle.ring, "5": t.particle.text, "6": t.particle.svg,
+                  };
+                  return <SelectItem key={m.value} value={m.value}>{labels[m.value]}</SelectItem>;
+                })}
               </SelectContent>
             </Select>
           </div>
-
-          {/* Knob row: SIZE / SPEED / OPCT / SCALE */}
-          <div className="flex flex-col gap-[7px] px-4 py-4 border-b border-wb-200">
-            <DragParam
-              label={t.particle.size}
-              value={params.particleSize}
-              min={0.5} max={5} step={0.1}
-              onChange={(v) => updateParam("particleSize", v)}
-              accent="blue"
-              defaultValue={DEFAULT_PARAMS.particleSize}
-            />
-            <DragParam
-              label={t.particle.speed}
-              value={params.speed}
-              min={0} max={2} step={0.01}
-              onChange={(v) => updateParam("speed", v)}
-              accent="ochre"
-              defaultValue={DEFAULT_PARAMS.speed}
-            />
-            <DragParam
-              label={t.particle.opacity}
-              value={params.opacity}
-              min={0.1} max={1.0} step={0.01}
-              onChange={(v) => updateParam("opacity", v)}
-              accent="grey"
-              defaultValue={DEFAULT_PARAMS.opacity}
-            />
-            <DragParam
-              label={t.particle.scale}
-              value={params.formationScale}
-              min={0.1} max={5.0} step={0.05}
-              onChange={(v) => updateParam("formationScale", v)}
-              accent="orange"
-              defaultValue={DEFAULT_PARAMS.formationScale}
-            />
-          </div>
-
-          {/* Fader bank: TURB / SCATTER / NOISE / SIZE-V / VARIATION */}
-          <div className="flex flex-col gap-[7px] px-4 py-4 border-b border-wb-200">
-            <DragParam label={t.particle.turbulence} value={params.turbulence} min={0} max={3} step={0.01} onChange={(v) => updateParam("turbulence", v)} accent="blue" defaultValue={DEFAULT_PARAMS.turbulence} />
-            <DragParam label={t.particle.scatter} value={params.scatter} min={0} max={1} step={0.01} onChange={(v) => updateParam("scatter", v)} accent="ochre" defaultValue={DEFAULT_PARAMS.scatter} />
-            <DragParam label={t.particle.noiseScale} value={params.noiseScale} min={0.5} max={5} step={0.1} onChange={(v) => updateParam("noiseScale", v)} accent="grey" defaultValue={DEFAULT_PARAMS.noiseScale} />
-            <DragParam label={t.particle.sizeVariation} value={params.sizeVariation} min={0} max={1} step={0.01} onChange={(v) => updateParam("sizeVariation", v)} accent="orange" defaultValue={DEFAULT_PARAMS.sizeVariation} />
-            <DragParam label={t.particle.variation} value={params.formationSpread} min={0} max={2} step={0.01} onChange={(v) => updateParam("formationSpread", v)} accent="blue" defaultValue={DEFAULT_PARAMS.formationSpread} />
-          </div>
-
-          {/* Interaction section */}
-          <div className="px-5 py-4 flex flex-col gap-3 border-b border-wb-200">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.particle.interaction}</span>
-            <ToggleSwitch
-              active={params.mouseInteraction}
-              onClick={() => updateParam("mouseInteraction", !params.mouseInteraction)}
-              label={t.particle.mouseHover}
-            />
-            {params.mouseInteraction && (
-              <div className="pl-3 border-l-2 border-wb-100">
-                <DragParam
-                  label={t.particle.attraction}
-                  value={params.mouseGravity}
-                  min={0.1} max={5} step={0.1}
-                  onChange={(v) => updateParam("mouseGravity", v)}
-                  accent="blue"
-                  defaultValue={DEFAULT_PARAMS.mouseGravity}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Color section */}
-          <div className="flex-1 px-5 py-4 flex flex-col gap-3">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.colors}</span>
-            <Select value={String(params.blending)} onValueChange={(v) => updateParam("blending", Number(v))}>
-              <SelectTrigger label={t.particle.blending} className="cursor-pointer">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">{t.particle.blendNormal}</SelectItem>
-                <SelectItem value="2">{t.particle.blendAdditive}</SelectItem>
-                <SelectItem value="3">{t.particle.blendSubtractive}</SelectItem>
-                <SelectItem value="4">{t.particle.blendMultiply}</SelectItem>
-              </SelectContent>
-            </Select>
-            <ToggleSwitch
-              active={params.colorBgTransparent}
-              onClick={() => updateParam("colorBgTransparent", !params.colorBgTransparent)}
-              label={t.particle.transparentBg}
-            />
-            {!params.colorBgTransparent && (
-              <ColorRow
-                label={t.particle.bgColor}
-                value={params.colorBg}
-                onChange={(v) => updateParam("colorBg", v)}
+          {params.formationMode === 5 && (
+            <NestedGroup>
+              <Label className="text-[12px] text-wb-600">{t.particle.text}</Label>
+              <TextField
+                type="text"
+                value={params.inputText}
+                onChange={(e) => updateParam("inputText", e.target.value)}
+                placeholder={t.particle.enterText}
               />
-            )}
-            <div className="flex flex-col gap-[7px]">
-              <div className="flex items-center justify-between">
-                <Label className="text-[12px] text-wb-600">{t.particle.particleColor}</Label>
-                {(params.colors || []).length < 5 && (
-                  <button
-                    type="button"
-                    onClick={() => updateParam("colors", [...(params.colors || ["#7b68ee"]), "#ffffff"])}
-                    className="flex size-7 shrink-0 items-center justify-center rounded-full border border-wb-100 bg-wb-0 text-[14px] font-semibold leading-none text-wb-900 shadow-[0px_2px_2px_0px_rgba(0,0,0,0.02)] transition-colors hover:bg-wb-50"
-                  >
-                    ＋
-                  </button>
-                )}
-              </div>
-              {(params.colors || ["#7b68ee"]).map((color, i) => (
-                <ColorRow
-                  key={i}
-                  value={color}
-                  onChange={(v) => {
-                    const newColors = [...(params.colors || ["#7b68ee"])];
-                    newColors[i] = v;
-                    updateParam("colors", newColors);
-                  }}
-                  onRemove={
-                    (params.colors || []).length > 1
-                      ? () => {
-                          const newColors = (params.colors || ["#7b68ee"]).filter((_, j) => j !== i);
-                          updateParam("colors", newColors);
-                        }
-                      : undefined
-                  }
-                />
-              ))}
-            </div>
-          </div>
-
-        </div>
-
-        {/* Action buttons */}
-        <div ref={outputFooterRef} className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
-          <PushButton
-            variant="light"
-            onClick={handleReset}
-            className="shrink-0"
-          >
-            {t.reset}
-          </PushButton>
-          <PushButton
-            variant="dark"
-            className="flex-1"
-            onClick={() => setShowOutputMenu(v => !v)}
-          >
-            {t.particle.output}
-          </PushButton>
-          {showOutputMenu && (
-            <div className="absolute bottom-[calc(100%+6px)] left-4 right-4 bg-wb-0 border border-wb-200 rounded-[12px] overflow-hidden shadow-[0_-4px_20px_rgba(12,12,16,0.14)]">
-              <button
-                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none border-b border-wb-200"
-                onClick={() => { setShowOutputMenu(false); handleDownload(); }}
-              >
-                PNG — Image
-              </button>
-              <button
-                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none"
-                onClick={() => { setShowOutputMenu(false); handleExport(); }}
-              >
-                HTML — Code
-              </button>
-            </div>
+            </NestedGroup>
           )}
-        </div>
-      </aside>
+          {params.formationMode === 6 && (
+            <NestedGroup>
+              <input
+                ref={svgInputRef}
+                type="file"
+                accept=".svg,image/svg+xml"
+                onChange={handleSvgUpload}
+                className="hidden"
+              />
+              <button
+                className="w-full py-2 px-4 rounded-[10px] bg-transparent border border-dashed border-wb-300 text-wb-500 text-[12px] hover:bg-wb-50 transition-colors select-none"
+                onClick={() => svgInputRef.current?.click()}
+              >
+                {t.particle.selectSvg}
+              </button>
+              {svgFileName && (
+                <p className="text-[12px] text-wb-600 truncate">{svgFileName}</p>
+              )}
+            </NestedGroup>
+          )}
+          <div className="flex flex-col gap-2">
+            <Select
+              value={String(params.particleCount)}
+              onValueChange={(v) => updateParam("particleCount", Number(v))}
+            >
+              <SelectTrigger className="cursor-pointer">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PARTICLE_COUNT_VALUES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {lang === "ja" ? c.ja : c.en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </PanelSection>
+
+        {/* ANIM MODE: select */}
+        <PanelSection className="px-4">
+          <Select value={String(params.animMode)} onValueChange={(v) => updateParam("animMode", Number(v))}>
+            <SelectTrigger label={t.particle.mode} className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">{t.particle.flow.toUpperCase()}</SelectItem>
+              <SelectItem value="1">{t.particle.wave.toUpperCase()}</SelectItem>
+              <SelectItem value="2">{t.particle.diffusion.toUpperCase()}</SelectItem>
+            </SelectContent>
+          </Select>
+        </PanelSection>
+
+        {/* Knob row: SIZE / SPEED / OPCT / SCALE */}
+        <PanelSection className="px-4">
+          <DragParam
+            label={t.particle.size}
+            value={params.particleSize}
+            min={0.5} max={5} step={0.1}
+            onChange={(v) => updateParam("particleSize", v)}
+            accent="blue"
+            defaultValue={DEFAULT_PARAMS.particleSize}
+          />
+          <DragParam
+            label={t.particle.speed}
+            value={params.speed}
+            min={0} max={2} step={0.01}
+            onChange={(v) => updateParam("speed", v)}
+            accent="ochre"
+            defaultValue={DEFAULT_PARAMS.speed}
+          />
+          <DragParam
+            label={t.particle.opacity}
+            value={params.opacity}
+            min={0.1} max={1.0} step={0.01}
+            onChange={(v) => updateParam("opacity", v)}
+            accent="grey"
+            defaultValue={DEFAULT_PARAMS.opacity}
+          />
+          <DragParam
+            label={t.particle.scale}
+            value={params.formationScale}
+            min={0.1} max={5.0} step={0.05}
+            onChange={(v) => updateParam("formationScale", v)}
+            accent="orange"
+            defaultValue={DEFAULT_PARAMS.formationScale}
+          />
+        </PanelSection>
+
+        {/* Fader bank: TURB / SCATTER / NOISE / SIZE-V / VARIATION */}
+        <PanelSection className="px-4">
+          <DragParam label={t.particle.turbulence} value={params.turbulence} min={0} max={3} step={0.01} onChange={(v) => updateParam("turbulence", v)} accent="blue" defaultValue={DEFAULT_PARAMS.turbulence} />
+          <DragParam label={t.particle.scatter} value={params.scatter} min={0} max={1} step={0.01} onChange={(v) => updateParam("scatter", v)} accent="ochre" defaultValue={DEFAULT_PARAMS.scatter} />
+          <DragParam label={t.particle.noiseScale} value={params.noiseScale} min={0.5} max={5} step={0.1} onChange={(v) => updateParam("noiseScale", v)} accent="grey" defaultValue={DEFAULT_PARAMS.noiseScale} />
+          <DragParam label={t.particle.sizeVariation} value={params.sizeVariation} min={0} max={1} step={0.01} onChange={(v) => updateParam("sizeVariation", v)} accent="orange" defaultValue={DEFAULT_PARAMS.sizeVariation} />
+          <DragParam label={t.particle.variation} value={params.formationSpread} min={0} max={2} step={0.01} onChange={(v) => updateParam("formationSpread", v)} accent="blue" defaultValue={DEFAULT_PARAMS.formationSpread} />
+        </PanelSection>
+
+        {/* Interaction section */}
+        <PanelSection title={t.particle.interaction}>
+          <ToggleSwitch
+            active={params.mouseInteraction}
+            onClick={() => updateParam("mouseInteraction", !params.mouseInteraction)}
+            label={t.particle.mouseHover}
+          />
+          {params.mouseInteraction && (
+            <NestedGroup>
+              <DragParam
+                label={t.particle.attraction}
+                value={params.mouseGravity}
+                min={0.1} max={5} step={0.1}
+                onChange={(v) => updateParam("mouseGravity", v)}
+                accent="blue"
+                defaultValue={DEFAULT_PARAMS.mouseGravity}
+              />
+            </NestedGroup>
+          )}
+        </PanelSection>
+
+        {/* Color section */}
+        <PanelSection title={t.colors} border={false}>
+          <Select value={String(params.blending)} onValueChange={(v) => updateParam("blending", Number(v))}>
+            <SelectTrigger label={t.particle.blending} className="cursor-pointer">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">{t.particle.blendNormal}</SelectItem>
+              <SelectItem value="2">{t.particle.blendAdditive}</SelectItem>
+              <SelectItem value="3">{t.particle.blendSubtractive}</SelectItem>
+              <SelectItem value="4">{t.particle.blendMultiply}</SelectItem>
+            </SelectContent>
+          </Select>
+          <ToggleSwitch
+            active={params.colorBgTransparent}
+            onClick={() => updateParam("colorBgTransparent", !params.colorBgTransparent)}
+            label={t.particle.transparentBg}
+          />
+          {!params.colorBgTransparent && (
+            <ColorRow
+              label={t.particle.bgColor}
+              value={params.colorBg}
+              onChange={(v) => updateParam("colorBg", v)}
+            />
+          )}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-[12px] text-wb-600">{t.particle.particleColor}</Label>
+              {(params.colors || []).length < 5 && (
+                <CircleButton
+                  onClick={() => updateParam("colors", [...(params.colors || ["#7b68ee"]), "#ffffff"])}
+                >
+                  ＋
+                </CircleButton>
+              )}
+            </div>
+            {(params.colors || ["#7b68ee"]).map((color, i) => (
+              <ColorRow
+                key={i}
+                value={color}
+                onChange={(v) => {
+                  const newColors = [...(params.colors || ["#7b68ee"])];
+                  newColors[i] = v;
+                  updateParam("colors", newColors);
+                }}
+                onRemove={
+                  (params.colors || []).length > 1
+                    ? () => {
+                        const newColors = (params.colors || ["#7b68ee"]).filter((_, j) => j !== i);
+                        updateParam("colors", newColors);
+                      }
+                    : undefined
+                }
+              />
+            ))}
+          </div>
+        </PanelSection>
+
+      </ControlPanel>
 
       {/* Export dialog */}
-      <Dialog open={showExport} onOpenChange={setShowExport}>
-        <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
-          <DialogHeader>
-            <DialogTitle>{t.particle.exportCodeTitle}</DialogTitle>
-          </DialogHeader>
-          <textarea
-            className="flex-1 min-h-[300px] rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 font-mono text-[12px] leading-relaxed p-4 resize-none outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
-            value={exportCode}
-            readOnly
-          />
-          <div className="flex justify-end gap-2 pt-2">
-            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => setShowExport(false)}>
-              {t.close}
-            </button>
-            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => { const b=new Blob([exportCode],{type:"text/html"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="particle.html";a.click();URL.revokeObjectURL(u); }}>
-              .html
-            </button>
-            <button className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none" onClick={() => copy(exportCode)}>
-              {copied ? t.copied : t.copy}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ExportDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+        title={t.particle.exportCodeTitle}
+        code={exportCode}
+        filename="particle.html"
+      />
     </div>
   );
 }

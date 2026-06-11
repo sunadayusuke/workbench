@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLanguage } from "@/lib/i18n";
-import { useClipboard } from "@/hooks/use-clipboard";
 import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 import { Label } from "@/components/ui/label";
 import { AppTopBar } from "@/components/app-top-bar";
+import { ControlPanel } from "@/components/ui/control-panel";
+import { PanelSection } from "@/components/ui/panel-section";
+import { ExportDialog } from "@/components/ui/export-dialog";
 import {
   Select,
   SelectContent,
@@ -14,12 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
 /* ------------------------------------------------------------------ */
@@ -486,6 +482,7 @@ interface SceneProps {
 
 /* --- Interactive scenes: button (press) & card (hover) --- */
 
+// ds-lint-disable — デモシーン(プレビュー被写体、DS対象外)
 function ButtonScene({ easing, duration }: SceneProps) {
   const [pressed, setPressed] = useState(false);
   const { t } = useLanguage();
@@ -859,6 +856,7 @@ function GalleryScene({ easing, duration }: SceneProps) {
     </div>
   );
 }
+// ds-lint-enable
 
 const SCENE_COMPONENTS: Record<SceneKey, React.ComponentType<SceneProps>> = {
   button: ButtonScene,
@@ -871,63 +869,6 @@ const SCENE_COMPONENTS: Record<SceneKey, React.ComponentType<SceneProps>> = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  ExportDialog                                                       */
-/* ------------------------------------------------------------------ */
-
-function ExportDialog({
-  open,
-  onOpenChange,
-  points,
-  duration,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  points: ControlPoints;
-  duration: number;
-}) {
-  const [format, setFormat] = useState("css-transition");
-  const { copy, copied } = useClipboard(1500);
-  const { t } = useLanguage();
-
-  const code = generateExportCode(format, points, duration);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
-        <DialogHeader>
-          <DialogTitle>{t.easing.exportCode}</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-4">
-          <Select value={format} onValueChange={setFormat}>
-            <SelectTrigger className="cursor-pointer">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {EXPORT_FORMATS.map((f) => (
-                <SelectItem key={f.value} value={f.value}>
-                  {f.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <textarea
-            readOnly
-            value={code}
-            className="flex-1 min-h-[200px] rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 font-mono text-[12px] leading-relaxed p-4 resize-none outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
-          />
-          <button
-            className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none"
-            onClick={() => copy(code)}
-          >
-            {copied ? t.copied : t.copy}
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /*  Main Page                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -937,9 +878,11 @@ export default function EasingPage() {
   const [activePreset, setActivePreset] = useState<string | null>(DEFAULT_PRESET);
   const [activeScene, setActiveScene] = useState<SceneKey>("button");
   const [showExport, setShowExport] = useState(false);
+  const [exportFormat, setExportFormat] = useState("css-transition");
   const { t } = useLanguage();
 
   const easingCSS = formatCubicBezier(controlPoints);
+  const exportCode = generateExportCode(exportFormat, controlPoints, duration);
 
   const handlePointsChange = (p: ControlPoints) => {
     setControlPoints(p);
@@ -1006,83 +949,86 @@ export default function EasingPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="relative flex-1 md:flex-none md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
+      <ControlPanel
+        title={t.apps.easing.name}
+        footer={
+          <>
+            <PushButton variant="light" onClick={handleReset} className="shrink-0">
+              {t.reset}
+            </PushButton>
+            <PushButton variant="dark" className="flex-1" onClick={() => setShowExport(true)}>
+              {t.easing.exportCode}
+            </PushButton>
+          </>
+        }
+      >
+        {/* Duration */}
+        <PanelSection>
+          <DragParam
+            label={t.easing.duration}
+            value={duration}
+            min={10}
+            max={2000}
+            step={10}
+            onChange={(v) => setDuration(v)}
+            accent="blue"
+            defaultValue={DEFAULT_DURATION}
+          />
+        </PanelSection>
 
-        {/* Header */}
-        <div className="shrink-0 px-5 pt-6 pb-3">
-          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.easing.name}</span>
-        </div>
+        {/* Bezier editor */}
+        <PanelSection>
+          <div className="text-[12px] text-wb-500 font-mono select-none">{easingCSS}</div>
+          <BezierEditor points={controlPoints} onChange={handlePointsChange} />
 
-        {/* Scrollable interior */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
-
-          {/* Duration */}
-          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-[7px]">
-            <DragParam
-              label={t.easing.duration}
-              value={duration}
-              min={10}
-              max={2000}
-              step={10}
-              onChange={(v) => setDuration(v)}
-              accent="blue"
-              defaultValue={DEFAULT_DURATION}
-            />
+          {/* Numeric inputs */}
+          <div className="grid grid-cols-4 gap-2 pt-1">
+            {(["P1x", "P1y", "P2x", "P2y"] as const).map((label, i) => (
+              <div key={label} className="flex flex-col gap-1">
+                <Label className="text-[12px] text-wb-500">{label}</Label>
+                <Input
+                  type="number"
+                  step={0.01}
+                  min={i % 2 === 0 ? 0 : -0.5}
+                  max={i % 2 === 0 ? 1 : 1.5}
+                  value={controlPoints[i]}
+                  onChange={(e) => handlePointInput(i, e.target.value)}
+                  className="h-8 font-mono text-[12px]"
+                />
+              </div>
+            ))}
           </div>
+        </PanelSection>
 
-          {/* Bezier editor */}
-          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-3">
-            <div className="text-[12px] text-wb-500 font-mono select-none">{easingCSS}</div>
-            <BezierEditor points={controlPoints} onChange={handlePointsChange} />
-
-            {/* Numeric inputs */}
-            <div className="grid grid-cols-4 gap-2 pt-1">
-              {(["P1x", "P1y", "P2x", "P2y"] as const).map((label, i) => (
-                <div key={label} className="flex flex-col gap-1">
-                  <Label className="text-[12px] text-wb-500">{label}</Label>
-                  <Input
-                    type="number"
-                    step={0.01}
-                    min={i % 2 === 0 ? 0 : -0.5}
-                    max={i % 2 === 0 ? 1 : 1.5}
-                    value={controlPoints[i]}
-                    onChange={(e) => handlePointInput(i, e.target.value)}
-                    className="h-8 font-mono text-[12px]"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Presets */}
-          <div className="flex-1 px-5 py-4 flex flex-col gap-2">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.easing.presets}</span>
-            <PresetGrid
-              activePreset={activePreset}
-              onSelect={handlePresetSelect}
-            />
-          </div>
-
-        </div>
-
-        {/* Footer */}
-        <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
-          <PushButton variant="light" onClick={handleReset} className="shrink-0">
-            {t.reset}
-          </PushButton>
-          <PushButton variant="dark" className="flex-1" onClick={() => setShowExport(true)}>
-            {t.easing.exportCode}
-          </PushButton>
-        </div>
-      </aside>
+        {/* Presets */}
+        <PanelSection title={t.easing.presets} border={false} className="flex-1">
+          <PresetGrid
+            activePreset={activePreset}
+            onSelect={handlePresetSelect}
+          />
+        </PanelSection>
+      </ControlPanel>
 
       {/* Export dialog */}
       <ExportDialog
         open={showExport}
         onOpenChange={setShowExport}
-        points={controlPoints}
-        duration={duration}
-      />
+        title={t.easing.exportCode}
+        code={exportCode}
+      >
+        <Select value={exportFormat} onValueChange={setExportFormat}>
+          <SelectTrigger className="cursor-pointer">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {EXPORT_FORMATS.map((f) => (
+              <SelectItem key={f.value} value={f.value}>
+                {f.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </ExportDialog>
     </div>
   );
 }

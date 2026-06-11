@@ -11,18 +11,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { useLanguage } from '@/lib/i18n';
 import { downloadCanvas, downloadBlob } from '@/lib/canvas-download';
 import { hexToRGB } from '@/lib/color-utils';
-import { useClipboard } from '@/hooks/use-clipboard';
 import { ColorRow } from '@/components/ui/color-row';
 import { AppTopBar } from '@/components/app-top-bar';
+import { ControlPanel } from '@/components/ui/control-panel';
+import { PanelSection } from '@/components/ui/panel-section';
+import { NestedGroup } from '@/components/ui/nested-group';
+import {
+  OutputMenu,
+  OutputMenuItem,
+  useOutputMenuClose,
+} from '@/components/ui/output-menu';
+import { ExportDialog } from '@/components/ui/export-dialog';
 
 const ICON_NAMES = [
   'favorite', 'star', 'bolt', 'cloud', 'music-note',
@@ -275,7 +277,6 @@ export default function AuroraPage() {
   const { lang, t } = useLanguage();
   const [params, setParamsState] = useState<Params>(DEFAULT_PARAMS);
   const paramsRef = useRef<Params>(DEFAULT_PARAMS);
-  const { copy, copied } = useClipboard();
 
   const [currentSvg, setCurrentSvg] = useState<string | null>(null);
   const [currentIconName, setCurrentIconName] = useState<string>('');
@@ -285,8 +286,6 @@ export default function AuroraPage() {
   const [exportCode, setExportCode] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState<number | null>(null);
-  const [showOutputMenu, setShowOutputMenu] = useState(false);
-  const outputFooterRef = useRef<HTMLDivElement>(null);
 
   const iconListRef = useRef<string[]>(ICON_NAMES);
   const iconCacheRef = useRef<Map<string, string>>(new Map());
@@ -654,16 +653,6 @@ export default function AuroraPage() {
     }
   }
 
-  useEffect(() => {
-    if (!showOutputMenu) return;
-    const handler = (e: PointerEvent) => {
-      if (outputFooterRef.current?.contains(e.target as Node)) return;
-      setShowOutputMenu(false);
-    };
-    document.addEventListener('pointerdown', handler);
-    return () => document.removeEventListener('pointerdown', handler);
-  }, [showOutputMenu]);
-
   return (
     <div className="fixed inset-0 flex flex-col md:flex-row bg-wb-50">
       {/* Canvas area */}
@@ -695,169 +684,147 @@ export default function AuroraPage() {
       </div>
 
       {/* Control surface */}
-      <aside className="relative flex-1 md:flex-none md:w-[320px] min-h-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col">
-        <div className="shrink-0 px-5 pt-6 pb-3">
-          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.aurora.name}</span>
-        </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
-
-          {/* Shape */}
-          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-[7px]">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.aurora.shape}</span>
-
-            <PushButton variant="dark" className="w-full text-center" onClick={() => fileInputRef.current?.click()}>
-              {t.aurora.upload}
+      <ControlPanel
+        title={t.apps.aurora.name}
+        footer={
+          <>
+            <PushButton variant="light" onClick={handleReset} className="shrink-0">
+              {t.reset}
             </PushButton>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".svg,image/svg+xml"
-              className="hidden"
-              onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }}
-            />
-
-            {/* Sample group */}
-            <div className="flex flex-col gap-2 py-2 border-y border-wb-100">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-px bg-wb-100" />
-                <span className="text-[11px] text-wb-400 select-none">sample</span>
-                <div className="flex-1 h-px bg-wb-100" />
-              </div>
-              <PushButton variant="light" className="w-full text-center" onClick={handleShuffle}>
-                {t.aurora.shuffle}
-              </PushButton>
-              <p className="text-[12px] text-wb-400">
-                {isLoadingIcon ? '...' : currentIconName}
-              </p>
-            </div>
-
-            <DragParam label={t.aurora.scale} value={params.scale} min={0.1} max={3} step={0.05} defaultValue={DEFAULT_PARAMS.scale} onChange={v => setParams({ scale: v })} />
-            <DragParam label={t.aurora.roundness} value={params.roundness} min={0} max={1} step={0.05} defaultValue={DEFAULT_PARAMS.roundness} onChange={v => setParams({ roundness: v })} />
-            <DragParam label={lang === 'ja' ? 'シェイプぼかし' : 'Shape Blur'} value={params.canvasBlur} min={0} max={1} step={0.05} defaultValue={DEFAULT_PARAMS.canvasBlur} onChange={v => setParams({ canvasBlur: v })} />
-          </div>
-
-          {/* Mode */}
-          <div className="px-4 py-4 border-b border-wb-200 flex flex-col gap-[7px]">
-            <Select value={String(params.mode)} onValueChange={v => setParams({ mode: Number(v) })}>
-              <SelectTrigger label={t.shader.mode} className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">{t.shader.flow}</SelectItem>
-                <SelectItem value="1">{t.shader.wave}</SelectItem>
-                <SelectItem value="2">{t.shader.ripple}</SelectItem>
-                <SelectItem value="3">{t.shader.morph}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Motion params */}
-          <div className="flex flex-col gap-[7px] px-4 py-4 border-b border-wb-200">
-            <DragParam label={t.shader.speed} value={params.speed} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.speed} onChange={v => setParams({ speed: v })} />
-            <DragParam label={t.shader.noiseScale} value={params.noiseScale} min={0.1} max={4} step={0.1} defaultValue={DEFAULT_PARAMS.noiseScale} onChange={v => setParams({ noiseScale: v })} />
-            <DragParam label={t.shader.distortion} value={params.warp} min={0.1} max={10} step={0.1} defaultValue={DEFAULT_PARAMS.warp} onChange={v => setParams({ warp: v })} />
-            <DragParam label={t.shader.aberration} value={params.aberration} min={0} max={0.1} step={0.001} defaultValue={DEFAULT_PARAMS.aberration} onChange={v => setParams({ aberration: v })} />
-            <DragParam label={t.aurora.blur} value={params.blur} min={0} max={1} step={0.05} defaultValue={DEFAULT_PARAMS.blur} onChange={v => setParams({ blur: v })} />
-            <DragParam label={t.shader.grain} value={params.grain} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.grain} onChange={v => setParams({ grain: v })} />
-          </div>
-
-          {/* Colors */}
-          <div className="px-5 py-4 border-b border-wb-200 flex flex-col gap-4">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.colors}</span>
-
-            <ColorRow label="BG" value={params.colorBg} onChange={v => setParams({ colorBg: v })} />
-
-            <div className="flex flex-col gap-[7px]">
-              <ColorRow label={t.shader.color1} value={params.color1} onChange={v => setParams({ color1: v })} />
-              <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-[7px]">
-                <DragParam label={t.shader.intensity} value={params.intensity1} min={0} max={5} step={0.1} onChange={v => setParams({ intensity1: v })} defaultValue={DEFAULT_PARAMS.intensity1} />
-                <DragParam label={t.shader.threshold} value={params.threshold1} min={-1} max={1} step={0.01} onChange={v => setParams({ threshold1: v })} defaultValue={DEFAULT_PARAMS.threshold1} />
-              </div>
-            </div>
-
-          </div>
-
-
-          {/* Background */}
-          <div className="px-5 py-4 flex flex-col gap-[7px]">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.aurora.background}</span>
-            <ColorRow label={t.shader.bgColor} value={params.canvasBg} onChange={v => setParams({ canvasBg: v })} />
-            <ToggleSwitch label={t.aurora.transparent} active={params.transparentBg} onClick={() => setParams({ transparentBg: !params.transparentBg })} />
-          </div>
-
-        </div>
-
-        {/* Footer actions */}
-        <div ref={outputFooterRef} className="absolute inset-x-0 bottom-0 flex items-center gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
-          <PushButton variant="light" onClick={handleReset} className="shrink-0">
-            {t.reset}
-          </PushButton>
-          <PushButton
-            variant="dark"
-            className="flex-1 text-center"
-            onClick={() => setShowOutputMenu(v => !v)}
-          >
-            {t.aurora.output}
-          </PushButton>
-          {showOutputMenu && (
-            <div className="absolute bottom-[calc(100%+6px)] left-5 right-5 bg-wb-0 border border-wb-200 rounded-[12px] overflow-hidden shadow-[0_-4px_20px_rgba(12,12,16,0.14)]">
-              <button
-                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none border-b border-wb-200"
-                onClick={() => { setShowOutputMenu(false); handleDownload(); }}
-              >
-                PNG — Image
-              </button>
+            <OutputMenu label={t.aurora.output}>
+              <OutputMenuItem onSelect={handleDownload}>PNG — Image</OutputMenuItem>
               <div className="border-b border-wb-200 px-4 py-2 flex items-center gap-2">
                 <span className="text-[12px] text-wb-500 shrink-0 select-none">Video</span>
-                <div className="flex gap-1.5 flex-1">
-                  {([3, 5, 10] as const).map(sec => (
-                    <button
-                      key={sec}
-                      className="flex-1 py-1.5 text-[12px] text-wb-700 bg-wb-50 hover:bg-wb-100 rounded-[8px] transition-colors disabled:opacity-40"
-                      disabled={isRecording}
-                      onClick={() => { setShowOutputMenu(false); handleVideoExport(sec); }}
-                    >
-                      {isRecording && recordingDuration === sec ? '●' : `${sec}s`}
-                    </button>
-                  ))}
-                </div>
+                <VideoRow
+                  isRecording={isRecording}
+                  recordingDuration={recordingDuration}
+                  onSelect={handleVideoExport}
+                />
               </div>
-              <button
-                className="w-full px-4 py-3 text-left text-[13px] text-wb-700 hover:bg-wb-50 transition-colors select-none"
-                onClick={() => { setShowOutputMenu(false); handleExport(); }}
-              >
-                HTML — Code
-              </button>
+              <OutputMenuItem onSelect={handleExport}>HTML — Code</OutputMenuItem>
+            </OutputMenu>
+          </>
+        }
+      >
+
+        {/* Shape */}
+        <PanelSection title={t.aurora.shape}>
+
+          <PushButton variant="dark" className="w-full text-center" onClick={() => fileInputRef.current?.click()}>
+            {t.aurora.upload}
+          </PushButton>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".svg,image/svg+xml"
+            className="hidden"
+            onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }}
+          />
+
+          {/* Sample group */}
+          <div className="flex flex-col gap-2 py-2 border-y border-wb-100">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-wb-100" />
+              <span className="text-[11px] text-wb-400 select-none">sample</span>
+              <div className="flex-1 h-px bg-wb-100" />
             </div>
-          )}
-        </div>
-      </aside>
+            <PushButton variant="light" className="w-full text-center" onClick={handleShuffle}>
+              {t.aurora.shuffle}
+            </PushButton>
+            <p className="text-[12px] text-wb-400">
+              {isLoadingIcon ? '...' : currentIconName}
+            </p>
+          </div>
+
+          <DragParam label={t.aurora.scale} value={params.scale} min={0.1} max={3} step={0.05} defaultValue={DEFAULT_PARAMS.scale} onChange={v => setParams({ scale: v })} />
+          <DragParam label={t.aurora.roundness} value={params.roundness} min={0} max={1} step={0.05} defaultValue={DEFAULT_PARAMS.roundness} onChange={v => setParams({ roundness: v })} />
+          <DragParam label={lang === 'ja' ? 'シェイプぼかし' : 'Shape Blur'} value={params.canvasBlur} min={0} max={1} step={0.05} defaultValue={DEFAULT_PARAMS.canvasBlur} onChange={v => setParams({ canvasBlur: v })} />
+        </PanelSection>
+
+        {/* Mode */}
+        <PanelSection>
+          <Select value={String(params.mode)} onValueChange={v => setParams({ mode: Number(v) })}>
+            <SelectTrigger label={t.shader.mode} className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">{t.shader.flow}</SelectItem>
+              <SelectItem value="1">{t.shader.wave}</SelectItem>
+              <SelectItem value="2">{t.shader.ripple}</SelectItem>
+              <SelectItem value="3">{t.shader.morph}</SelectItem>
+            </SelectContent>
+          </Select>
+        </PanelSection>
+
+        {/* Motion params */}
+        <PanelSection>
+          <DragParam label={t.shader.speed} value={params.speed} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.speed} onChange={v => setParams({ speed: v })} />
+          <DragParam label={t.shader.noiseScale} value={params.noiseScale} min={0.1} max={4} step={0.1} defaultValue={DEFAULT_PARAMS.noiseScale} onChange={v => setParams({ noiseScale: v })} />
+          <DragParam label={t.shader.distortion} value={params.warp} min={0.1} max={10} step={0.1} defaultValue={DEFAULT_PARAMS.warp} onChange={v => setParams({ warp: v })} />
+          <DragParam label={t.shader.aberration} value={params.aberration} min={0} max={0.1} step={0.001} defaultValue={DEFAULT_PARAMS.aberration} onChange={v => setParams({ aberration: v })} />
+          <DragParam label={t.aurora.blur} value={params.blur} min={0} max={1} step={0.05} defaultValue={DEFAULT_PARAMS.blur} onChange={v => setParams({ blur: v })} />
+          <DragParam label={t.shader.grain} value={params.grain} min={0} max={1} step={0.01} defaultValue={DEFAULT_PARAMS.grain} onChange={v => setParams({ grain: v })} />
+        </PanelSection>
+
+        {/* Colors */}
+        <PanelSection title={t.colors}>
+
+          <ColorRow label="BG" value={params.colorBg} onChange={v => setParams({ colorBg: v })} />
+
+          <div className="flex flex-col gap-2">
+            <ColorRow label={t.shader.color1} value={params.color1} onChange={v => setParams({ color1: v })} />
+            <NestedGroup>
+              <DragParam label={t.shader.intensity} value={params.intensity1} min={0} max={5} step={0.1} onChange={v => setParams({ intensity1: v })} defaultValue={DEFAULT_PARAMS.intensity1} />
+              <DragParam label={t.shader.threshold} value={params.threshold1} min={-1} max={1} step={0.01} onChange={v => setParams({ threshold1: v })} defaultValue={DEFAULT_PARAMS.threshold1} />
+            </NestedGroup>
+          </div>
+
+        </PanelSection>
+
+
+        {/* Background */}
+        <PanelSection title={t.aurora.background} border={false}>
+          <ColorRow label={t.shader.bgColor} value={params.canvasBg} onChange={v => setParams({ canvasBg: v })} />
+          <ToggleSwitch label={t.aurora.transparent} active={params.transparentBg} onClick={() => setParams({ transparentBg: !params.transparentBg })} />
+        </PanelSection>
+
+      </ControlPanel>
 
       {/* Code export dialog */}
-      <Dialog open={showExport} onOpenChange={setShowExport}>
-        <DialogContent className="max-w-[720px]! max-h-[80vh] flex! flex-col">
-          <DialogHeader>
-            <DialogTitle>{t.aurora.exportCodeTitle}</DialogTitle>
-          </DialogHeader>
-          <textarea
-            className="flex-1 min-h-[300px] rounded-[10px] border border-wb-200 bg-wb-50 text-wb-900 font-mono text-[12px] leading-relaxed p-4 resize-none outline-none focus-visible:ring-2 focus-visible:ring-wb-900"
-            value={exportCode}
-            readOnly
-          />
-          <div className="flex justify-end gap-2 pt-2">
-            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => setShowExport(false)}>
-              {t.close}
-            </button>
-            <button className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none" onClick={() => { const b=new Blob([exportCode],{type:"text/html"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="aurora.html";a.click();URL.revokeObjectURL(u); }}>
-              .html
-            </button>
-            <button className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none" onClick={() => copy(exportCode)}>
-              {copied ? t.copied : t.copy}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ExportDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+        title={t.aurora.exportCodeTitle}
+        code={exportCode}
+        filename="aurora.html"
+      />
+    </div>
+  );
+}
+
+/** Custom popup row for video export (uses OutputMenu's close before recording). */
+function VideoRow({
+  isRecording,
+  recordingDuration,
+  onSelect,
+}: {
+  isRecording: boolean;
+  recordingDuration: number | null;
+  onSelect: (sec: number) => void;
+}) {
+  const close = useOutputMenuClose();
+  return (
+    <div className="flex gap-1.5 flex-1">
+      {([3, 5, 10] as const).map(sec => (
+        <button
+          key={sec}
+          className="flex-1 py-1.5 text-[12px] text-wb-700 bg-wb-50 hover:bg-wb-100 rounded-[8px] transition-colors disabled:opacity-40"
+          disabled={isRecording}
+          onClick={() => { close(); onSelect(sec); }}
+        >
+          {isRecording && recordingDuration === sec ? '●' : `${sec}s`}
+        </button>
+      ))}
     </div>
   );
 }

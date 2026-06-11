@@ -21,6 +21,10 @@ import { DragParam } from "@/components/ui/drag-param";
 import { PushButton } from "@/components/ui/push-button";
 import { ColorRow } from "@/components/ui/color-row";
 import { downloadCanvas } from "@/lib/canvas-download";
+import { ControlPanel } from "@/components/ui/control-panel";
+import { PanelSection, SectionTitle } from "@/components/ui/panel-section";
+import { FlatButton } from "@/components/ui/flat-button";
+import { NestedGroup } from "@/components/ui/nested-group";
 
 /* ------------------------------------------------------------------ */
 /*  Shaders                                                           */
@@ -704,133 +708,124 @@ export default function ImagePage() {
       </div>
 
       {/* Control surface */}
-      <aside className="relative flex-1 md:flex-none md:w-[320px] shrink-0 bg-wb-0 shadow-[0_-8px_24px_rgba(12,12,16,0.08)] md:shadow-none md:border-l md:border-wb-200 flex flex-col overflow-hidden">
-
-        {/* Header */}
-        <div className="shrink-0 px-5 pt-6 pb-3">
-          <span className="text-[18px] font-medium text-wb-900 select-none">{t.apps.image.name}</span>
-        </div>
-
-        {/* Scrollable interior */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col pb-[88px]">
-
-          {/* File upload */}
-          <div className="px-5 py-4 border-b border-wb-200">
-            <label className="flex items-center justify-center gap-2 min-h-10 py-2.5 rounded-[10px] border border-dashed border-wb-300 text-[12px] text-wb-500 cursor-pointer bg-transparent hover:bg-wb-50 transition-colors">
-              {hasImage ? t.image.changeImage : t.image.selectImage}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) loadImage(file);
-                }}
-              />
-            </label>
-          </div>
-
-          {/* Knob row: BRITE / CONT / SAT / EXPSR */}
-          <div className="flex flex-col gap-[7px] px-4 py-4 border-b border-wb-200">
-            <DragParam
-              label={t.image.brightness}
-              value={params.brightness}
-              min={-1} max={1} step={0.01}
-              defaultValue={0}
-              onChange={(v) => updateParam("brightness", v)}
+      <ControlPanel
+        title={t.apps.image.name}
+        footer={
+          <>
+            <PushButton variant="light" onClick={handleReset} disabled={!hasImage} className="shrink-0">
+              {t.reset}
+            </PushButton>
+            <PushButton variant="dark" className="flex-1" onClick={() => setShowDownload(true)} disabled={!hasImage}>
+              {t.download}
+            </PushButton>
+          </>
+        }
+      >
+        {/* File upload */}
+        <PanelSection>
+          <label className="flex items-center justify-center gap-2 min-h-10 py-2.5 rounded-[10px] border border-dashed border-wb-300 text-[12px] text-wb-500 cursor-pointer bg-transparent hover:bg-wb-50 transition-colors">
+            {hasImage ? t.image.changeImage : t.image.selectImage}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) loadImage(file);
+              }}
             />
-            <DragParam
-              label={t.image.contrast}
-              value={params.contrast}
-              min={-1} max={1} step={0.01}
-              defaultValue={0}
-              onChange={(v) => updateParam("contrast", v)}
-            />
-            <DragParam
-              label={t.image.saturation}
-              value={params.saturation}
-              min={-1} max={1} step={0.01}
-              defaultValue={0}
-              onChange={(v) => updateParam("saturation", v)}
-            />
-            <DragParam
-              label={t.image.exposure}
-              value={params.exposure}
-              min={-2} max={2} step={0.01}
-              defaultValue={0}
-              onChange={(v) => updateParam("exposure", v)}
-            />
-          </div>
+          </label>
+        </PanelSection>
 
-          {/* Fader bank: NOISE / BLUR / VIGNT / FADE */}
-          <div className="flex flex-col gap-[7px] px-4 py-4 border-b border-wb-200">
-            <DragParam label={t.image.noise} value={params.noise} min={0} max={1} step={0.01} onChange={(v) => updateParam("noise", v)} defaultValue={0} />
-            <DragParam label={t.image.blur} value={params.blur} min={0} max={20} step={0.5} onChange={(v) => updateParam("blur", v)} defaultValue={0} />
-            <DragParam label={t.image.vignette} value={params.vignette} min={0} max={1} step={0.01} onChange={(v) => updateParam("vignette", v)} defaultValue={0} />
-            <DragParam label={t.image.fade} value={params.fade} min={0} max={1} step={0.01} onChange={(v) => updateParam("fade", v)} defaultValue={0} />
-          </div>
+        {/* Knob row: BRITE / CONT / SAT / EXPSR */}
+        <PanelSection className="px-4">
+          <DragParam
+            label={t.image.brightness}
+            value={params.brightness}
+            min={-1} max={1} step={0.01}
+            defaultValue={0}
+            onChange={(v) => updateParam("brightness", v)}
+          />
+          <DragParam
+            label={t.image.contrast}
+            value={params.contrast}
+            min={-1} max={1} step={0.01}
+            defaultValue={0}
+            onChange={(v) => updateParam("contrast", v)}
+          />
+          <DragParam
+            label={t.image.saturation}
+            value={params.saturation}
+            min={-1} max={1} step={0.01}
+            defaultValue={0}
+            onChange={(v) => updateParam("saturation", v)}
+          />
+          <DragParam
+            label={t.image.exposure}
+            value={params.exposure}
+            min={-2} max={2} step={0.01}
+            defaultValue={0}
+            onChange={(v) => updateParam("exposure", v)}
+          />
+        </PanelSection>
 
-          {/* Scrollable secondary controls */}
-          <div className="flex flex-col gap-4 px-5 py-4">
-            <span className="text-[15px] font-medium text-wb-900 select-none">{t.image.tone}</span>
-            <DragParam label={t.image.highlights} value={params.highlights} min={-1} max={1} step={0.01} onChange={(v) => updateParam("highlights", v)} defaultValue={0} />
-            <DragParam label={t.image.shadows} value={params.shadows} min={-1} max={1} step={0.01} onChange={(v) => updateParam("shadows", v)} defaultValue={0} />
-            <DragParam label={t.image.cyanYellow} value={params.temperature} min={-1} max={1} step={0.01} onChange={(v) => updateParam("temperature", v)} defaultValue={0} />
-            <DragParam label={t.image.greenMagenta} value={params.tint} min={-1} max={1} step={0.01} onChange={(v) => updateParam("tint", v)} defaultValue={0} />
-            <DragParam label={t.image.hueShift} value={params.hueShift} min={-0.5} max={0.5} step={0.01} onChange={(v) => updateParam("hueShift", v)} defaultValue={0} />
+        {/* Fader bank: NOISE / BLUR / VIGNT / FADE */}
+        <PanelSection className="px-4">
+          <DragParam label={t.image.noise} value={params.noise} min={0} max={1} step={0.01} onChange={(v) => updateParam("noise", v)} defaultValue={0} />
+          <DragParam label={t.image.blur} value={params.blur} min={0} max={20} step={0.5} onChange={(v) => updateParam("blur", v)} defaultValue={0} />
+          <DragParam label={t.image.vignette} value={params.vignette} min={0} max={1} step={0.01} onChange={(v) => updateParam("vignette", v)} defaultValue={0} />
+          <DragParam label={t.image.fade} value={params.fade} min={0} max={1} step={0.01} onChange={(v) => updateParam("fade", v)} defaultValue={0} />
+        </PanelSection>
 
-            <span className="text-[15px] font-medium text-wb-900 select-none mt-2">{t.image.fx}</span>
-            <DragParam label={t.image.glitch} value={params.glitchAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("glitchAmount", v)} defaultValue={0} />
-            {params.glitchAmount > 0 && (
-              <div className="pl-3 border-l-2 border-wb-100">
-                <DragParam label={t.image.seed} value={params.glitchSeed} min={0} max={100} step={1} onChange={(v) => updateParam("glitchSeed", v)} defaultValue={0} />
-              </div>
-            )}
-            <DragParam label={t.image.pixelate} value={params.pixelate} min={0} max={1} step={0.01} onChange={(v) => updateParam("pixelate", v)} defaultValue={0} />
-            <DragParam label={t.image.rgbShift} value={params.rgbShift} min={0} max={1} step={0.01} onChange={(v) => updateParam("rgbShift", v)} defaultValue={0} />
-            {params.rgbShift > 0 && (
-              <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-3">
-                <Select value={String(params.rgbShiftMode)} onValueChange={(v) => updateParam("rgbShiftMode", Number(v))}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">{t.image.linear}</SelectItem>
-                    <SelectItem value="1">{t.image.radial}</SelectItem>
-                  </SelectContent>
-                </Select>
-                {params.rgbShiftMode === 0 && (
-                  <DragParam label={t.image.angle} value={params.rgbShiftAngle} min={0} max={360} step={1} onChange={(v) => updateParam("rgbShiftAngle", v)} defaultValue={0} />
-                )}
-              </div>
-            )}
-            <DragParam label={t.image.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("waveAmount", v)} defaultValue={0} />
-            {params.waveAmount > 0 && (
-              <div className="pl-3 border-l-2 border-wb-100">
-                <DragParam label={t.image.frequency} value={params.waveFrequency} min={1} max={50} step={0.5} onChange={(v) => updateParam("waveFrequency", v)} defaultValue={10} />
-              </div>
-            )}
-            <DragParam label={t.image.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => updateParam("halftone", v)} defaultValue={0} />
-            <DragParam label={t.image.scanline} value={params.scanline} min={0} max={1} step={0.01} onChange={(v) => updateParam("scanline", v)} defaultValue={0} />
-            <DragParam label={t.image.duotone} value={params.duotone} min={0} max={1} step={0.01} onChange={(v) => updateParam("duotone", v)} defaultValue={0} />
-            {params.duotone > 0 && (
-              <div className="pl-3 border-l-2 border-wb-100 flex flex-col gap-[7px]">
-                <ColorRow label={t.image.shadow} value={params.duotoneShadow} onChange={(v) => updateParam("duotoneShadow", v)} />
-                <ColorRow label={t.image.highlight} value={params.duotoneHighlight} onChange={(v) => updateParam("duotoneHighlight", v)} />
-              </div>
-            )}
-          </div>
+        {/* Scrollable secondary controls */}
+        <PanelSection border={false}>
+          <SectionTitle>{t.image.tone}</SectionTitle>
+          <DragParam label={t.image.highlights} value={params.highlights} min={-1} max={1} step={0.01} onChange={(v) => updateParam("highlights", v)} defaultValue={0} />
+          <DragParam label={t.image.shadows} value={params.shadows} min={-1} max={1} step={0.01} onChange={(v) => updateParam("shadows", v)} defaultValue={0} />
+          <DragParam label={t.image.cyanYellow} value={params.temperature} min={-1} max={1} step={0.01} onChange={(v) => updateParam("temperature", v)} defaultValue={0} />
+          <DragParam label={t.image.greenMagenta} value={params.tint} min={-1} max={1} step={0.01} onChange={(v) => updateParam("tint", v)} defaultValue={0} />
+          <DragParam label={t.image.hueShift} value={params.hueShift} min={-0.5} max={0.5} step={0.01} onChange={(v) => updateParam("hueShift", v)} defaultValue={0} />
 
-        </div>
-
-        {/* Footer */}
-        <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent">
-          <PushButton variant="light" onClick={handleReset} disabled={!hasImage} className="shrink-0">
-            {t.reset}
-          </PushButton>
-          <PushButton variant="dark" className="flex-1" onClick={() => setShowDownload(true)} disabled={!hasImage}>
-            {t.download}
-          </PushButton>
-        </div>
-      </aside>
+          <SectionTitle className="mt-2">{t.image.fx}</SectionTitle>
+          <DragParam label={t.image.glitch} value={params.glitchAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("glitchAmount", v)} defaultValue={0} />
+          {params.glitchAmount > 0 && (
+            <NestedGroup>
+              <DragParam label={t.image.seed} value={params.glitchSeed} min={0} max={100} step={1} onChange={(v) => updateParam("glitchSeed", v)} defaultValue={0} />
+            </NestedGroup>
+          )}
+          <DragParam label={t.image.pixelate} value={params.pixelate} min={0} max={1} step={0.01} onChange={(v) => updateParam("pixelate", v)} defaultValue={0} />
+          <DragParam label={t.image.rgbShift} value={params.rgbShift} min={0} max={1} step={0.01} onChange={(v) => updateParam("rgbShift", v)} defaultValue={0} />
+          {params.rgbShift > 0 && (
+            <NestedGroup>
+              <Select value={String(params.rgbShiftMode)} onValueChange={(v) => updateParam("rgbShiftMode", Number(v))}>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">{t.image.linear}</SelectItem>
+                  <SelectItem value="1">{t.image.radial}</SelectItem>
+                </SelectContent>
+              </Select>
+              {params.rgbShiftMode === 0 && (
+                <DragParam label={t.image.angle} value={params.rgbShiftAngle} min={0} max={360} step={1} onChange={(v) => updateParam("rgbShiftAngle", v)} defaultValue={0} />
+              )}
+            </NestedGroup>
+          )}
+          <DragParam label={t.image.wave} value={params.waveAmount} min={0} max={1} step={0.01} onChange={(v) => updateParam("waveAmount", v)} defaultValue={0} />
+          {params.waveAmount > 0 && (
+            <NestedGroup>
+              <DragParam label={t.image.frequency} value={params.waveFrequency} min={1} max={50} step={0.5} onChange={(v) => updateParam("waveFrequency", v)} defaultValue={10} />
+            </NestedGroup>
+          )}
+          <DragParam label={t.image.halftone} value={params.halftone} min={0} max={1} step={0.01} onChange={(v) => updateParam("halftone", v)} defaultValue={0} />
+          <DragParam label={t.image.scanline} value={params.scanline} min={0} max={1} step={0.01} onChange={(v) => updateParam("scanline", v)} defaultValue={0} />
+          <DragParam label={t.image.duotone} value={params.duotone} min={0} max={1} step={0.01} onChange={(v) => updateParam("duotone", v)} defaultValue={0} />
+          {params.duotone > 0 && (
+            <NestedGroup>
+              <ColorRow label={t.image.shadow} value={params.duotoneShadow} onChange={(v) => updateParam("duotoneShadow", v)} />
+              <ColorRow label={t.image.highlight} value={params.duotoneHighlight} onChange={(v) => updateParam("duotoneHighlight", v)} />
+            </NestedGroup>
+          )}
+        </PanelSection>
+      </ControlPanel>
 
       {/* ダウンロードダイアログ */}
       <Dialog open={showDownload} onOpenChange={setShowDownload}>
@@ -865,18 +860,12 @@ export default function ImagePage() {
               />
             )}
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                className="h-10 px-4 rounded-[10px] bg-wb-0 border border-wb-200 text-wb-900 text-[14px] font-medium hover:bg-wb-50 transition-colors select-none"
-                onClick={() => setShowDownload(false)}
-              >
+              <FlatButton variant="outline" onClick={() => setShowDownload(false)}>
                 {t.cancel}
-              </button>
-              <button
-                className="h-10 px-4 rounded-[10px] bg-wb-900 text-wb-0 text-[14px] font-medium hover:bg-wb-800 active:bg-wb-950 transition-colors select-none"
-                onClick={handleDownload}
-              >
+              </FlatButton>
+              <FlatButton onClick={handleDownload}>
                 {t.download}
-              </button>
+              </FlatButton>
             </div>
           </div>
         </DialogContent>

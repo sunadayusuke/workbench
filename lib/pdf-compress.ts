@@ -433,6 +433,11 @@ export async function compressPdf(
         // Stream bytes are a self-contained JPEG. Skip CMYK (4-comp) — browsers
         // decode Adobe CMYK JPEGs inconsistently (color inversion risk).
         if (jpegComponents(encoded) === 4) continue;
+        // The PDF /ColorSpace must be an RGB/gray family we can faithfully relabel
+        // as DeviceRGB. Lab / Separation / DeviceN / Indexed reinterpret the JPEG's
+        // samples through a colour transform the browser ignores, so re-encoding
+        // them as DeviceRGB would shift colors — skip (same guard as the Flate path).
+        if (colorComponents(dict) === null) continue;
         source = await createImageBitmap(
           new Blob([asBlobPart(encoded)], { type: "image/jpeg" }),
         );

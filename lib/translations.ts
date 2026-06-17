@@ -321,6 +321,11 @@ export interface Translations {
     privacy: string;
     format: string;
     formatOriginal: string;
+    pdfQuality: string;
+    pdfQualityHigh: string;
+    pdfQualityBalanced: string;
+    pdfQualityMax: string;
+    pdfNote: string;
     clearAll: string;
     downloadAll: string;
     zipping: string;
@@ -337,6 +342,7 @@ export interface Translations {
     errorUnsupported: string;
     errorDecodeFailed: string;
     errorEncodeFailed: string;
+    errorPdfFailed: string;
     errorTooManyFiles: string;
   };
 
@@ -435,7 +441,7 @@ const ja: Translations = {
     signal: { name: "シグナルノイズ", description: "ディザリングシグナルノイズジェネレーター" },
     aurora: { name: "シェイプシェーダー", description: "SVGシェイプにシェーダーを合成するツール" },
     badge: { name: "バッジジェネレーター", description: "SVGを3Dバッジに変換するツール" },
-    compress: { name: "コンプレッサー", description: "画像の圧縮・形式変換ツール" },
+    compress: { name: "コンプレッサー", description: "画像・PDFの圧縮・形式変換ツール" },
     qr: { name: "QRコード", description: "スタイルドQRコードジェネレーター" },
   },
 
@@ -711,14 +717,19 @@ const ja: Translations = {
   },
 
   compress: {
-    dropHint: "画像をドラッグ&ドロップ",
+    dropHint: "画像・PDFをドラッグ&ドロップ",
     clickHint: "またはクリックしてファイルを選択",
     selectFiles: "ファイル選択",
-    supportedTypes: "JPEG · PNG · WebP · GIF",
+    supportedTypes: "JPEG · PNG · WebP · GIF · PDF",
     maxNote: "1ファイル100MBまで / 最大50枚",
-    privacy: "全処理はブラウザ内で完結します。画像は外部サーバーに一切送信されません。",
+    privacy: "全処理はブラウザ内で完結します。ファイルは外部サーバーに一切送信されません。",
     format: "出力形式",
     formatOriginal: "元の形式",
+    pdfQuality: "PDF品質",
+    pdfQualityHigh: "高画質（低圧縮）",
+    pdfQualityBalanced: "標準（推奨）",
+    pdfQualityMax: "最小サイズ（高圧縮）",
+    pdfNote: "PDF内の画像を再圧縮します。文字・ベクター要素はそのまま維持されます。",
     clearAll: "全クリア",
     downloadAll: "全てZIPダウンロード",
     zipping: "ZIP圧縮中...",
@@ -735,6 +746,7 @@ const ja: Translations = {
     errorUnsupported: "非対応形式",
     errorDecodeFailed: "デコード失敗",
     errorEncodeFailed: "エンコード失敗",
+    errorPdfFailed: "PDF処理失敗（破損・暗号化の可能性）",
     errorTooManyFiles: "ファイル数上限（50枚）に達しました",
   },
 
@@ -831,7 +843,7 @@ const en: Translations = {
     signal: { name: "Signal Noise", description: "Dithered signal noise generator" },
     aurora: { name: "Shape Shader", description: "Shader compositor over SVG shapes" },
     badge: { name: "Badge Generator", description: "Convert SVG to 3D badge" },
-    compress: { name: "Compress", description: "Image compression & format converter" },
+    compress: { name: "Compress", description: "Image & PDF compression / format converter" },
     qr: { name: "QR Code", description: "Styled QR code generator" },
   },
 
@@ -1107,14 +1119,19 @@ const en: Translations = {
   },
 
   compress: {
-    dropHint: "Drag & drop images",
+    dropHint: "Drag & drop images or PDFs",
     clickHint: "or click to select files",
     selectFiles: "Select files",
-    supportedTypes: "JPEG · PNG · WebP · GIF",
-    maxNote: "Up to 100MB per file / max 50 images",
-    privacy: "All processing happens inside your browser. Images are never uploaded to any server.",
+    supportedTypes: "JPEG · PNG · WebP · GIF · PDF",
+    maxNote: "Up to 100MB per file / max 50 files",
+    privacy: "All processing happens inside your browser. Files are never uploaded to any server.",
     format: "Output Format",
     formatOriginal: "Original",
+    pdfQuality: "PDF Quality",
+    pdfQualityHigh: "High quality (light)",
+    pdfQualityBalanced: "Balanced (recommended)",
+    pdfQualityMax: "Smallest size (max)",
+    pdfNote: "Re-compresses images inside the PDF. Text and vectors are kept intact.",
     clearAll: "Clear All",
     downloadAll: "Download All (ZIP)",
     zipping: "Zipping...",
@@ -1131,6 +1148,7 @@ const en: Translations = {
     errorUnsupported: "Unsupported format",
     errorDecodeFailed: "Decode failed",
     errorEncodeFailed: "Encode failed",
+    errorPdfFailed: "PDF processing failed (corrupt or encrypted)",
     errorTooManyFiles: "Max files reached (50)",
   },
 

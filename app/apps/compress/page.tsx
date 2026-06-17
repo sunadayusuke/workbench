@@ -14,19 +14,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { downloadBlob } from "@/lib/canvas-download";
+import { compressPdf, type PdfQuality } from "@/lib/pdf-compress";
 
 type Format = "webp" | "jpeg" | "png" | "original";
+type Kind = "image" | "pdf";
 type Status = "pending" | "processing" | "done" | "error";
 type ErrorKey =
   | "errorTooLarge"
   | "errorUnsupported"
   | "errorDecodeFailed"
   | "errorEncodeFailed"
+  | "errorPdfFailed"
   | "errorTooManyFiles";
 
 interface Item {
   id: string;
   file: File;
+  kind: Kind;
   thumbUrl: string;
   originalSize: number;
   status: Status;
@@ -40,6 +44,13 @@ interface Item {
 const MAX_SIZE = 100 * 1024 * 1024; // 100MB
 const MAX_FILES = 50;
 const SUPPORTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+function isPdf(file: File): boolean {
+  return (
+    file.type.toLowerCase() === "application/pdf" ||
+    file.name.toLowerCase().endsWith(".pdf")
+  );
+}
 // JPEG/WebP lossy quality (0-1 scale for canvas.toBlob).
 const JPEG_WEBP_QUALITY = 0.8;
 // PNG palette color count for UPNG quantization. Lower = smaller files, more
@@ -128,6 +139,7 @@ export default function CompressPage() {
   const { t } = useLanguage();
   const [items, setItems] = useState<Item[]>([]);
   const [format, setFormat] = useState<Format>("original");
+  const [pdfQuality, setPdfQuality] = useState<PdfQuality>("balanced");
   const [isDragOver, setIsDragOver] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [topError, setTopError] = useState<ErrorKey | null>(null);
@@ -139,10 +151,14 @@ export default function CompressPage() {
   const formatRef = useRef(format);
   formatRef.current = format;
 
+  const pdfQualityRef = useRef(pdfQuality);
+  pdfQualityRef.current = pdfQuality;
+
   const genRef = useRef(0);
   const isProcessingRef = useRef(false);
 
-  // Re-process when format changes — invalidate any prior outputs.
+  // Re-process when the output format or PDF quality changes — invalidate any
+  // prior outputs so the queue regenerates them.
   useEffect(() => {
     genRef.current++;
     setItems((prev) =>
@@ -159,7 +175,7 @@ export default function CompressPage() {
         };
       }),
     );
-  }, [format]);
+  }, [format, pdfQuality]);
 
   // Sequential processing queue.
   useEffect(() => {
@@ -175,13 +191,17 @@ export default function CompressPage() {
 
         const myGen = genRef.current;
         const currentFormat = formatRef.current;
+        const currentPdfQuality = pdfQualityRef.current;
 
         setItems((prev) =>
           prev.map((i) => (i.id === next.id ? { ...i, status: "processing" } : i)),
         );
 
         try {
-          const r = await encodeImage(next.file, currentFormat);
+          const r =
+            next.kind === "pdf"
+              ? await compressPdf(next.file, currentPdfQuality)
+              : await encodeImage(next.file, currentFormat);
           if (myGen !== genRef.current) continue;
           const outputUrl = URL.createObjectURL(r.blob);
           setItems((prev) =>
@@ -245,10 +265,13 @@ export default function CompressPage() {
       const toAdd = incoming.slice(0, remaining);
       const newItems: Item[] = toAdd.map((file) => {
         const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        const thumbUrl = URL.createObjectURL(file);
+        const pdf = isPdf(file);
+        // PDFs use a glyph placeholder, so no object URL is needed for a thumb.
+        const thumbUrl = pdf ? "" : URL.createObjectURL(file);
         const base: Item = {
           id,
           file,
+          kind: pdf ? "pdf" : "image",
           thumbUrl,
           originalSize: file.size,
           status: "pending",
@@ -256,7 +279,7 @@ export default function CompressPage() {
         if (file.size > MAX_SIZE) {
           return { ...base, status: "error", errorKey: "errorTooLarge" };
         }
-        if (!SUPPORTED_TYPES.includes(file.type.toLowerCase())) {
+        if (!pdf && !SUPPORTED_TYPES.includes(file.type.toLowerCase())) {
           return { ...base, status: "error", errorKey: "errorUnsupported" };
         }
         return base;
@@ -349,6 +372,11 @@ export default function CompressPage() {
     }
   }, []);
 
+  const hasPdfs = items.some((i) => i.kind === "pdf");
+  // Keep the format control visible on the empty panel (prior behavior); hide it
+  // only when every queued file is a PDF.
+  const hasImages = items.some((i) => i.kind === "image") || items.length === 0;
+
   const doneItems = items.filter((i) => i.status === "done");
   const activeForTotals = items.filter((i) => i.status !== "error");
   const totalOriginal = activeForTotals.reduce((s, i) => s + i.originalSize, 0);
@@ -400,7 +428,7 @@ export default function CompressPage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
             multiple
             className="hidden"
             onChange={handleSelect}
@@ -469,20 +497,44 @@ export default function CompressPage() {
           </>
         }
       >
-        {/* Format */}
-        <PanelSection>
-          <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
-            <SelectTrigger label={t.compress.format}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="original">{t.compress.formatOriginal}</SelectItem>
-              <SelectItem value="webp">WebP</SelectItem>
-              <SelectItem value="jpeg">JPEG</SelectItem>
-              <SelectItem value="png">PNG</SelectItem>
-            </SelectContent>
-          </Select>
-        </PanelSection>
+        {/* Image format */}
+        {hasImages && (
+          <PanelSection>
+            <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
+              <SelectTrigger label={t.compress.format}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="original">{t.compress.formatOriginal}</SelectItem>
+                <SelectItem value="webp">WebP</SelectItem>
+                <SelectItem value="jpeg">JPEG</SelectItem>
+                <SelectItem value="png">PNG</SelectItem>
+              </SelectContent>
+            </Select>
+          </PanelSection>
+        )}
+
+        {/* PDF quality */}
+        {hasPdfs && (
+          <PanelSection>
+            <Select
+              value={pdfQuality}
+              onValueChange={(v) => setPdfQuality(v as PdfQuality)}
+            >
+              <SelectTrigger label={t.compress.pdfQuality}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="high">{t.compress.pdfQualityHigh}</SelectItem>
+                <SelectItem value="balanced">{t.compress.pdfQualityBalanced}</SelectItem>
+                <SelectItem value="max">{t.compress.pdfQualityMax}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[12px] text-wb-500 leading-relaxed">
+              {t.compress.pdfNote}
+            </p>
+          </PanelSection>
+        )}
 
         {/* Totals */}
         {doneItems.length > 0 && (
@@ -558,14 +610,20 @@ function ItemRow({
   return (
     <li className="flex items-center gap-3 p-2.5 rounded-[10px] bg-wb-50 border border-wb-200">
       {/* Thumb */}
-      <div className="shrink-0 w-12 h-12 rounded-[8px] bg-wb-100 overflow-hidden border border-wb-200">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={item.thumbUrl}
-          alt=""
-          className="w-full h-full object-cover"
-          draggable={false}
-        />
+      <div className="shrink-0 w-12 h-12 rounded-[8px] bg-wb-100 overflow-hidden border border-wb-200 flex items-center justify-center">
+        {item.kind === "pdf" ? (
+          <span className="text-[10px] font-semibold tracking-wide text-wb-500 select-none">
+            PDF
+          </span>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.thumbUrl}
+            alt=""
+            className="w-full h-full object-cover"
+            draggable={false}
+          />
+        )}
       </div>
 
       {/* Info */}

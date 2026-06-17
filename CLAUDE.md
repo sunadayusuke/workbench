@@ -48,7 +48,7 @@ app/
     signal/page.tsx   — ディザリングシグナルノイズジェネレーター（Canvas 2D + Bayer dither）
     aurora/page.tsx   — シェイプシェーダー × SVGマスク合成ツール（Three.js + GLSL + MediaRecorder）
     badge/page.tsx    — SVG→3Dバッジジェネレーター（Three.js + matcap）
-    compress/page.tsx — 画像圧縮・形式変換ツール（UPNG + JSZip、全処理クライアントサイド）
+    compress/page.tsx — 画像圧縮・形式変換 + PDF圧縮ツール（UPNG + JSZip + pdf-lib、全処理クライアントサイド）
     qr/page.tsx       — スタイルドQRコードジェネレーター（qrcode + 自前SVGレンダラー、jsQRで読取検証済み）
 components/
   app-top-bar.tsx     — 全アプリ共通トップバー（← 戻る ピル + <LangToggle>）`useLanguage()` 使用
@@ -77,6 +77,7 @@ lib/
   utils.ts            — cn() ユーティリティ
   color-utils.ts      — hexToRGB()（Three.js ShaderMaterial 向け色変換）
   canvas-download.ts  — downloadCanvas() / downloadBlob()（モバイル/デスクトップ分岐）
+  pdf-compress.ts     — compressPdf()（pdf-lib で画像XObjectを再圧縮するPDF軽量化。compress アプリ専用）
   translations.ts     — i18n 翻訳テキスト定義（Translations interface + ja/en オブジェクト）
   i18n.tsx            — LanguageProvider / useLanguage() フック
 hooks/
@@ -219,6 +220,20 @@ import { FlatButton } from "@/components/ui/flat-button";
   5. MIME タイプは `['video/webm;codecs=vp9', 'video/webm', 'video/mp4'].find(isTypeSupported)` で検出、未対応なら `new MediaRecorder(stream)`（引数なし）でブラウザ既定を使う
   6. `recorder.onstop` で `recorder.mimeType`（実際の型）から拡張子を決定
 - **書き出しポップアップは `OutputMenu` を使う**（pointerdown レースは内蔵処理済み）。カスタム行（動画書き出しなど）からは `useOutputMenuClose()` で close を取得
+
+## コンプレッサー（compress）固有の注意点
+- **PDF圧縮は `lib/pdf-compress.ts` の `compressPdf()`**。Acrobat の「ファイルサイズを縮小」と同方針で、PDFオブジェクトツリーを走査し**埋め込み画像XObjectのみを再圧縮**（ダウンサンプル + JPEG再エンコード）して差し替える。**テキスト・ベクターのコンテンツストリームは一切触らない**ので文字は選択可能・シャープなまま残る（実測: 画像主体PDFで balanced 約 −60%、出力は3ページPDFとして再オープン可・テキスト Tj オペレータ保持を検証済み）
+- ページのラスタライズ方式は**採らない**（テキストが画像化されるため）。あくまで画像ストリーム差し替え
+- **透過の扱い（最重要・"画像が消える"バグの核心と修正）**: 再圧縮ループ前に「他画像から `/SMask`・`/Mask` で参照される ref」を集める **maskRefs プリパス**を実行し、**ソフトマスク/マスク本体は絶対に再圧縮しない**（=1成分 DeviceGray のまま保持）。理由: ソフトマスクを3成分 DeviceRGB JPEG に書き換えると無効マスクになり、厳格なビューア（Preview/Acrobat）が**親画像ごと描画しなくなる**（= 画像が消える）。**バグの原因はこれ**。pdf-lib の `embedPng` はSMaskに `/Decode` を付けるため合成テストでは偶然踏まず、実PDFのSMaskは `/Decode` なしが多く確実に踏む
+- **透過画像のベース（色）は再圧縮する（Acrobat同等）**: `/SMask` または stream `/Mask` を**持つ**ベース画像は、色データを JPEG 再エンコードして圧縮するが **ダウンスケールはしない**（`{...preset, maxEdge:0}`）。寸法を変えないことで、触っていないグレーマスクと整合が保たれる（マスク参照は新dictへ引き継ぐ）。これで透過画像も大きく縮む（実測: Flate-RGB 819KB → JPEG 35KB、PDF全体 1.01MB → 254KB ≈ −76%、base×alpha 合成の可視性は前後で不変）。**色キー `/Mask`（PDFArray）を持つ画像はスキップ**（ロッシー再エンコードでキー色がずれるため）
+- 対応する画像フィルタ: **単一フィルタのみ**（`/Filter` が配列＝多段フィルタはスキップ）。**DCTDecode**（ストリームがそのままJPEG → `createImageBitmap`）と **予測子なしの FlateDecode**（`DecompressionStream('deflate')` で展開、`raw.length === W*H*comps` の**完全一致**のみ採用＝偽りの ICCBased N で4成分が混入する事故を排除）。`colorComponents` は DeviceRGB/DeviceGray と ICCBased(N∈{1,3}) のみ許可（CalRGB/CalGray/Indexed/Separation/DeviceN/Lab はスキップ）。`createImageBitmap` の SOF を見て **4成分(CMYK) JPEG はスキップ**。`/Decode` 配列付き / ImageMask も**安全側でスキップ**（原本維持）
+- 各画像は try/catch で囲み、失敗時は原本を残す。再エンコード後が元より大きければ差し替えない。`doc.save({useObjectStreams:true})` 後に**再度 `PDFDocument.load` で開いてページ数一致を検証**し、壊れていれば**元ファイルをそのまま返す**。元サイズ以上でも元ファイルを返す（決して肥大化／破損させない）
+- 色空間は再エンコード後 `DeviceRGB` 固定。透過画像のベースは `/SMask`・`/Mask`(ref) を新dictへ引き継ぐ
+- 検証方法メモ: プレビューsandboxでは pdf.js のラスタライズも `<iframe>` 内ネイティブPDFレンダリングも動かない。画像ストリームを pdf-lib で取り出し `createImageBitmap`/`DecompressionStream` で直接デコードする「分離デコード検証」＋ `/Length` とストリーム実バイト数の一致確認＋手組みPDF（`/Decode` なしの DeviceGray SMask）での再現/回帰＋**base×alpha 合成キャンバスの可視性比較**で代替した
+- **dev 起動中に `npm run build` を回すと共有 `.next` が壊れて Internal Server Error になる**（既知）。dev とビルドは同時に走らせない。復旧は dev サーバー再起動（`.next` 再生成）、それでも駄目なら `rm -rf .next`
+- pdf-lib は SSR 不可ではないが**動的 import**（`await import("pdf-lib")`）で初期バンドルから外す。型は `import type { PDFDict as TPDFDict }` を使う（`InstanceType<typeof PDFDict>` は protected constructor で TS エラー）
+- **プリセットはDPIダウンサンプルが主レバー（Acrobat準拠）**: 単なる品質差(0.72/0.55/0.42)＋高すぎるピクセル上限だと、よくある〜1600px画像では解像度が落ちず差が小さい（実測 high64/balanced51/max37KB程度）。そこで**ページのコンテンツストリームをミニ解釈（q/Q/cm/Do とForm XObjectの再帰、CTMから画像の実表示サイズpt算出）** → `effDpi = px*72/表示pt` → プリセット目標DPIへダウンサンプル。`PRESETS` は `{quality, dpi, maxEdgeFallback}`（Acrobat准拠 Print/eBook/Screen: high:0.85/300dpi、balanced:0.6/150dpi、max:0.38/72dpi）。表示サイズ不明時のみ `maxEdgeFallback` を使用。プリセット差を出すには **high のDPIを高め(=潰しすぎない)・max を低め**にしてレンジを広げるのが要点（200dpi 等で high も攻めると全プリセットが潰れて差が出ない）。**透過ベースは寸法維持のため目標DPIを適用せず（maxEdge=0）品質のみ**。コンテンツ解釈は try/catch で全面ガード（失敗してもサイズ推定が外れるだけ＝破損しない、fallbackへ）。実測: 1600px@230dpi の画像が high1389px/balanced903px/max583px、12.8〜58.9KB と明確に差が出る
+- UI: PDFは `kind:"pdf"` として扱い、サムネは "PDF" グリフ。画像形式セレクトは「キュー内が全てPDFのとき」隠す。PDF品質セレクトは high/balanced/max の3プリセット
 
 ## アナリティクス
 - **Vercel Analytics** 導入済み（`@vercel/analytics/react`）。`app/layout.tsx` に `<Analytics />` コンポーネント配置

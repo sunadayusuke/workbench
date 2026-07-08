@@ -226,6 +226,8 @@ export interface Translations {
     loading: string;
     countries: string;
     solid: string;
+    focusCountries: string;
+    world: string;
   };
 
   // Image page
@@ -326,6 +328,12 @@ export interface Translations {
     pdfQualityBalanced: string;
     pdfQualityMax: string;
     pdfNote: string;
+    videoQuality: string;
+    videoQualityHigh: string;
+    videoQualityBalanced: string;
+    videoQualityMax: string;
+    videoNote: string;
+    encodingVideo: string;
     clearAll: string;
     downloadAll: string;
     zipping: string;
@@ -343,6 +351,8 @@ export interface Translations {
     errorDecodeFailed: string;
     errorEncodeFailed: string;
     errorPdfFailed: string;
+    errorVideoFailed: string;
+    errorVideoLoadFailed: string;
     errorTooManyFiles: string;
   };
 
@@ -441,7 +451,7 @@ const ja: Translations = {
     signal: { name: "シグナルノイズ", description: "ディザリングシグナルノイズジェネレーター" },
     aurora: { name: "シェイプシェーダー", description: "SVGシェイプにシェーダーを合成するツール" },
     badge: { name: "バッジジェネレーター", description: "SVGを3Dバッジに変換するツール" },
-    compress: { name: "コンプレッサー", description: "画像・PDFの圧縮・形式変換ツール" },
+    compress: { name: "コンプレッサー", description: "画像・PDF・動画の圧縮・形式変換ツール" },
     qr: { name: "QRコード", description: "スタイルドQRコードジェネレーター" },
   },
 
@@ -608,6 +618,8 @@ const ja: Translations = {
     loading: "読み込み中...",
     countries: "国",
     solid: "ソリッド",
+    focusCountries: "国で絞り込む",
+    world: "世界全体",
   },
 
   image: {
@@ -717,11 +729,11 @@ const ja: Translations = {
   },
 
   compress: {
-    dropHint: "画像・PDFをドラッグ&ドロップ",
+    dropHint: "画像・PDF・動画をドラッグ&ドロップ",
     clickHint: "またはクリックしてファイルを選択",
     selectFiles: "ファイル選択",
-    supportedTypes: "JPEG · PNG · WebP · GIF · PDF",
-    maxNote: "1ファイル100MBまで / 最大50枚",
+    supportedTypes: "JPEG · PNG · WebP · GIF · PDF · MP4 · MOV",
+    maxNote: "画像・PDFは100MB / 動画は300MBまで / 最大50件",
     privacy: "全処理はブラウザ内で完結します。ファイルは外部サーバーに一切送信されません。",
     format: "出力形式",
     formatOriginal: "元の形式",
@@ -730,24 +742,32 @@ const ja: Translations = {
     pdfQualityBalanced: "標準（推奨）",
     pdfQualityMax: "最小サイズ（高圧縮）",
     pdfNote: "PDF内の画像を再圧縮します。文字・ベクター要素はそのまま維持されます。",
+    videoQuality: "動画品質",
+    videoQualityHigh: "高画質（解像度維持）",
+    videoQualityBalanced: "標準・720p（推奨）",
+    videoQualityMax: "最小サイズ・480p",
+    videoNote: "H.264 MP4 に再エンコードします（MOV も MP4 で出力）。初回のみ変換エンジン（約30MB）を読み込みます。",
     clearAll: "全クリア",
     downloadAll: "全てZIPダウンロード",
     zipping: "ZIP圧縮中...",
     empty: "ファイル未選択",
     pending: "待機中",
     processingItem: "処理中...",
+    encodingVideo: "変換中",
     processingProgress: "処理中",
     before: "圧縮前",
     after: "圧縮後",
     reduction: "削減率",
     totals: "合計",
     larger: "(元より大)",
-    errorTooLarge: "サイズ超過（100MB上限）",
+    errorTooLarge: "サイズ超過（画像/PDF 100MB・動画 300MB上限）",
     errorUnsupported: "非対応形式",
     errorDecodeFailed: "デコード失敗",
     errorEncodeFailed: "エンコード失敗",
     errorPdfFailed: "PDF処理失敗（破損・暗号化の可能性）",
-    errorTooManyFiles: "ファイル数上限（50枚）に達しました",
+    errorVideoFailed: "動画変換に失敗（非対応コーデック・メモリ不足の可能性）",
+    errorVideoLoadFailed: "変換エンジンの読み込みに失敗しました",
+    errorTooManyFiles: "ファイル数上限（50件）に達しました",
   },
 
   qr: {
@@ -843,7 +863,7 @@ const en: Translations = {
     signal: { name: "Signal Noise", description: "Dithered signal noise generator" },
     aurora: { name: "Shape Shader", description: "Shader compositor over SVG shapes" },
     badge: { name: "Badge Generator", description: "Convert SVG to 3D badge" },
-    compress: { name: "Compress", description: "Image & PDF compression / format converter" },
+    compress: { name: "Compress", description: "Image, PDF & video compression / format converter" },
     qr: { name: "QR Code", description: "Styled QR code generator" },
   },
 
@@ -1010,6 +1030,8 @@ const en: Translations = {
     loading: "Loading...",
     countries: "Countries",
     solid: "Solid",
+    focusCountries: "Focus Country",
+    world: "Whole World",
   },
 
   image: {
@@ -1119,11 +1141,11 @@ const en: Translations = {
   },
 
   compress: {
-    dropHint: "Drag & drop images or PDFs",
+    dropHint: "Drag & drop images, PDFs or video",
     clickHint: "or click to select files",
     selectFiles: "Select files",
-    supportedTypes: "JPEG · PNG · WebP · GIF · PDF",
-    maxNote: "Up to 100MB per file / max 50 files",
+    supportedTypes: "JPEG · PNG · WebP · GIF · PDF · MP4 · MOV",
+    maxNote: "Images/PDF up to 100MB / video up to 300MB / max 50 files",
     privacy: "All processing happens inside your browser. Files are never uploaded to any server.",
     format: "Output Format",
     formatOriginal: "Original",
@@ -1132,23 +1154,31 @@ const en: Translations = {
     pdfQualityBalanced: "Balanced (recommended)",
     pdfQualityMax: "Smallest size (max)",
     pdfNote: "Re-compresses images inside the PDF. Text and vectors are kept intact.",
+    videoQuality: "Video Quality",
+    videoQualityHigh: "High quality (keep resolution)",
+    videoQualityBalanced: "Balanced · 720p (recommended)",
+    videoQualityMax: "Smallest size · 480p",
+    videoNote: "Re-encodes to H.264 MP4 (MOV is output as MP4). The converter engine (~30MB) loads once on first use.",
     clearAll: "Clear All",
     downloadAll: "Download All (ZIP)",
     zipping: "Zipping...",
     empty: "No files selected",
     pending: "Pending",
     processingItem: "Processing...",
+    encodingVideo: "Encoding",
     processingProgress: "Processing",
     before: "Before",
     after: "After",
     reduction: "Saved",
     totals: "Totals",
     larger: "(larger than original)",
-    errorTooLarge: "Too large (max 100MB)",
+    errorTooLarge: "Too large (images/PDF 100MB · video 300MB)",
     errorUnsupported: "Unsupported format",
     errorDecodeFailed: "Decode failed",
     errorEncodeFailed: "Encode failed",
     errorPdfFailed: "PDF processing failed (corrupt or encrypted)",
+    errorVideoFailed: "Video conversion failed (unsupported codec or out of memory)",
+    errorVideoLoadFailed: "Failed to load the converter engine",
     errorTooManyFiles: "Max files reached (50)",
   },
 

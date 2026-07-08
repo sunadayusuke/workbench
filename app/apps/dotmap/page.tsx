@@ -38,6 +38,7 @@ interface MapParams {
   shape: "circle" | "hexagon";
   lngOffset: number;
   highlightedCountries: HighlightedCountry[];
+  focusCountry: string; // country code, or "" for whole world
 }
 
 const DEFAULT_PARAMS: MapParams = {
@@ -50,6 +51,7 @@ const DEFAULT_PARAMS: MapParams = {
   shape: "circle",
   lngOffset: 0,
   highlightedCountries: [],
+  focusCountry: "",
 };
 
 const HIGHLIGHT_PALETTE = [
@@ -112,6 +114,28 @@ const COUNTRY_NAME_JA: Record<string, string> = {
   "860": "ウズベキスタン", "548": "バヌアツ", "862": "ベネズエラ", "704": "ベトナム",
   "887": "イエメン", "894": "ザンビア", "716": "ジンバブエ",
   "10": "南極", "732": "西サハラ", "260": "仏領南方・南極地域",
+  // 小国・島嶼国・海外領土（Natural Earth 50m で追加。ISO 3166-1 準拠の日本語名）
+  "16": "アメリカ領サモア", "20": "アンドラ", "28": "アンティグア・バーブーダ",
+  "48": "バーレーン", "52": "バルバドス", "60": "バミューダ",
+  "86": "イギリス領インド洋地域", "92": "イギリス領ヴァージン諸島", "132": "カーボベルデ",
+  "136": "ケイマン諸島", "174": "コモロ", "184": "クック諸島",
+  "212": "ドミニカ国", "234": "フェロー諸島", "239": "サウスジョージア・サウスサンドウィッチ諸島",
+  "248": "オーランド諸島", "258": "フランス領ポリネシア", "296": "キリバス",
+  "308": "グレナダ", "316": "グアム", "334": "ハード島・マクドナルド諸島",
+  "336": "バチカン", "344": "香港", "438": "リヒテンシュタイン",
+  "446": "マカオ", "462": "モルディブ", "470": "マルタ",
+  "480": "モーリシャス", "492": "モナコ", "500": "モントセラト",
+  "520": "ナウル", "531": "キュラソー", "533": "アルバ",
+  "534": "シント・マールテン", "570": "ニウエ", "574": "ノーフォーク島",
+  "580": "北マリアナ諸島", "583": "ミクロネシア連邦", "584": "マーシャル諸島",
+  "585": "パラオ", "612": "ピトケアン諸島", "652": "サン・バルテルミー島",
+  "654": "セントヘレナ", "659": "セントクリストファー・ネイビス", "660": "アンギラ",
+  "662": "セントルシア", "663": "サン・マルタン", "666": "サンピエール島・ミクロン島",
+  "670": "セントビンセント・グレナディーン", "674": "サンマリノ", "678": "サントメ・プリンシペ",
+  "690": "セーシェル", "702": "シンガポール", "776": "トンガ",
+  "796": "タークス・カイコス諸島", "831": "ガーンジー", "832": "ジャージー",
+  "833": "マン島", "850": "アメリカ領ヴァージン諸島", "876": "ウォリス・フツナ",
+  "882": "サモア",
 };
 
 /* ------------------------------------------------------------------ */
@@ -191,6 +215,34 @@ function isLand(
   return data[(y * RASTER_W + x) * 4 + 3] > 128;
 }
 
+interface RasterBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+/** Tight pixel bounding box of the opaque (land) pixels of a raster. */
+function rasterBounds(data: Uint8ClampedArray): RasterBounds | null {
+  let minX = RASTER_W;
+  let minY = RASTER_H;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < RASTER_H; y++) {
+    const rowBase = y * RASTER_W;
+    for (let x = 0; x < RASTER_W; x++) {
+      if (data[(rowBase + x) * 4 + 3] > 128) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (maxX < 0) return null;
+  return { minX, minY, maxX, maxY };
+}
+
 function svgToRaster(
   svgX: number,
   svgY: number,
@@ -246,6 +298,7 @@ export default function DotMapPage() {
   const landRasterRef = useRef<Uint8ClampedArray | null>(null);
   const countriesGeoRef = useRef<any>(null);
   const countryRasterCache = useRef<Map<string, Uint8ClampedArray>>(new Map());
+  const countryBoundsCache = useRef<Map<string, RasterBounds | null>>(new Map());
 
   const updateParam = useCallback(
     <K extends keyof MapParams>(key: K, value: MapParams[K]) => {
@@ -260,7 +313,7 @@ export default function DotMapPage() {
     Promise.all([
       import("d3-geo"),
       import("topojson-client"),
-      fetch("/data/world-110m.json").then((r) => r.json()),
+      fetch("/data/countries-50m.json").then((r) => r.json()),
     ])
       .then(([d3, tj, topo]) => {
         if (cancelled) return;
@@ -272,15 +325,22 @@ export default function DotMapPage() {
         const countries = tj.feature(topo, topo.objects.countries);
         countriesGeoRef.current = countries;
 
-        const list: CountryEntry[] = (countries as any).features
-          .filter((f: any) => f.id != null && f.properties.name)
-          .map((f: any) => ({
-            code: String(f.id),
-            name: COUNTRY_NAME_JA[String(Number(f.id))] || f.properties.name,
-          }))
-          .sort((a: CountryEntry, b: CountryEntry) =>
-            a.name.localeCompare(b.name, "ja")
-          );
+        // Dedup by ISO id — some datasets list a country's external territories
+        // as separate features sharing the same numeric id (e.g. 036 = Australia
+        // + Ashmore and Cartier Is.). Keep the first (the main country).
+        const seen = new Set<string>();
+        const list: CountryEntry[] = [];
+        for (const f of (countries as any).features) {
+          if (f.id == null || !f.properties.name) continue;
+          const code = String(f.id);
+          if (seen.has(code)) continue;
+          seen.add(code);
+          list.push({
+            code,
+            name: COUNTRY_NAME_JA[String(Number(code))] || f.properties.name,
+          });
+        }
+        list.sort((a, b) => a.name.localeCompare(b.name, "ja"));
         setCountryList(list);
         setReady(true);
       })
@@ -299,14 +359,33 @@ export default function DotMapPage() {
     const d3 = d3GeoRef.current;
     const countriesGeo = countriesGeoRef.current;
     if (!d3 || !countriesGeo) return null;
-    const feature = (countriesGeo as any).features.find(
+    // Gather ALL geometries for this id (a country may be multi-part across
+    // separate features) and rasterize them together as one FeatureCollection.
+    const features = (countriesGeo as any).features.filter(
       (f: any) => String(f.id) === code
     );
-    if (!feature) return null;
-    const raster = rasterizeFeature(d3, feature);
+    if (features.length === 0) return null;
+    const raster = rasterizeFeature(d3, {
+      type: "FeatureCollection",
+      features,
+    });
     countryRasterCache.current.set(code, raster);
     return raster;
   }, []);
+
+  // Get (or cache) a country's raster-space bounding box
+  const getCountryBounds = useCallback(
+    (code: string): RasterBounds | null => {
+      if (countryBoundsCache.current.has(code)) {
+        return countryBoundsCache.current.get(code)!;
+      }
+      const raster = getCountryRaster(code);
+      const bounds = raster ? rasterBounds(raster) : null;
+      countryBoundsCache.current.set(code, bounds);
+      return bounds;
+    },
+    [getCountryRaster]
+  );
 
   // Generate dots — instant via raster lookup
   const svgString = useMemo(() => {
@@ -314,7 +393,6 @@ export default function DotMapPage() {
 
     const landData = landRasterRef.current;
     const rows = params.rows;
-    const cols = Math.round(rows * ASPECT);
     const r = params.dotRadius;
     const bgColor = params.backgroundColor;
     const defaultColor = params.dotColor;
@@ -328,6 +406,33 @@ export default function DotMapPage() {
       const raster = getCountryRaster(hc.code);
       if (raster) highlights.push({ raster, color: hc.color });
     }
+
+    // Focus mode: restrict the sampled region to the selected country's
+    // bbox (zoom-to-fit) and only render its land. Empty = whole world.
+    let regMinX = 0;
+    let regMinY = 0;
+    let regW = RASTER_W;
+    let regH = RASTER_H;
+    let useFocus = false;
+    let focusRaster: Uint8ClampedArray | null = null;
+    if (params.focusCountry) {
+      const raster = getCountryRaster(params.focusCountry);
+      const b = getCountryBounds(params.focusCountry);
+      if (raster && b) {
+        const pad = Math.max(b.maxX - b.minX, b.maxY - b.minY) * 0.04 + 1;
+        regMinX = Math.max(0, b.minX - pad);
+        regMinY = Math.max(0, b.minY - pad);
+        regW = Math.min(RASTER_W, b.maxX + pad) - regMinX;
+        regH = Math.min(RASTER_H, b.maxY + pad) - regMinY;
+        focusRaster = raster;
+        useFocus = true;
+      }
+    }
+
+    const cols = Math.max(
+      1,
+      Math.round(rows * (useFocus ? regW / regH : ASPECT))
+    );
 
     const parts: string[] = [];
     parts.push(
@@ -347,13 +452,19 @@ export default function DotMapPage() {
         const svgX = col + offset;
         const svgY = row;
 
-        // Apply lng offset: shift the raster lookup horizontally (wrapping)
-        let rasterX = (svgX / cols) * RASTER_W + (lngOff / X_RANGE) * RASTER_W;
-        // Wrap around
-        rasterX = ((rasterX % RASTER_W) + RASTER_W) % RASTER_W;
-        const rasterY = (svgY / rows) * RASTER_H;
+        let rasterX = regMinX + (svgX / cols) * regW;
+        if (!useFocus) {
+          // Apply lng offset in world mode: shift lookup horizontally (wrapping)
+          rasterX += (lngOff / X_RANGE) * RASTER_W;
+          rasterX = ((rasterX % RASTER_W) + RASTER_W) % RASTER_W;
+        }
+        const rasterY = regMinY + (svgY / rows) * regH;
 
-        if (!isLand(landData, rasterX, rasterY)) continue;
+        if (useFocus) {
+          if (!isLand(focusRaster!, rasterX, rasterY)) continue;
+        } else if (!isLand(landData, rasterX, rasterY)) {
+          continue;
+        }
 
         // Determine color
         let fill = defaultColor;
@@ -378,7 +489,7 @@ export default function DotMapPage() {
 
     parts.push("</svg>");
     return parts.join("\n");
-  }, [ready, params, getCountryRaster]);
+  }, [ready, params, getCountryRaster, getCountryBounds]);
 
   // Download SVG
   const handleDownload = useCallback(() => {
@@ -478,6 +589,28 @@ export default function DotMapPage() {
           </>
         }
       >
+        {/* Focus country (isolate region) — top-most control */}
+        <PanelSection title={t.dotmap.focusCountries}>
+          <Select
+            value={params.focusCountry || "world"}
+            onValueChange={(v) =>
+              updateParam("focusCountry", v === "world" ? "" : v)
+            }
+          >
+            <SelectTrigger className="cursor-pointer">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-[240px]">
+              <SelectItem value="world">{t.dotmap.world}</SelectItem>
+              {countryList.map((c) => (
+                <SelectItem key={c.code} value={c.code}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </PanelSection>
+
         {/* Knob row: ROWS / RADIUS / OFFSET */}
         <PanelSection className="px-4">
           <DragParam

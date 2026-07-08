@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/select";
 import { downloadBlob } from "@/lib/canvas-download";
 import { compressPdf, type PdfQuality } from "@/lib/pdf-compress";
+import { compressVideo, type VideoQuality } from "@/lib/video-compress";
 
 type Format = "webp" | "jpeg" | "png" | "original";
-type Kind = "image" | "pdf";
+type Kind = "image" | "pdf" | "video";
 type Status = "pending" | "processing" | "done" | "error";
 type ErrorKey =
   | "errorTooLarge"
@@ -25,6 +26,8 @@ type ErrorKey =
   | "errorDecodeFailed"
   | "errorEncodeFailed"
   | "errorPdfFailed"
+  | "errorVideoFailed"
+  | "errorVideoLoadFailed"
   | "errorTooManyFiles";
 
 interface Item {
@@ -32,8 +35,10 @@ interface Item {
   file: File;
   kind: Kind;
   thumbUrl: string;
+  glyph?: string; // short label shown for non-image thumbs (PDF / MP4 …)
   originalSize: number;
   status: Status;
+  progress?: number; // 0–1, video encode progress
   outputBlob?: Blob;
   outputUrl?: string;
   outputExt?: string;
@@ -41,7 +46,8 @@ interface Item {
   errorKey?: ErrorKey;
 }
 
-const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_SIZE = 100 * 1024 * 1024; // 100MB (images / PDF)
+const VIDEO_MAX_SIZE = 300 * 1024 * 1024; // 300MB — ffmpeg.wasm is memory-bound
 const MAX_FILES = 50;
 const SUPPORTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
@@ -49,6 +55,17 @@ function isPdf(file: File): boolean {
   return (
     file.type.toLowerCase() === "application/pdf" ||
     file.name.toLowerCase().endsWith(".pdf")
+  );
+}
+
+function isVideo(file: File): boolean {
+  const t = file.type.toLowerCase();
+  const n = file.name.toLowerCase();
+  return (
+    t === "video/mp4" ||
+    t === "video/quicktime" ||
+    n.endsWith(".mp4") ||
+    n.endsWith(".mov")
   );
 }
 // JPEG/WebP lossy quality (0-1 scale for canvas.toBlob).
@@ -140,6 +157,7 @@ export default function CompressPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [format, setFormat] = useState<Format>("original");
   const [pdfQuality, setPdfQuality] = useState<PdfQuality>("balanced");
+  const [videoQuality, setVideoQuality] = useState<VideoQuality>("balanced");
   const [isDragOver, setIsDragOver] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [topError, setTopError] = useState<ErrorKey | null>(null);
@@ -153,6 +171,9 @@ export default function CompressPage() {
 
   const pdfQualityRef = useRef(pdfQuality);
   pdfQualityRef.current = pdfQuality;
+
+  const videoQualityRef = useRef(videoQuality);
+  videoQualityRef.current = videoQuality;
 
   const genRef = useRef(0);
   const isProcessingRef = useRef(false);
@@ -168,6 +189,7 @@ export default function CompressPage() {
         return {
           ...i,
           status: "pending",
+          progress: undefined,
           outputBlob: undefined,
           outputUrl: undefined,
           outputExt: undefined,
@@ -175,7 +197,7 @@ export default function CompressPage() {
         };
       }),
     );
-  }, [format, pdfQuality]);
+  }, [format, pdfQuality, videoQuality]);
 
   // Sequential processing queue.
   useEffect(() => {
@@ -192,16 +214,28 @@ export default function CompressPage() {
         const myGen = genRef.current;
         const currentFormat = formatRef.current;
         const currentPdfQuality = pdfQualityRef.current;
+        const currentVideoQuality = videoQualityRef.current;
 
         setItems((prev) =>
-          prev.map((i) => (i.id === next.id ? { ...i, status: "processing" } : i)),
+          prev.map((i) =>
+            i.id === next.id ? { ...i, status: "processing", progress: undefined } : i,
+          ),
         );
 
         try {
-          const r =
-            next.kind === "pdf"
-              ? await compressPdf(next.file, currentPdfQuality)
-              : await encodeImage(next.file, currentFormat);
+          let r: { blob: Blob; ext: string };
+          if (next.kind === "pdf") {
+            r = await compressPdf(next.file, currentPdfQuality);
+          } else if (next.kind === "video") {
+            r = await compressVideo(next.file, currentVideoQuality, (p) => {
+              if (myGen !== genRef.current) return;
+              setItems((prev) =>
+                prev.map((i) => (i.id === next.id ? { ...i, progress: p } : i)),
+              );
+            });
+          } else {
+            r = await encodeImage(next.file, currentFormat);
+          }
           if (myGen !== genRef.current) continue;
           const outputUrl = URL.createObjectURL(r.blob);
           setItems((prev) =>
@@ -210,6 +244,7 @@ export default function CompressPage() {
                 ? {
                     ...i,
                     status: "done",
+                    progress: undefined,
                     outputBlob: r.blob,
                     outputUrl,
                     outputExt: r.ext,
@@ -266,20 +301,31 @@ export default function CompressPage() {
       const newItems: Item[] = toAdd.map((file) => {
         const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const pdf = isPdf(file);
-        // PDFs use a glyph placeholder, so no object URL is needed for a thumb.
-        const thumbUrl = pdf ? "" : URL.createObjectURL(file);
+        const video = !pdf && isVideo(file);
+        const kind: Kind = pdf ? "pdf" : video ? "video" : "image";
+        // PDFs/videos use a glyph placeholder, so no object URL is needed.
+        const thumbUrl = kind === "image" ? URL.createObjectURL(file) : "";
+        const ext =
+          file.name.lastIndexOf(".") > 0
+            ? file.name.slice(file.name.lastIndexOf(".") + 1).toUpperCase()
+            : "";
         const base: Item = {
           id,
           file,
-          kind: pdf ? "pdf" : "image",
+          kind,
           thumbUrl,
+          glyph: pdf ? "PDF" : video ? ext || "MP4" : undefined,
           originalSize: file.size,
           status: "pending",
         };
-        if (file.size > MAX_SIZE) {
+        const sizeCap = video ? VIDEO_MAX_SIZE : MAX_SIZE;
+        if (file.size > sizeCap) {
           return { ...base, status: "error", errorKey: "errorTooLarge" };
         }
-        if (!pdf && !SUPPORTED_TYPES.includes(file.type.toLowerCase())) {
+        if (
+          kind === "image" &&
+          !SUPPORTED_TYPES.includes(file.type.toLowerCase())
+        ) {
           return { ...base, status: "error", errorKey: "errorUnsupported" };
         }
         return base;
@@ -373,6 +419,7 @@ export default function CompressPage() {
   }, []);
 
   const hasPdfs = items.some((i) => i.kind === "pdf");
+  const hasVideos = items.some((i) => i.kind === "video");
   // Keep the format control visible on the empty panel (prior behavior); hide it
   // only when every queued file is a PDF.
   const hasImages = items.some((i) => i.kind === "image") || items.length === 0;
@@ -428,7 +475,7 @@ export default function CompressPage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+            accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,video/mp4,video/quicktime,.mp4,.mov"
             multiple
             className="hidden"
             onChange={handleSelect}
@@ -454,6 +501,7 @@ export default function CompressPage() {
                   item={item}
                   errorLabel={item.errorKey ? t.compress[item.errorKey] : ""}
                   processingLabel={t.compress.processingItem}
+                  encodingLabel={t.compress.encodingVideo}
                   pendingLabel={t.compress.pending}
                   largerLabel={t.compress.larger}
                   onDownload={() => handleDownloadOne(item)}
@@ -536,6 +584,28 @@ export default function CompressPage() {
           </PanelSection>
         )}
 
+        {/* Video quality */}
+        {hasVideos && (
+          <PanelSection>
+            <Select
+              value={videoQuality}
+              onValueChange={(v) => setVideoQuality(v as VideoQuality)}
+            >
+              <SelectTrigger label={t.compress.videoQuality}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="high">{t.compress.videoQualityHigh}</SelectItem>
+                <SelectItem value="balanced">{t.compress.videoQualityBalanced}</SelectItem>
+                <SelectItem value="max">{t.compress.videoQualityMax}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[12px] text-wb-500 leading-relaxed">
+              {t.compress.videoNote}
+            </p>
+          </PanelSection>
+        )}
+
         {/* Totals */}
         {doneItems.length > 0 && (
           <PanelSection title={t.compress.totals}>
@@ -586,6 +656,7 @@ interface ItemRowProps {
   item: Item;
   errorLabel: string;
   processingLabel: string;
+  encodingLabel: string;
   pendingLabel: string;
   largerLabel: string;
   onDownload: () => void;
@@ -596,6 +667,7 @@ function ItemRow({
   item,
   errorLabel,
   processingLabel,
+  encodingLabel,
   pendingLabel,
   largerLabel,
   onDownload,
@@ -611,9 +683,9 @@ function ItemRow({
     <li className="flex items-center gap-3 p-2.5 rounded-[10px] bg-wb-50 border border-wb-200">
       {/* Thumb */}
       <div className="shrink-0 w-12 h-12 rounded-[8px] bg-wb-100 overflow-hidden border border-wb-200 flex items-center justify-center">
-        {item.kind === "pdf" ? (
+        {item.kind !== "image" ? (
           <span className="text-[10px] font-semibold tracking-wide text-wb-500 select-none">
-            PDF
+            {item.glyph ?? "FILE"}
           </span>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
@@ -651,8 +723,12 @@ function ItemRow({
             )}
           </div>
         ) : (
-          <p className="text-[12px] text-wb-500">
-            {item.status === "processing" ? processingLabel : pendingLabel}
+          <p className="text-[12px] text-wb-500 tabular-nums">
+            {item.status === "processing"
+              ? item.kind === "video" && item.progress != null
+                ? `${encodingLabel} ${Math.round(item.progress * 100)}%`
+                : processingLabel
+              : pendingLabel}
           </p>
         )}
       </div>

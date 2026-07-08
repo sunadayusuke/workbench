@@ -11,6 +11,8 @@
     "lint:ds": "node scripts/ds-lint.mjs"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@tailwindcss/postcss": "^4.1.18",
     "@vercel/analytics": "^1.6.1",
     "class-variance-authority": "^0.7.1",

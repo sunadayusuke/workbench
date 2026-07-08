@@ -48,7 +48,7 @@ app/
     signal/page.tsx   — ディザリングシグナルノイズジェネレーター（Canvas 2D + Bayer dither）
     aurora/page.tsx   — シェイプシェーダー × SVGマスク合成ツール（Three.js + GLSL + MediaRecorder）
     badge/page.tsx    — SVG→3Dバッジジェネレーター（Three.js + matcap）
-    compress/page.tsx — 画像圧縮・形式変換 + PDF圧縮ツール（UPNG + JSZip + pdf-lib、全処理クライアントサイド）
+    compress/page.tsx — 画像圧縮・形式変換 + PDF圧縮 + 動画圧縮ツール（UPNG + JSZip + pdf-lib + ffmpeg.wasm、全処理クライアントサイド）
     qr/page.tsx       — スタイルドQRコードジェネレーター（qrcode + 自前SVGレンダラー、jsQRで読取検証済み）
 components/
   app-top-bar.tsx     — 全アプリ共通トップバー（← 戻る ピル + <LangToggle>）`useLanguage()` 使用
@@ -71,6 +71,7 @@ components/
   ui/color-row.tsx    — カラー行（label 左 / hex + .color-swatch 右）
   ui/lang-toggle.tsx  — JA/EN セグメンテッドトグル（iOS風。ホーム + AppTopBar で使用）
   ui/button-select.tsx — セグメンテッドセレクター（AAA BB CCC 型）
+  ui/removable-row.tsx — ColorRow と同じピル外殻のラベルのみ行（× 削除のみ・色なしリスト用）
 scripts/
   ds-lint.mjs         — デザインシステム逸脱検出リンター（`npm run lint:ds`、build でも実行）
 lib/
@@ -78,6 +79,7 @@ lib/
   color-utils.ts      — hexToRGB()（Three.js ShaderMaterial 向け色変換）
   canvas-download.ts  — downloadCanvas() / downloadBlob()（モバイル/デスクトップ分岐）
   pdf-compress.ts     — compressPdf()（pdf-lib で画像XObjectを再圧縮するPDF軽量化。compress アプリ専用）
+  video-compress.ts   — compressVideo()（ffmpeg.wasm で MP4/MOV を H.264 MP4 に再エンコード。compress アプリ専用。ワーカーは public/ffmpeg/ から自己ホスト）
   translations.ts     — i18n 翻訳テキスト定義（Translations interface + ja/en オブジェクト）
   i18n.tsx            — LanguageProvider / useLanguage() フック
 hooks/
@@ -235,6 +237,18 @@ import { FlatButton } from "@/components/ui/flat-button";
 - **プリセットはDPIダウンサンプルが主レバー（Acrobat準拠）**: 単なる品質差(0.72/0.55/0.42)＋高すぎるピクセル上限だと、よくある〜1600px画像では解像度が落ちず差が小さい（実測 high64/balanced51/max37KB程度）。そこで**ページのコンテンツストリームをミニ解釈（q/Q/cm/Do とForm XObjectの再帰、CTMから画像の実表示サイズpt算出）** → `effDpi = px*72/表示pt` → プリセット目標DPIへダウンサンプル。`PRESETS` は `{quality, dpi, maxEdgeFallback}`（Acrobat准拠 Print/eBook/Screen: high:0.85/300dpi、balanced:0.6/150dpi、max:0.38/72dpi）。表示サイズ不明時のみ `maxEdgeFallback` を使用。プリセット差を出すには **high のDPIを高め(=潰しすぎない)・max を低め**にしてレンジを広げるのが要点（200dpi 等で high も攻めると全プリセットが潰れて差が出ない）。**透過ベースは寸法維持のため目標DPIを適用せず（maxEdge=0）品質のみ**。コンテンツ解釈は try/catch で全面ガード（失敗してもサイズ推定が外れるだけ＝破損しない、fallbackへ）。実測: 1600px@230dpi の画像が high1389px/balanced903px/max583px、12.8〜58.9KB と明確に差が出る
 - UI: PDFは `kind:"pdf"` として扱い、サムネは "PDF" グリフ。画像形式セレクトは「キュー内が全てPDFのとき」隠す。PDF品質セレクトは high/balanced/max の3プリセット
 
+### 動画圧縮（compress の video 対応）
+- **動画圧縮は `lib/video-compress.ts` の `compressVideo()`**。**ffmpeg.wasm（`@ffmpeg/ffmpeg` + `@ffmpeg/util`、シングルスレッド core）** で MP4/MOV を **H.264 MP4（AAC）に再エンコード**。入力が MOV でも出力は MP4 固定（圧縮効率と互換性）。UI は `kind:"video"`（サムネはコンテナ拡張子グリフ "MP4"/"MOV"）、動画品質セレクト high/balanced/max（`hasVideos` のとき表示）。`VideoQuality` プリセットは `{crf, maxHeight, preset, audioBitrate}`（high:23/原寸、balanced:28/720p、max:30/480p）。ダウンスケールは `scale=-2:min(H\,trunc(ih/2)*2)`（アップスケールなし・偶数寸法保証、x264 は偶数必須）
+- **COOP/COEP ヘッダーは追加しない方針**（サイト全体に効き BMC ウィジェット等の外部埋め込みを壊すため）→ シングルスレッド core を使用。SharedArrayBuffer 不要
+- **ffmpeg.wasm を Next.js/Turbopack で読み込む3つの罠（重要・ここでかなりハマった）**:
+  1. **ワーカーをバンドルさせない**: 既定の `new Worker(new URL("./worker.js", import.meta.url), {type:"module"})` を Turbopack が解析すると、worker 内の動的 `import(coreURL)` で **`Cannot find module as expression is too dynamic`** ビルドエラー。回避策として **ESM ワーカー3ファイル（`worker.js`/`const.js`/`errors.js`）を `public/ffmpeg/` に自己ホスト**し、`classWorkerURL` に**変数の絶対URL**（`` `${window.location.origin}/ffmpeg/worker.js` ``）を渡す。リテラル `new URL("./worker.js",…)` でなく変数なら Turbopack はバンドルを試みない
+  2. **UMD ワーカー（`814.ffmpeg.js`）は使えない**: それを `classWorkerURL` に渡すと module ワーカー化され、内部の core ロードが **webpack 内部 require** になり外部 blob を解決できず **`Cannot find module 'blob:…'`**。→ **ESM ワーカー**（native `import()`）でなければ外部 core を読めない
+  3. **core は ESM 版**: ワーカーは module worker なので `import(coreURL).default` で読む。`@ffmpeg/core@0.12.9/dist/**esm**/ffmpeg-core.js`（末尾 `export default createFFmpegCore`）を使う。**UMD core は `export default` が無く `.default` が undefined になり失敗**。`coreURL`/`wasmURL` は `toBlobURL()` で同一オリジン blob 化（COEP 不要のため）
+- core（約30MB）はモジュールレベルのシングルトンで**初回のみ CDN(unpkg) から読み込み**、キュー全体で使い回す（`getFFmpeg()`）。失敗時は `loadPromise=null` でリトライ可能
+- 進捗: `ff.on("progress", …)` を `compressVideo` の `onProgress` で item.progress に反映（キューは逐次処理なのでグローバル progress = 現在の item）。UI は `変換中 NN%` 表示
+- 各動画は try/catch、再エンコードが元サイズ以上なら**原本をそのまま返す**（`ext` は元拡張子）＝決して肥大化させない。動画は `VIDEO_MAX_SIZE=300MB`（ffmpeg.wasm はメモリ制約）で画像/PDF の 100MB とは別枠
+- **検証メモ**: ホストに ffmpeg が無い/実 mp4 が用意できない場合、プレビューで canvas+MediaRecorder で webm を作り `sample.mp4` 名で file input に `DataTransfer` 経由注入してパイプラインを実走できる。ただし MediaRecorder(VP8) は滑らかな映像を高効率圧縮するため h264 が勝てず size guard で原本が返りがち → **高解像度ノイズ(1080p)＋max/720p ダウンスケール**なら実削減を確認可能（実測 1.60MB→1.11MB −30.2%）
+
 ## アナリティクス
 - **Vercel Analytics** 導入済み（`@vercel/analytics/react`）。`app/layout.tsx` に `<Analytics />` コンポーネント配置
 - Vercelダッシュボード > プロジェクト > Analytics タブで閲覧（初回は有効化が必要な場合あり）
@@ -243,6 +257,9 @@ import { FlatButton } from "@/components/ui/flat-button";
 - **d3-geo**, **topojson-client** を使用（SSR不可 → `useEffect` 内で動的インポート）
 - 陸地判定: GeoJSON → Canvas raster（8192px幅）に描画し、O(1)のピクセルルックアップで高速化
 - 国ハイライト: 国別rasterを `useRef<Map>` でキャッシュ（遅延生成）
-- TopoJSON（`public/data/world-110m.json`）のIDはゼロ埋め3桁文字列（例: `"032"`）。`COUNTRY_NAME_JA` マッピングは先頭ゼロなし → ルックアップ時に `String(Number(id))` で変換
-- 国名は全て日本語（`COUNTRY_NAME_JA` に174カ国分のマッピング）
+- **国で絞り込む（focus mode）**: `params.focusCountry`（国コード文字列、`""`＝世界全体がデフォルト）を選ぶとその1か国のみ描画＋ズームフィット。UI はコントロール最上段の単一 `Select`（先頭に「世界全体」オプション、`value="world"`→`""` に変換）。国ラスターの不透明ピクセルから **raster空間の bbox** を `rasterBounds()` で算出し `countryBoundsCache` にキャッシュ。pad を足した矩形 `[regMinX,regMinY,regW,regH]` にグリッドを線形マップ（raster は Mercator 済みなので線形補間で正しいズームになる）。world モードは `regMinX=0/regW=RASTER_W` で従来式に一致（同一コードパス）。focus 時は `focusRaster` の `isLand` でその国のセルだけ描画し、`lngOffset` は無効化。ハイライト色は focus 内でもそのまま効く。子午線をまたぐ国（ロシア等）は bbox が全幅になり近似的（許容）
+- **データセットは `public/data/countries-50m.json`（world-atlas / Natural Earth 1:50m）**。`objects` に `countries` と `land` の両方を含むので単一 fetch で従来コードのまま動く。**110m（旧 `world-110m.json`、177国）はシンガポール・バーレーン・ブルネイ・マルタ・モナコ・香港・マカオ等の小国/島嶼国を大量に欠落**していたため 50m（235国、id付き236 features）に差し替えた。10m は 3.6MB と重く追加は微小な領土のみなので不採用（50m は 756KB）。旧 `world-110m.json` は未使用（削除可）
+- IDはゼロ埋め3桁文字列（例: `"032"`, `"048"`）。`COUNTRY_NAME_JA` マッピングは先頭ゼロなし → ルックアップ時に `String(Number(id))` で変換（50m でも同一形式）
+- **同一 ID の複数 feature に注意**: 50m は本国と海外領土を別 feature・同一 ISO id で持つことがある（例: `036` = Australia + Ashmore and Cartier Is.）。国リストは **id で dedup（先頭=本国を採用）** しないと React の duplicate key 警告＋重複行になる。`getCountryRaster` は **同一 id の全 feature を FeatureCollection でまとめてラスタライズ**（多島・飛び地対応）
+- 国名は全て日本語（`COUNTRY_NAME_JA` に **235カ国/地域**、50m の id付き全件をカバー）。50m 追加分の日本語名は 3 翻訳者×1 照合の consensus/verify ワークフローで生成・検証（ISO 3166-1 準拠、島嶼は「諸島」・複合名は「・」）
 - Mercator投影の緯度範囲: -56° 〜 71°（高緯度の歪み回避のため意図的にクリップ）

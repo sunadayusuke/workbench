@@ -28,6 +28,7 @@
 | `CodeField` / `TextField` | `@/components/ui/code-field` | 暗色インセットのコード textarea / 単行 input |
 | `ColorSwatch` | `@/components/ui/color-swatch` | 丸型カラーピッカー入力（単独・ベア用途） |
 | `ColorRow` | `@/components/ui/color-row` | ラベル付きカラー行（22px swatch + 値 + 任意の × 削除）★既存 |
+| `RemovableRow` | `@/components/ui/removable-row` | ColorRow と同じピル外殻のラベルのみ行（× 削除のみ。色不要のリスト用） |
 | `PushButton` | `@/components/ui/push-button` | ピル型ボタン（variant: light/dark/accent, size: sm/md/lg）★既存 |
 | `ButtonSelect` | `@/components/ui/button-select` | フロステッドのミニ・セグメント・コントロール ★既存 |
 | `DragParam` | `@/components/ui/drag-param` | ドラッグで値を変えるラベル + 値表示 ★既存 |

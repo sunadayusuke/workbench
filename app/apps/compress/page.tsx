@@ -519,7 +519,7 @@ export default function CompressPage() {
         footerClassName="flex-col items-stretch gap-0"
         footer={
           <>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-row-reverse md:flex-row items-center gap-2">
               <PushButton
                 variant="light"
                 className="shrink-0"

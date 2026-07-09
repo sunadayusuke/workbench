@@ -39,7 +39,7 @@ export function ControlPanel({
       {footer != null && (
         <div
           className={cn(
-            "absolute inset-x-0 bottom-0 flex items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent",
+            "absolute inset-x-0 bottom-0 flex flex-row-reverse md:flex-row items-start gap-2 p-4 backdrop-blur-[6px] bg-gradient-to-t from-white to-transparent",
             footerClassName
           )}
         >

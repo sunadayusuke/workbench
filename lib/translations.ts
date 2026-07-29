@@ -328,6 +328,11 @@ export interface Translations {
     pdfQualityBalanced: string;
     pdfQualityMax: string;
     pdfNote: string;
+    videoFormat: string;
+    videoFormatAuto: string;
+    videoFormatH264: string;
+    videoResolution: string;
+    videoResolutionOriginal: string;
     videoQuality: string;
     videoQualityHigh: string;
     videoQualityBalanced: string;
@@ -742,11 +747,16 @@ const ja: Translations = {
     pdfQualityBalanced: "標準（推奨）",
     pdfQualityMax: "最小サイズ（高圧縮）",
     pdfNote: "PDF内の画像を再圧縮します。文字・ベクター要素はそのまま維持されます。",
+    videoFormat: "出力形式",
+    videoFormatAuto: "自動（最小サイズ・AV1）",
+    videoFormatH264: "H.264（互換性重視）",
+    videoResolution: "解像度",
+    videoResolutionOriginal: "元のまま",
     videoQuality: "動画品質",
-    videoQualityHigh: "高画質（解像度維持）",
-    videoQualityBalanced: "標準・720p（推奨）",
-    videoQualityMax: "最小サイズ・480p",
-    videoNote: "H.264 MP4 に再エンコードします（MOV も MP4 で出力）。初回のみ変換エンジン（約30MB）を読み込みます。",
+    videoQualityHigh: "高画質",
+    videoQualityBalanced: "標準（推奨）",
+    videoQualityMax: "最小サイズ",
+    videoNote: "対応ブラウザでは内蔵エンコーダーで高速変換します（自動 = AV1、非対応環境は H.264 やフォールバックに切替）。MOV も MP4 で出力。",
     clearAll: "全クリア",
     downloadAll: "全てZIPダウンロード",
     zipping: "ZIP圧縮中...",
@@ -1154,11 +1164,16 @@ const en: Translations = {
     pdfQualityBalanced: "Balanced (recommended)",
     pdfQualityMax: "Smallest size (max)",
     pdfNote: "Re-compresses images inside the PDF. Text and vectors are kept intact.",
+    videoFormat: "Format",
+    videoFormatAuto: "Auto (smallest · AV1)",
+    videoFormatH264: "H.264 (most compatible)",
+    videoResolution: "Resolution",
+    videoResolutionOriginal: "Keep original",
     videoQuality: "Video Quality",
-    videoQualityHigh: "High quality (keep resolution)",
-    videoQualityBalanced: "Balanced · 720p (recommended)",
-    videoQualityMax: "Smallest size · 480p",
-    videoNote: "Re-encodes to H.264 MP4 (MOV is output as MP4). The converter engine (~30MB) loads once on first use.",
+    videoQualityHigh: "High quality",
+    videoQualityBalanced: "Balanced (recommended)",
+    videoQualityMax: "Smallest size",
+    videoNote: "Supported browsers encode with the built-in encoder for speed (Auto = AV1; falls back to H.264 or the wasm encoder elsewhere). MOV is output as MP4.",
     clearAll: "Clear All",
     downloadAll: "Download All (ZIP)",
     zipping: "Zipping...",

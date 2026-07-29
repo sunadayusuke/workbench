@@ -15,7 +15,12 @@ import {
 } from "@/components/ui/select";
 import { downloadBlob } from "@/lib/canvas-download";
 import { compressPdf, type PdfQuality } from "@/lib/pdf-compress";
-import { compressVideo, type VideoQuality } from "@/lib/video-compress";
+import {
+  compressVideo,
+  type VideoFormat,
+  type VideoQuality,
+  type VideoResolution,
+} from "@/lib/video-compress";
 
 type Format = "webp" | "jpeg" | "png" | "original";
 type Kind = "image" | "pdf" | "video";
@@ -47,7 +52,7 @@ interface Item {
 }
 
 const MAX_SIZE = 100 * 1024 * 1024; // 100MB (images / PDF)
-const VIDEO_MAX_SIZE = 300 * 1024 * 1024; // 300MB — ffmpeg.wasm is memory-bound
+const VIDEO_MAX_SIZE = 300 * 1024 * 1024; // 300MB — both video paths buffer in memory
 const MAX_FILES = 50;
 const SUPPORTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
@@ -158,6 +163,8 @@ export default function CompressPage() {
   const [format, setFormat] = useState<Format>("original");
   const [pdfQuality, setPdfQuality] = useState<PdfQuality>("balanced");
   const [videoQuality, setVideoQuality] = useState<VideoQuality>("balanced");
+  const [videoFormat, setVideoFormat] = useState<VideoFormat>("auto");
+  const [videoResolution, setVideoResolution] = useState<VideoResolution>(1080);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [topError, setTopError] = useState<ErrorKey | null>(null);
@@ -174,6 +181,12 @@ export default function CompressPage() {
 
   const videoQualityRef = useRef(videoQuality);
   videoQualityRef.current = videoQuality;
+
+  const videoFormatRef = useRef(videoFormat);
+  videoFormatRef.current = videoFormat;
+
+  const videoResolutionRef = useRef(videoResolution);
+  videoResolutionRef.current = videoResolution;
 
   const genRef = useRef(0);
   const isProcessingRef = useRef(false);
@@ -197,7 +210,7 @@ export default function CompressPage() {
         };
       }),
     );
-  }, [format, pdfQuality, videoQuality]);
+  }, [format, pdfQuality, videoQuality, videoFormat, videoResolution]);
 
   // Sequential processing queue.
   useEffect(() => {
@@ -215,6 +228,8 @@ export default function CompressPage() {
         const currentFormat = formatRef.current;
         const currentPdfQuality = pdfQualityRef.current;
         const currentVideoQuality = videoQualityRef.current;
+        const currentVideoFormat = videoFormatRef.current;
+        const currentVideoResolution = videoResolutionRef.current;
 
         setItems((prev) =>
           prev.map((i) =>
@@ -227,12 +242,20 @@ export default function CompressPage() {
           if (next.kind === "pdf") {
             r = await compressPdf(next.file, currentPdfQuality);
           } else if (next.kind === "video") {
-            r = await compressVideo(next.file, currentVideoQuality, (p) => {
-              if (myGen !== genRef.current) return;
-              setItems((prev) =>
-                prev.map((i) => (i.id === next.id ? { ...i, progress: p } : i)),
-              );
-            });
+            r = await compressVideo(
+              next.file,
+              {
+                quality: currentVideoQuality,
+                format: currentVideoFormat,
+                resolution: currentVideoResolution,
+              },
+              (p) => {
+                if (myGen !== genRef.current) return;
+                setItems((prev) =>
+                  prev.map((i) => (i.id === next.id ? { ...i, progress: p } : i)),
+                );
+              },
+            );
           } else {
             r = await encodeImage(next.file, currentFormat);
           }
@@ -584,9 +607,36 @@ export default function CompressPage() {
           </PanelSection>
         )}
 
-        {/* Video quality */}
+        {/* Video */}
         {hasVideos && (
           <PanelSection>
+            <Select
+              value={videoFormat}
+              onValueChange={(v) => setVideoFormat(v as VideoFormat)}
+            >
+              <SelectTrigger label={t.compress.videoFormat}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">{t.compress.videoFormatAuto}</SelectItem>
+                <SelectItem value="h264">{t.compress.videoFormatH264}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={String(videoResolution)}
+              onValueChange={(v) => setVideoResolution(Number(v) as VideoResolution)}
+            >
+              <SelectTrigger label={t.compress.videoResolution}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">{t.compress.videoResolutionOriginal}</SelectItem>
+                <SelectItem value="1440">1440p</SelectItem>
+                <SelectItem value="1080">1080p</SelectItem>
+                <SelectItem value="720">720p</SelectItem>
+                <SelectItem value="480">480p</SelectItem>
+              </SelectContent>
+            </Select>
             <Select
               value={videoQuality}
               onValueChange={(v) => setVideoQuality(v as VideoQuality)}

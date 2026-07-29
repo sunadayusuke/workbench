@@ -48,7 +48,7 @@ app/
     signal/page.tsx   — ディザリングシグナルノイズジェネレーター（Canvas 2D + Bayer dither）
     aurora/page.tsx   — シェイプシェーダー × SVGマスク合成ツール（Three.js + GLSL + MediaRecorder）
     badge/page.tsx    — SVG→3Dバッジジェネレーター（Three.js + matcap）
-    compress/page.tsx — 画像圧縮・形式変換 + PDF圧縮 + 動画圧縮ツール（UPNG + JSZip + pdf-lib + ffmpeg.wasm、全処理クライアントサイド）
+    compress/page.tsx — 画像圧縮・形式変換 + PDF圧縮 + 動画圧縮ツール（UPNG + JSZip + pdf-lib + mediabunny/WebCodecs + ffmpeg.wasm fallback、全処理クライアントサイド）
     qr/page.tsx       — スタイルドQRコードジェネレーター（qrcode + 自前SVGレンダラー、jsQRで読取検証済み）
 components/
   app-top-bar.tsx     — 全アプリ共通トップバー（← 戻る ピル + <LangToggle>）`useLanguage()` 使用
@@ -79,7 +79,8 @@ lib/
   color-utils.ts      — hexToRGB()（Three.js ShaderMaterial 向け色変換）
   canvas-download.ts  — downloadCanvas() / downloadBlob()（モバイル/デスクトップ分岐）
   pdf-compress.ts     — compressPdf()（pdf-lib で画像XObjectを再圧縮するPDF軽量化。compress アプリ専用）
-  video-compress.ts   — compressVideo()（ffmpeg.wasm で MP4/MOV を H.264 MP4 に再エンコード。compress アプリ専用。ワーカーは public/ffmpeg/ から自己ホスト）
+  video-compress.ts   — compressVideo()（WebCodecs + mediabunny で MP4/MOV を AV1/H.264 MP4 に再エンコード。compress アプリ専用）
+  video-compress-ffmpeg.ts — WebCodecs 非対応環境・デコード不能入力用フォールバック（ffmpeg.wasm。ワーカーは public/ffmpeg/ から自己ホスト）
   translations.ts     — i18n 翻訳テキスト定義（Translations interface + ja/en オブジェクト）
   i18n.tsx            — LanguageProvider / useLanguage() フック
 hooks/
@@ -238,16 +239,20 @@ import { FlatButton } from "@/components/ui/flat-button";
 - UI: PDFは `kind:"pdf"` として扱い、サムネは "PDF" グリフ。画像形式セレクトは「キュー内が全てPDFのとき」隠す。PDF品質セレクトは high/balanced/max の3プリセット
 
 ### 動画圧縮（compress の video 対応）
-- **動画圧縮は `lib/video-compress.ts` の `compressVideo()`**。**ffmpeg.wasm（`@ffmpeg/ffmpeg` + `@ffmpeg/util`、シングルスレッド core）** で MP4/MOV を **H.264 MP4（AAC）に再エンコード**。入力が MOV でも出力は MP4 固定（圧縮効率と互換性）。UI は `kind:"video"`（サムネはコンテナ拡張子グリフ "MP4"/"MOV"）、動画品質セレクト high/balanced/max（`hasVideos` のとき表示）。`VideoQuality` プリセットは `{crf, maxHeight, preset, audioBitrate}`（high:23/原寸、balanced:28/720p、max:30/480p）。ダウンスケールは `scale=-2:min(H\,trunc(ih/2)*2)`（アップスケールなし・偶数寸法保証、x264 は偶数必須）
-- **COOP/COEP ヘッダーは追加しない方針**（サイト全体に効き BMC ウィジェット等の外部埋め込みを壊すため）→ シングルスレッド core を使用。SharedArrayBuffer 不要
-- **ffmpeg.wasm を Next.js/Turbopack で読み込む3つの罠（重要・ここでかなりハマった）**:
+- **主経路は WebCodecs + mediabunny（v1.51+、`lib/video-compress.ts` の `compressVideo()`）**。ブラウザ内蔵エンコーダーで MP4/MOV を再エンコードし、**AV1 で H.264 比 −60%前後**（実測: 同条件で AV1 193KB vs H.264 526KB）。mediabunny は pure TS/ESM で**動的 import**（初期バンドル外・ランタイムDL なし・COOP/COEP 不要）。出力は MP4 固定（fastStart "in-memory"、音声 AAC 160k/128k/96k）
+- 新 API: `compressVideo(file, { quality: high|balanced|max, format: auto|h264, resolution: 0|1440|1080|720|480 }, onProgress)`。`format:"auto"` は `getFirstEncodableVideoCodec(["av1","vp9","avc"])` の先頭、`"h264"` は avc 固定。品質は mediabunny の `QUALITY_HIGH/MEDIUM/LOW`（コーデック・解像度・fps を考慮したビットレート算出。**quantizer/CRF 指定は Conversion API に存在しない**ので不採用が確定判断）。`bitrate` を明示すると同コーデック入力でも必ず再エンコードされる（素通し remux で無圧縮になる事故を回避、mediabunny src/conversion.ts で裏取り済み）
+- **解像度は短辺キャップ**（`fitShortSide`、アップスケールなし・偶数丸め）。縦動画は幅がキャップされる（旧実装の「高さ literal キャップで縦動画が過剰縮小」を解消）。寸法は `getDisplayWidth/Height()`（回転・PAR 適用後）基準なので iPhone の回転メタデータ付き MOV も正しい
+- UI は Select 3つ（出力形式 auto/h264、解像度 デフォルト1080p、品質 デフォルトbalanced）。設定変更で全キュー再処理（gen ガードで stale 結果破棄）
+- **フォールバックは `lib/video-compress-ffmpeg.ts`（旧実装を移設）**。発火条件: WebCodecs なし / 対象コーデックがエンコード不可 / **音声トラックありで AAC エンコード不可（Firefox がこれ。無音化事故防止）** / mediabunny 経路の実行時エラー（ProRes 等のデコード不能含む）。Conversion init 後に video/audio の discardedTracks があれば throw してフォールバックへ
+- **COOP/COEP ヘッダーは追加しない方針**（サイト全体に効き BMC ウィジェット等の外部埋め込みを壊すため）→ ffmpeg はシングルスレッド core を使用。SharedArrayBuffer 不要
+- **ffmpeg.wasm を Next.js/Turbopack で読み込む3つの罠（重要・ここでかなりハマった。現物は `lib/video-compress-ffmpeg.ts`）**:
   1. **ワーカーをバンドルさせない**: 既定の `new Worker(new URL("./worker.js", import.meta.url), {type:"module"})` を Turbopack が解析すると、worker 内の動的 `import(coreURL)` で **`Cannot find module as expression is too dynamic`** ビルドエラー。回避策として **ESM ワーカー3ファイル（`worker.js`/`const.js`/`errors.js`）を `public/ffmpeg/` に自己ホスト**し、`classWorkerURL` に**変数の絶対URL**（`` `${window.location.origin}/ffmpeg/worker.js` ``）を渡す。リテラル `new URL("./worker.js",…)` でなく変数なら Turbopack はバンドルを試みない
   2. **UMD ワーカー（`814.ffmpeg.js`）は使えない**: それを `classWorkerURL` に渡すと module ワーカー化され、内部の core ロードが **webpack 内部 require** になり外部 blob を解決できず **`Cannot find module 'blob:…'`**。→ **ESM ワーカー**（native `import()`）でなければ外部 core を読めない
   3. **core は ESM 版**: ワーカーは module worker なので `import(coreURL).default` で読む。`@ffmpeg/core@0.12.9/dist/**esm**/ffmpeg-core.js`（末尾 `export default createFFmpegCore`）を使う。**UMD core は `export default` が無く `.default` が undefined になり失敗**。`coreURL`/`wasmURL` は `toBlobURL()` で同一オリジン blob 化（COEP 不要のため）
-- core（約30MB）はモジュールレベルのシングルトンで**初回のみ CDN(unpkg) から読み込み**、キュー全体で使い回す（`getFFmpeg()`）。失敗時は `loadPromise=null` でリトライ可能
-- 進捗: `ff.on("progress", …)` を `compressVideo` の `onProgress` で item.progress に反映（キューは逐次処理なのでグローバル progress = 現在の item）。UI は `変換中 NN%` 表示
-- 各動画は try/catch、再エンコードが元サイズ以上なら**原本をそのまま返す**（`ext` は元拡張子）＝決して肥大化させない。動画は `VIDEO_MAX_SIZE=300MB`（ffmpeg.wasm はメモリ制約）で画像/PDF の 100MB とは別枠
-- **検証メモ**: ホストに ffmpeg が無い/実 mp4 が用意できない場合、プレビューで canvas+MediaRecorder で webm を作り `sample.mp4` 名で file input に `DataTransfer` 経由注入してパイプラインを実走できる。ただし MediaRecorder(VP8) は滑らかな映像を高効率圧縮するため h264 が勝てず size guard で原本が返りがち → **高解像度ノイズ(1080p)＋max/720p ダウンスケール**なら実削減を確認可能（実測 1.60MB→1.11MB −30.2%）
+- ffmpeg core（約30MB）はモジュールレベルのシングルトンで**初回のみ CDN(unpkg) から読み込み**、キュー全体で使い回す（`getFFmpeg()`）。失敗時は `loadPromise=null` でリトライ可能。CRF は high 23 / balanced 28 / max 31、短辺キャップは `scale=if(gt(iw\,ih)\,…)` 式（カンマは `\,` エスケープ必須）
+- 進捗: mediabunny は `conversion.onProgress`（0–1）、ffmpeg は `ff.on("progress", …)` を `onProgress` に転送（キューは逐次処理なのでグローバル progress = 現在の item）。UI は `変換中 NN%` 表示
+- 各動画は try/catch、再エンコードが元サイズ以上なら**原本をそのまま返す**（`ext` は元拡張子）＝決して肥大化させない。動画は `VIDEO_MAX_SIZE=300MB`（mediabunny の BufferTarget も ffmpeg.wasm もメモリバウンド）で画像/PDF の 100MB とは別枠
+- **検証メモ（2026-07 更新）**: ブラウザペインのタブは `visibility:hidden` になりがちで **rAF が回らず MediaRecorder でのフィクスチャ生成は不可**（ほぼ空の webm になる）。代わりに **mediabunny 自体（esm.sh から import）+ OffscreenCanvas + CanvasSource で本物の H.264 MP4 をリアルタイム非依存で合成**し、`DataTransfer` 経由で file input に注入する。注意2点: (1) ページ realm に esm.sh コピーを import すると「Mediabunny was loaded twice」警告が出る（`Symbol.for` によるグローバル検出。アプリ実害なし・検証アーティファクト）→ 隔離したいなら iframe realm で生成、(2) **iframe で作った File は iframe を remove すると実体が無効化される** → `arrayBuffer()` で親 realm にコピーしてから捨てる。出力検証は「バイト列に av01/avc1/mp4a があるか + moov が mdat より前（fastStart）」+ **`<video>` で実デコードして寸法と中間フレームの画素を入力と比較**（実測: 平均差 1.89/255）。実測値: 8Mbps H.264 1080p 3s 2.35MB → AV1 1080p 394KB(−83.6%) / AV1 720p 193KB(−92%) / H.264 720p 526KB(−78.1%)
 
 ## アナリティクス
 - **Vercel Analytics** 導入済み（`@vercel/analytics/react`）。`app/layout.tsx` に `<Analytics />` コンポーネント配置

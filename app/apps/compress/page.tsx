@@ -6,6 +6,7 @@ import { AppTopBar } from "@/components/app-top-bar";
 import { PushButton } from "@/components/ui/push-button";
 import { ControlPanel } from "@/components/ui/control-panel";
 import { PanelSection } from "@/components/ui/panel-section";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import {
   Select,
   SelectContent,
@@ -165,6 +166,7 @@ export default function CompressPage() {
   const [videoQuality, setVideoQuality] = useState<VideoQuality>("balanced");
   const [videoFormat, setVideoFormat] = useState<VideoFormat>("auto");
   const [videoResolution, setVideoResolution] = useState<VideoResolution>(1080);
+  const [videoRemoveAudio, setVideoRemoveAudio] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [topError, setTopError] = useState<ErrorKey | null>(null);
@@ -188,6 +190,9 @@ export default function CompressPage() {
   const videoResolutionRef = useRef(videoResolution);
   videoResolutionRef.current = videoResolution;
 
+  const videoRemoveAudioRef = useRef(videoRemoveAudio);
+  videoRemoveAudioRef.current = videoRemoveAudio;
+
   const genRef = useRef(0);
   const isProcessingRef = useRef(false);
 
@@ -210,7 +215,7 @@ export default function CompressPage() {
         };
       }),
     );
-  }, [format, pdfQuality, videoQuality, videoFormat, videoResolution]);
+  }, [format, pdfQuality, videoQuality, videoFormat, videoResolution, videoRemoveAudio]);
 
   // Sequential processing queue.
   useEffect(() => {
@@ -230,6 +235,7 @@ export default function CompressPage() {
         const currentVideoQuality = videoQualityRef.current;
         const currentVideoFormat = videoFormatRef.current;
         const currentVideoResolution = videoResolutionRef.current;
+        const currentVideoRemoveAudio = videoRemoveAudioRef.current;
 
         setItems((prev) =>
           prev.map((i) =>
@@ -248,6 +254,7 @@ export default function CompressPage() {
                 quality: currentVideoQuality,
                 format: currentVideoFormat,
                 resolution: currentVideoResolution,
+                removeAudio: currentVideoRemoveAudio,
               },
               (p) => {
                 if (myGen !== genRef.current) return;
@@ -650,6 +657,11 @@ export default function CompressPage() {
                 <SelectItem value="max">{t.compress.videoQualityMax}</SelectItem>
               </SelectContent>
             </Select>
+            <ToggleSwitch
+              label={t.compress.videoRemoveAudio}
+              active={videoRemoveAudio}
+              onClick={() => setVideoRemoveAudio((v) => !v)}
+            />
             <p className="text-[12px] text-wb-500 leading-relaxed">
               {t.compress.videoNote}
             </p>

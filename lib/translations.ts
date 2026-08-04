@@ -337,6 +337,7 @@ export interface Translations {
     videoQualityHigh: string;
     videoQualityBalanced: string;
     videoQualityMax: string;
+    videoRemoveAudio: string;
     videoNote: string;
     encodingVideo: string;
     clearAll: string;
@@ -756,6 +757,7 @@ const ja: Translations = {
     videoQualityHigh: "高画質",
     videoQualityBalanced: "標準（推奨）",
     videoQualityMax: "最小サイズ",
+    videoRemoveAudio: "音声を削除",
     videoNote: "対応ブラウザでは内蔵エンコーダーで高速変換します（自動 = AV1、非対応環境は H.264 やフォールバックに切替）。MOV も MP4 で出力。",
     clearAll: "全クリア",
     downloadAll: "全てZIPダウンロード",
@@ -1173,6 +1175,7 @@ const en: Translations = {
     videoQualityHigh: "High quality",
     videoQualityBalanced: "Balanced (recommended)",
     videoQualityMax: "Smallest size",
+    videoRemoveAudio: "Remove audio",
     videoNote: "Supported browsers encode with the built-in encoder for speed (Auto = AV1; falls back to H.264 or the wasm encoder elsewhere). MOV is output as MP4.",
     clearAll: "Clear All",
     downloadAll: "Download All (ZIP)",

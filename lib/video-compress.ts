@@ -27,6 +27,7 @@ export interface VideoCompressOptions {
   quality: VideoQuality;
   format: VideoFormat;
   resolution: VideoResolution;
+  removeAudio: boolean;
 }
 
 // Audio is re-encoded to AAC at these bitrates (matched to the ffmpeg fallback).
@@ -106,8 +107,14 @@ async function encodeWithWebCodecs(
     const audioBitrate = AUDIO_BITRATES[opts.quality];
     const audioTrack = await input.getPrimaryAudioTrack();
     // Without an AAC encoder the audio would just be dropped, leaving a silent
-    // video — hand the file to ffmpeg instead.
-    if (audioTrack && !(await canEncodeAudio("aac", { bitrate: audioBitrate }))) {
+    // video — hand the file to ffmpeg instead. Skipped when the user asked to
+    // remove the audio: no audio encoder is needed in that case, so this is
+    // exactly the escape hatch for browsers (Firefox) without an AAC encoder.
+    if (
+      !opts.removeAudio &&
+      audioTrack &&
+      !(await canEncodeAudio("aac", { bitrate: audioBitrate }))
+    ) {
       throw new Error("noEncodableAudioCodec");
     }
 
@@ -139,16 +146,19 @@ async function encodeWithWebCodecs(
         height: size.height,
         fit: "fill",
       },
-      audio: { codec: "aac", bitrate: audioBitrate },
+      audio: opts.removeAudio ? { discard: true } : { codec: "aac", bitrate: audioBitrate },
       showWarnings: false,
     });
 
     if (!conversion.isValid) throw new Error("invalidConversion");
     // A discarded video/audio track means silent data loss (undecodable source,
-    // no encodable target …) — let ffmpeg have a go at it instead.
+    // no encodable target …) — let ffmpeg have a go at it instead. An audio track
+    // discarded because *we* asked for `discard: true` is expected, not data loss.
     if (
       conversion.discardedTracks.some(
-        (d) => d.track.type === "video" || d.track.type === "audio",
+        (d) =>
+          d.track.type === "video" ||
+          (d.track.type === "audio" && d.reason !== "discarded_by_user"),
       )
     ) {
       throw new Error("discardedTrack");

@@ -128,12 +128,12 @@ export async function compressVideoWithFfmpeg(
     if (opts.resolution > 0) {
       args.push("-vf", shortSideScaleFilter(opts.resolution));
     }
-    args.push(
-      "-c:a", "aac",
-      "-b:a", preset.audioBitrate,
-      "-movflags", "+faststart",
-      outName,
-    );
+    if (opts.removeAudio) {
+      args.push("-an");
+    } else {
+      args.push("-c:a", "aac", "-b:a", preset.audioBitrate);
+    }
+    args.push("-movflags", "+faststart", outName);
 
     await ff.exec(args);
 

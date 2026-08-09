@@ -438,8 +438,10 @@ export default function QrPage() {
       "<svg",
       `<svg width="${px}" height="${px}"`
     );
-    const blob = new Blob([sized], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
+    // A data URI (not Blob + createObjectURL) is required here: Safari fails to
+    // rasterize a blob: URL SVG that itself embeds a data: URI <image> (the logo) —
+    // the nested resource silently fails to load, so the logo vanishes from the PNG.
+    const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(sized)}`;
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
@@ -451,10 +453,8 @@ export default function QrPage() {
         ctx.drawImage(img, 0, 0, px, px);
         void downloadCanvas(canvas, "qrcode.png");
       }
-      URL.revokeObjectURL(url);
     };
-    img.onerror = () => URL.revokeObjectURL(url);
-    img.src = url;
+    img.src = dataUrl;
   }, [svg, params.pngSize]);
 
   const logoEcWeak = params.logoDataUrl && (params.ecLevel === "L" || params.ecLevel === "M");

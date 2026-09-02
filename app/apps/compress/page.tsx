@@ -22,8 +22,11 @@ import {
   type VideoQuality,
   type VideoResolution,
 } from "@/lib/video-compress";
+import { isAnimatedWebP } from "@/lib/webp-anim";
+import { asBlobPart, createFrameEncoder, type FrameEncoder } from "@/lib/webp-encode";
 
 type Format = "webp" | "jpeg" | "png" | "original";
+type ImageQuality = "high" | "balanced" | "max";
 type Kind = "image" | "pdf" | "video";
 type Status = "pending" | "processing" | "done" | "error";
 type ErrorKey =
@@ -74,11 +77,18 @@ function isVideo(file: File): boolean {
     n.endsWith(".mov")
   );
 }
-// JPEG/WebP lossy quality (0-1 scale for canvas.toBlob).
-const JPEG_WEBP_QUALITY = 0.8;
-// PNG palette color count for UPNG quantization. Lower = smaller files, more
-// posterization. ~128 targets TinyPNG-like ~70% reduction on typical inputs.
-const PNG_COLORS = 128;
+// Image presets. `jpegWebp` is the 0–1 lossy quality canvas.toBlob takes;
+// `pngColors` is the UPNG palette size (0 = lossless, lower = smaller and more
+// posterized — 128 targets a TinyPNG-like ~70% reduction on typical inputs).
+// "balanced" holds the values this app shipped with, so the default is unchanged.
+const IMAGE_QUALITY: Record<
+  ImageQuality,
+  { jpegWebp: number; pngColors: number }
+> = {
+  high: { jpegWebp: 0.9, pngColors: 0 },
+  balanced: { jpegWebp: 0.8, pngColors: 128 },
+  max: { jpegWebp: 0.65, pngColors: 64 },
+};
 
 const EXT_MAP: Record<Exclude<Format, "original">, string> = {
   webp: "webp",
@@ -98,6 +108,11 @@ function buildOutputName(originalName: string, ext: string): string {
   return `${base}.${ext}`;
 }
 
+function extensionOf(name: string): string {
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? name.slice(dot + 1).toLowerCase() : "";
+}
+
 function resolveOutputFormat(format: Format, fileType: string): Exclude<Format, "original"> {
   if (format !== "original") return format;
   const t = fileType.toLowerCase();
@@ -107,10 +122,42 @@ function resolveOutputFormat(format: Format, fileType: string): Exclude<Format, 
   return "png"; // gif/avif → png fallback
 }
 
+// One encoder for the whole page: the probe (and, on Safari, the wasm module)
+// is worth doing once rather than per file. A failed load clears the cache so a
+// later file can try again.
+let frameEncoderPromise: Promise<FrameEncoder> | null = null;
+
+function getFrameEncoder(): Promise<FrameEncoder> {
+  if (!frameEncoderPromise) {
+    frameEncoderPromise = createFrameEncoder().catch((error) => {
+      frameEncoderPromise = null;
+      throw error;
+    });
+  }
+  return frameEncoderPromise;
+}
+
+/**
+ * Whether the file is an animated WebP — only its first chunk is read, so this
+ * costs a 64-byte slice rather than the whole file.
+ */
+async function isAnimatedWebPFile(file: File): Promise<boolean> {
+  if (file.type.toLowerCase() !== "image/webp" && extensionOf(file.name) !== "webp") {
+    return false;
+  }
+  try {
+    return isAnimatedWebP(new Uint8Array(await file.slice(0, 64).arrayBuffer()));
+  } catch {
+    return false;
+  }
+}
+
 async function encodeImage(
   file: File,
   format: Format,
+  quality: ImageQuality,
 ): Promise<{ blob: Blob; ext: string }> {
+  const preset = IMAGE_QUALITY[quality];
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file);
@@ -134,25 +181,52 @@ async function encodeImage(
   let blob: Blob;
 
   if (outFormat === "png") {
-    // UPNG with color quantization — TinyPNG-style. quality 100 = lossless, lower
+    // UPNG with color quantization — TinyPNG-style. 0 colors = lossless, lower
     // values quantize to fewer palette colors (8-bit indexed PNG).
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const UPNG = (await import("upng-js")).default;
-    const buf = UPNG.encode([imgData.data.buffer], canvas.width, canvas.height, PNG_COLORS);
+    const buf = UPNG.encode(
+      [imgData.data.buffer],
+      canvas.width,
+      canvas.height,
+      preset.pngColors,
+    );
     blob = new Blob([buf], { type: "image/png" });
+  } else if (outFormat === "webp") {
+    // Not canvas.toBlob directly: Safari has no WebP canvas encoder and hands
+    // back a PNG without saying so, which would ship as a .webp nothing can
+    // open. The shared encoder checks the type it actually got and falls back to
+    // libwebp wasm — the same path the WebP converter app uses.
+    let bytes: Uint8Array;
+    try {
+      const encoder = await getFrameEncoder();
+      bytes = await encoder.encode(
+        canvas,
+        Math.round(preset.jpegWebp * 100), // shared encoder takes 1–100
+        // The canvas path ignores this; only pay for the readback on the wasm one.
+        encoder.usesImageData
+          ? ctx.getImageData(0, 0, canvas.width, canvas.height)
+          : new ImageData(1, 1),
+      );
+    } catch {
+      // errorEncodeUnsupported / errorEncoderLoadFailed are the WebP app's
+      // vocabulary — this app has the one key.
+      throw new Error("errorEncodeFailed");
+    }
+    blob = new Blob([asBlobPart(bytes)], { type: "image/webp" });
   } else {
-    const mime = `image/${outFormat}`;
     const result = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, mime, JPEG_WEBP_QUALITY);
+      canvas.toBlob(resolve, "image/jpeg", preset.jpegWebp);
     });
     if (!result || result.size === 0) throw new Error("errorEncodeFailed");
     blob = result;
   }
 
   // In "original" mode the user wants compression without format change. Fall back
-  // to the source file when re-encoding can't beat the original size.
+  // to the source file when re-encoding can't beat the original size — under its
+  // own extension, since the bytes handed back are the source file's.
   if (format === "original" && blob.size >= file.size) {
-    return { blob: file, ext: EXT_MAP[outFormat] };
+    return { blob: file, ext: extensionOf(file.name) || EXT_MAP[outFormat] };
   }
 
   return { blob, ext: EXT_MAP[outFormat] };
@@ -162,6 +236,7 @@ export default function CompressPage() {
   const { t } = useLanguage();
   const [items, setItems] = useState<Item[]>([]);
   const [format, setFormat] = useState<Format>("original");
+  const [imageQuality, setImageQuality] = useState<ImageQuality>("balanced");
   const [pdfQuality, setPdfQuality] = useState<PdfQuality>("balanced");
   const [videoQuality, setVideoQuality] = useState<VideoQuality>("balanced");
   const [videoFormat, setVideoFormat] = useState<VideoFormat>("auto");
@@ -177,6 +252,9 @@ export default function CompressPage() {
 
   const formatRef = useRef(format);
   formatRef.current = format;
+
+  const imageQualityRef = useRef(imageQuality);
+  imageQualityRef.current = imageQuality;
 
   const pdfQualityRef = useRef(pdfQuality);
   pdfQualityRef.current = pdfQuality;
@@ -196,8 +274,8 @@ export default function CompressPage() {
   const genRef = useRef(0);
   const isProcessingRef = useRef(false);
 
-  // Re-process when the output format or PDF quality changes — invalidate any
-  // prior outputs so the queue regenerates them.
+  // Re-process when any output setting changes — invalidate any prior outputs so
+  // the queue regenerates them.
   useEffect(() => {
     genRef.current++;
     setItems((prev) =>
@@ -215,7 +293,15 @@ export default function CompressPage() {
         };
       }),
     );
-  }, [format, pdfQuality, videoQuality, videoFormat, videoResolution, videoRemoveAudio]);
+  }, [
+    format,
+    imageQuality,
+    pdfQuality,
+    videoQuality,
+    videoFormat,
+    videoResolution,
+    videoRemoveAudio,
+  ]);
 
   // Sequential processing queue.
   useEffect(() => {
@@ -231,6 +317,7 @@ export default function CompressPage() {
 
         const myGen = genRef.current;
         const currentFormat = formatRef.current;
+        const currentImageQuality = imageQualityRef.current;
         const currentPdfQuality = pdfQualityRef.current;
         const currentVideoQuality = videoQualityRef.current;
         const currentVideoFormat = videoFormatRef.current;
@@ -242,6 +329,15 @@ export default function CompressPage() {
             i.id === next.id ? { ...i, status: "processing", progress: undefined } : i,
           ),
         );
+
+        // Used by the paths that run long enough to report progress (video and
+        // animated WebP); a stale generation's updates are dropped.
+        const onProgress = (p: number) => {
+          if (myGen !== genRef.current) return;
+          setItems((prev) =>
+            prev.map((i) => (i.id === next.id ? { ...i, progress: p } : i)),
+          );
+        };
 
         try {
           let r: { blob: Blob; ext: string };
@@ -256,15 +352,24 @@ export default function CompressPage() {
                 resolution: currentVideoResolution,
                 removeAudio: currentVideoRemoveAudio,
               },
-              (p) => {
-                if (myGen !== genRef.current) return;
-                setItems((prev) =>
-                  prev.map((i) => (i.id === next.id ? { ...i, progress: p } : i)),
-                );
+              onProgress,
+            );
+          } else if (
+            resolveOutputFormat(currentFormat, next.file.type) === "webp" &&
+            (await isAnimatedWebPFile(next.file))
+          ) {
+            // The still-image path would keep frame 0 and throw the animation
+            // away; this one re-encodes every frame and re-muxes them.
+            const { compressAnimatedWebP } = await import("@/lib/webp-anim-compress");
+            r = await compressAnimatedWebP(
+              next.file,
+              {
+                quality: Math.round(IMAGE_QUALITY[currentImageQuality].jpegWebp * 100),
               },
+              onProgress,
             );
           } else {
-            r = await encodeImage(next.file, currentFormat);
+            r = await encodeImage(next.file, currentFormat, currentImageQuality);
           }
           if (myGen !== genRef.current) continue;
           const outputUrl = URL.createObjectURL(r.blob);
@@ -317,51 +422,46 @@ export default function CompressPage() {
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const incoming = Array.from(files);
-    setItems((prev) => {
-      const remaining = MAX_FILES - prev.length;
-      if (remaining <= 0) {
-        setTopError("errorTooManyFiles");
-        return prev;
-      }
-      const truncated = incoming.length > remaining;
-      if (truncated) setTopError("errorTooManyFiles");
-      else setTopError(null);
+    // Everything with a side effect happens out here. React runs a setItems
+    // updater twice under StrictMode, and an object URL minted inside one would
+    // be created twice and revoked once — a leak per file, in dev only.
+    const remaining = MAX_FILES - itemsRef.current.length;
+    if (remaining <= 0) {
+      setTopError("errorTooManyFiles");
+      return;
+    }
+    setTopError(incoming.length > remaining ? "errorTooManyFiles" : null);
 
-      const toAdd = incoming.slice(0, remaining);
-      const newItems: Item[] = toAdd.map((file) => {
-        const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        const pdf = isPdf(file);
-        const video = !pdf && isVideo(file);
-        const kind: Kind = pdf ? "pdf" : video ? "video" : "image";
-        // PDFs/videos use a glyph placeholder, so no object URL is needed.
-        const thumbUrl = kind === "image" ? URL.createObjectURL(file) : "";
-        const ext =
-          file.name.lastIndexOf(".") > 0
-            ? file.name.slice(file.name.lastIndexOf(".") + 1).toUpperCase()
-            : "";
-        const base: Item = {
-          id,
-          file,
-          kind,
-          thumbUrl,
-          glyph: pdf ? "PDF" : video ? ext || "MP4" : undefined,
-          originalSize: file.size,
-          status: "pending",
-        };
-        const sizeCap = video ? VIDEO_MAX_SIZE : MAX_SIZE;
-        if (file.size > sizeCap) {
-          return { ...base, status: "error", errorKey: "errorTooLarge" };
-        }
-        if (
-          kind === "image" &&
-          !SUPPORTED_TYPES.includes(file.type.toLowerCase())
-        ) {
-          return { ...base, status: "error", errorKey: "errorUnsupported" };
-        }
-        return base;
-      });
-      return [...prev, ...newItems];
+    const newItems: Item[] = incoming.slice(0, remaining).map((file) => {
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const pdf = isPdf(file);
+      const video = !pdf && isVideo(file);
+      const kind: Kind = pdf ? "pdf" : video ? "video" : "image";
+      // PDFs/videos use a glyph placeholder, so no object URL is needed.
+      const thumbUrl = kind === "image" ? URL.createObjectURL(file) : "";
+      const ext =
+        file.name.lastIndexOf(".") > 0
+          ? file.name.slice(file.name.lastIndexOf(".") + 1).toUpperCase()
+          : "";
+      const base: Item = {
+        id,
+        file,
+        kind,
+        thumbUrl,
+        glyph: pdf ? "PDF" : video ? ext || "MP4" : undefined,
+        originalSize: file.size,
+        status: "pending",
+      };
+      const sizeCap = video ? VIDEO_MAX_SIZE : MAX_SIZE;
+      if (file.size > sizeCap) {
+        return { ...base, status: "error", errorKey: "errorTooLarge" };
+      }
+      if (kind === "image" && !SUPPORTED_TYPES.includes(file.type.toLowerCase())) {
+        return { ...base, status: "error", errorKey: "errorUnsupported" };
+      }
+      return base;
     });
+    setItems((prev) => [...prev, ...newItems]);
   }, []);
 
   const handleSelect = useCallback(
@@ -575,7 +675,7 @@ export default function CompressPage() {
           </>
         }
       >
-        {/* Image format */}
+        {/* Image format + quality */}
         {hasImages && (
           <PanelSection>
             <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
@@ -587,6 +687,19 @@ export default function CompressPage() {
                 <SelectItem value="webp">WebP</SelectItem>
                 <SelectItem value="jpeg">JPEG</SelectItem>
                 <SelectItem value="png">PNG</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={imageQuality}
+              onValueChange={(v) => setImageQuality(v as ImageQuality)}
+            >
+              <SelectTrigger label={t.compress.imageQuality}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="high">{t.compress.imageQualityHigh}</SelectItem>
+                <SelectItem value="balanced">{t.compress.imageQualityBalanced}</SelectItem>
+                <SelectItem value="max">{t.compress.imageQualityMax}</SelectItem>
               </SelectContent>
             </Select>
           </PanelSection>
@@ -787,7 +900,7 @@ function ItemRow({
         ) : (
           <p className="text-[12px] text-wb-500 tabular-nums">
             {item.status === "processing"
-              ? item.kind === "video" && item.progress != null
+              ? item.progress != null
                 ? `${encodingLabel} ${Math.round(item.progress * 100)}%`
                 : processingLabel
               : pendingLabel}

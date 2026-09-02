@@ -28,6 +28,7 @@ export interface Translations {
     badge: { name: string; description: string };
     compress: { name: string; description: string };
     qr: { name: string; description: string };
+    webp: { name: string; description: string };
   };
 
   // Signal page
@@ -323,6 +324,10 @@ export interface Translations {
     privacy: string;
     format: string;
     formatOriginal: string;
+    imageQuality: string;
+    imageQualityHigh: string;
+    imageQualityBalanced: string;
+    imageQualityMax: string;
     pdfQuality: string;
     pdfQualityHigh: string;
     pdfQualityBalanced: string;
@@ -360,6 +365,60 @@ export interface Translations {
     errorVideoFailed: string;
     errorVideoLoadFailed: string;
     errorTooManyFiles: string;
+  };
+
+  // WebP page
+  webp: {
+    dropHint: string;
+    clickHint: string;
+    supportedTypes: string;
+    maxNote: string;
+    privacy: string;
+    videoInfo: string;
+    imageInfo: string;
+    resolution: string;
+    duration: string;
+    fileSize: string;
+    imageCount: string;
+    fps: string;
+    outputResolution: string;
+    resolutionOriginal: string;
+    resolutionHalf: string;
+    resolutionQuarter: string;
+    resolutionCustom: string;
+    width: string;
+    quality: string;
+    infiniteLoop: string;
+    loopCount: string;
+    transparentBg: string;
+    bgColor: string;
+    keyTolerance: string;
+    outputDimensions: string;
+    estimatedFrames: string;
+    framesWarning: string;
+    convert: string;
+    converting: string;
+    zipping: string;
+    outputAnimated: string;
+    outputFrames: string;
+    result: string;
+    sourceVideo: string;
+    sourceImages: string;
+    webpOutput: string;
+    reduction: string;
+    increase: string;
+    frameCount: string;
+    /** `{frames}` = frames kept, `{n}` = duplicates folded into them. */
+    mergedFrames: string;
+    largerThanSource: string;
+    largeOutputWarning: string;
+    errorTooLarge: string;
+    errorVideoLoad: string;
+    errorImageLoad: string;
+    errorSeekFailed: string;
+    errorEncoderLoadFailed: string;
+    errorEncodeUnsupported: string;
+    errorConvertFailed: string;
   };
 
   // QR page
@@ -459,6 +518,7 @@ const ja: Translations = {
     badge: { name: "バッジジェネレーター", description: "SVGを3Dバッジに変換するツール" },
     compress: { name: "コンプレッサー", description: "画像・PDF・動画の圧縮・形式変換ツール" },
     qr: { name: "QRコード", description: "スタイルドQRコードジェネレーター" },
+    webp: { name: "WebPコンバーター", description: "動画・コマ画像をアニメーションWebPに変換" },
   },
 
   color: {
@@ -743,6 +803,10 @@ const ja: Translations = {
     privacy: "全処理はブラウザ内で完結します。ファイルは外部サーバーに一切送信されません。",
     format: "出力形式",
     formatOriginal: "元の形式",
+    imageQuality: "画像品質",
+    imageQualityHigh: "高画質（低圧縮）",
+    imageQualityBalanced: "標準（推奨）",
+    imageQualityMax: "最小サイズ（高圧縮）",
     pdfQuality: "PDF品質",
     pdfQualityHigh: "高画質（低圧縮）",
     pdfQualityBalanced: "標準（推奨）",
@@ -780,6 +844,58 @@ const ja: Translations = {
     errorVideoFailed: "動画変換に失敗（非対応コーデック・メモリ不足の可能性）",
     errorVideoLoadFailed: "変換エンジンの読み込みに失敗しました",
     errorTooManyFiles: "ファイル数上限（50件）に達しました",
+  },
+
+  webp: {
+    dropHint: "動画・コマ画像をドラッグ&ドロップ",
+    clickHint: "またはクリックしてファイルを選択",
+    supportedTypes: "動画（MP4 · MOV · WebM）／ 画像を複数選ぶとコマ結合",
+    maxNote: "合計300MBまで",
+    privacy: "全処理はブラウザ内で完結します。ファイルは外部サーバーに一切送信されません。",
+    videoInfo: "動画情報",
+    imageInfo: "画像情報",
+    resolution: "解像度",
+    duration: "再生時間",
+    fileSize: "ファイルサイズ",
+    imageCount: "枚数",
+    fps: "フレームレート",
+    outputResolution: "解像度",
+    resolutionOriginal: "元のまま",
+    resolutionHalf: "1/2",
+    resolutionQuarter: "1/4",
+    resolutionCustom: "幅を指定",
+    width: "幅",
+    quality: "品質",
+    infiniteLoop: "無限ループ",
+    loopCount: "ループ回数",
+    transparentBg: "背景を透過",
+    bgColor: "背景色",
+    keyTolerance: "許容度",
+    outputDimensions: "出力サイズ",
+    estimatedFrames: "推定フレーム数",
+    framesWarning: "フレーム数が多いため変換に時間がかかります。フレームレートを下げるか、短い動画で試してください。",
+    convert: "変換",
+    converting: "変換中",
+    zipping: "ZIP圧縮中...",
+    outputAnimated: "WebP — アニメーション",
+    outputFrames: "ZIP — コマ画像",
+    result: "出力",
+    sourceVideo: "元動画",
+    sourceImages: "元画像",
+    webpOutput: "WebP",
+    reduction: "削減率",
+    increase: "増加率",
+    frameCount: "コマ数",
+    mergedFrames: "{frames}（重複 {n} を統合）",
+    largerThanSource: "アニメーションWebPは全コマを独立して圧縮するため、動画より大きくなります。フレームレートや解像度を下げるとサイズを抑えられます。",
+    largeOutputWarning: "WebPとしてはかなり大きいファイルです。フレームレート・解像度・品質を下げると小さくなります。",
+    errorTooLarge: "サイズ超過（合計300MB上限）",
+    errorVideoLoad: "この動画は再生できませんでした。H.264形式のmp4で試してください",
+    errorImageLoad: "画像を読み込めませんでした。PNG・JPEG・WebPで試してください",
+    errorSeekFailed: "フレームの取得に失敗しました。別の動画で試すか、ページを再読み込みしてください",
+    errorEncoderLoadFailed: "変換エンジンの読み込みに失敗しました。再読み込みして再試行してください",
+    errorEncodeUnsupported: "お使いのブラウザはWebP出力に対応していません。ChromeまたはEdgeでご利用ください",
+    errorConvertFailed: "変換に失敗しました（メモリ不足・非対応ファイルの可能性）",
   },
 
   qr: {
@@ -877,6 +993,7 @@ const en: Translations = {
     badge: { name: "Badge Generator", description: "Convert SVG to 3D badge" },
     compress: { name: "Compress", description: "Image, PDF & video compression / format converter" },
     qr: { name: "QR Code", description: "Styled QR code generator" },
+    webp: { name: "WebP Converter", description: "Turn video or frame images into animated WebP" },
   },
 
   color: {
@@ -1161,6 +1278,10 @@ const en: Translations = {
     privacy: "All processing happens inside your browser. Files are never uploaded to any server.",
     format: "Output Format",
     formatOriginal: "Original",
+    imageQuality: "Image Quality",
+    imageQualityHigh: "High quality (light)",
+    imageQualityBalanced: "Balanced (recommended)",
+    imageQualityMax: "Smallest size (max)",
     pdfQuality: "PDF Quality",
     pdfQualityHigh: "High quality (light)",
     pdfQualityBalanced: "Balanced (recommended)",
@@ -1198,6 +1319,58 @@ const en: Translations = {
     errorVideoFailed: "Video conversion failed (unsupported codec or out of memory)",
     errorVideoLoadFailed: "Failed to load the converter engine",
     errorTooManyFiles: "Max files reached (50)",
+  },
+
+  webp: {
+    dropHint: "Drag & drop a video or frame images",
+    clickHint: "or click to select files",
+    supportedTypes: "Video (MP4 · MOV · WebM) / pick several images to join them",
+    maxNote: "Up to 300MB total",
+    privacy: "All processing happens inside your browser. Files are never uploaded to any server.",
+    videoInfo: "Video",
+    imageInfo: "Images",
+    resolution: "Resolution",
+    duration: "Duration",
+    fileSize: "File size",
+    imageCount: "Images",
+    fps: "Frame rate",
+    outputResolution: "Resolution",
+    resolutionOriginal: "Keep original",
+    resolutionHalf: "1/2",
+    resolutionQuarter: "1/4",
+    resolutionCustom: "Custom width",
+    width: "Width",
+    quality: "Quality",
+    infiniteLoop: "Loop forever",
+    loopCount: "Loop count",
+    transparentBg: "Transparent background",
+    bgColor: "Background color",
+    keyTolerance: "Tolerance",
+    outputDimensions: "Output size",
+    estimatedFrames: "Frames",
+    framesWarning: "That many frames will take a while. Try a lower frame rate or a shorter video.",
+    convert: "Convert",
+    converting: "Converting",
+    zipping: "Zipping...",
+    outputAnimated: "WebP — Animation",
+    outputFrames: "ZIP — Frames",
+    result: "Output",
+    sourceVideo: "Source",
+    sourceImages: "Source",
+    webpOutput: "WebP",
+    reduction: "Saved",
+    increase: "Size increase",
+    frameCount: "Frames",
+    mergedFrames: "{frames} ({n} duplicates merged)",
+    largerThanSource: "Animated WebP compresses every frame independently, so it comes out larger than the video. Lower the frame rate or resolution to shrink it.",
+    largeOutputWarning: "That's quite large for a WebP. A lower frame rate, resolution or quality will shrink it.",
+    errorTooLarge: "Too large (300MB total max)",
+    errorVideoLoad: "This video couldn't be played. Try an H.264 MP4.",
+    errorImageLoad: "Couldn't read the image. Try PNG, JPEG or WebP.",
+    errorSeekFailed: "Failed to grab a frame. Try another video, or reload the page.",
+    errorEncoderLoadFailed: "Failed to load the converter engine. Reload the page and try again.",
+    errorEncodeUnsupported: "This browser can't output WebP. Please use Chrome or Edge.",
+    errorConvertFailed: "Conversion failed (out of memory, or an unsupported file)",
   },
 
   qr: {

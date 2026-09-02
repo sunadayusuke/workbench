@@ -60,9 +60,12 @@ footer は **絶対配置のオーバーレイ**（aside が `relative`、スク
 
 ### PanelSection / SectionTitle
 ```tsx
-PanelSection({ title?, titleAction?, border? = true, className?, children })
+PanelSection({ title?, titleAction?, border? = true, className?, inert?, children })
 SectionTitle({ children, className? })   // <span>。<p>/<h3> ではない
 ```
+`inert`（処理中のロック用）は pointer だけでなく **キーボード操作も止める**
+（`pointer-events-none` だけだと Tab + Space で貫通する）。見た目のトーンダウンは
+`className="opacity-50"` を併用する。
 最終セクションは `border={false}`。セクション内のコントロール間隔は
 **`gap-2`（8px）に統一**（`PanelSection` / `NestedGroup` のデフォルト）。
 gap を個別に上書きしない（横余白だけ詰めたいときは `className="px-4"` のように padding のみ指定）。

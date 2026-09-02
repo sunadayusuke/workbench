@@ -19,6 +19,8 @@ interface PanelSectionProps {
   titleAction?: React.ReactNode;
   border?: boolean;
   className?: string;
+  /** Locks the section against pointer *and* keyboard input (busy states). */
+  inert?: boolean;
   children: React.ReactNode;
 }
 
@@ -27,10 +29,12 @@ export function PanelSection({
   titleAction,
   border = true,
   className,
+  inert,
   children,
 }: PanelSectionProps) {
   return (
     <div
+      inert={inert}
       className={cn(
         "px-5 py-4 flex flex-col gap-2",
         border && "border-b border-wb-200",

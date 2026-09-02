@@ -28,6 +28,7 @@ const LOADERS: Record<string, () => Promise<PreviewModule>> = {
   aurora:   () => import("@/lib/app-previews/aurora"),
   badge:    () => import("@/lib/app-previews/badge"),
   qr:       () => import("@/lib/app-previews/qr"),
+  webp:     () => import("@/lib/app-previews/webp"),
 };
 
 export function AppPreview({ appKey, className }: { appKey: string; className?: string }) {

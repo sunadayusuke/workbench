@@ -50,6 +50,7 @@ app/
     badge/page.tsx    — SVG→3Dバッジジェネレーター（Three.js + matcap）
     compress/page.tsx — 画像圧縮・形式変換 + PDF圧縮 + 動画圧縮ツール（UPNG + JSZip + pdf-lib + mediabunny/WebCodecs + ffmpeg.wasm fallback、全処理クライアントサイド）
     qr/page.tsx       — スタイルドQRコードジェネレーター（qrcode + 自前SVGレンダラー、jsQRで読取検証済み）
+    webp/page.tsx     — WebPコンバーター（動画/コマ画像→アニメーションWebP + コマ画像ZIP。canvas.toBlob + 自前RIFF/ANMFマキサー、Safari は libwebp wasm フォールバック、Pillow検証済み）
 components/
   app-top-bar.tsx     — 全アプリ共通トップバー（← 戻る ピル + <LangToggle>）`useLanguage()` 使用
   app-preview.tsx     — ホームカード用ライブキャンバスプレビュー（IntersectionObserver で遅延マウント。shader/gradient/aurora は実 GLSL、他は FPS 制限 Canvas2D）
@@ -81,6 +82,11 @@ lib/
   pdf-compress.ts     — compressPdf()（pdf-lib で画像XObjectを再圧縮するPDF軽量化。compress アプリ専用）
   video-compress.ts   — compressVideo()（WebCodecs + mediabunny で MP4/MOV を AV1/H.264 MP4 に再エンコード。compress アプリ専用）
   video-compress-ffmpeg.ts — WebCodecs 非対応環境・デコード不能入力用フォールバック（ffmpeg.wasm。ワーカーは public/ffmpeg/ から自己ホスト）
+  webp-anim.ts        — アニメーションWebPのマキサー/デマルチプレクサ（RIFF/ANMF 自前構築・解析。純関数・ブラウザAPI非依存で Node でも動く。webp / compress 共用）
+  webp-encode.ts      — 静止 WebP のフレームエンコーダ（canvas.toBlob 主経路 + Safari 用 自己ホスト libwebp wasm。webp / compress 共用）
+  video-to-webp.ts    — 動画/画像列→アニメWebP のオーケストレーター（フレーム抽出 + 重複コマ統合 + 背景透過キーイング。webp アプリ専用）
+  webp-anim-compress.ts — アニメWebP の再圧縮（デマルチプレクス → 純関数合成 → 差分矩形の再エンコード → 再結合。compress アプリ専用）
+  app-previews/       — ホームカードプレビューの実装（アプリごとに1ファイル。components/app-preview.tsx から遅延ロード）
   translations.ts     — i18n 翻訳テキスト定義（Translations interface + ja/en オブジェクト）
   i18n.tsx            — LanguageProvider / useLanguage() フック
 hooks/
@@ -253,6 +259,29 @@ import { FlatButton } from "@/components/ui/flat-button";
 - 進捗: mediabunny は `conversion.onProgress`（0–1）、ffmpeg は `ff.on("progress", …)` を `onProgress` に転送（キューは逐次処理なのでグローバル progress = 現在の item）。UI は `変換中 NN%` 表示
 - 各動画は try/catch、再エンコードが元サイズ以上なら**原本をそのまま返す**（`ext` は元拡張子）＝決して肥大化させない。動画は `VIDEO_MAX_SIZE=300MB`（mediabunny の BufferTarget も ffmpeg.wasm もメモリバウンド）で画像/PDF の 100MB とは別枠
 - **検証メモ（2026-07 更新）**: ブラウザペインのタブは `visibility:hidden` になりがちで **rAF が回らず MediaRecorder でのフィクスチャ生成は不可**（ほぼ空の webm になる）。代わりに **mediabunny 自体（esm.sh から import）+ OffscreenCanvas + CanvasSource で本物の H.264 MP4 をリアルタイム非依存で合成**し、`DataTransfer` 経由で file input に注入する。注意2点: (1) ページ realm に esm.sh コピーを import すると「Mediabunny was loaded twice」警告が出る（`Symbol.for` によるグローバル検出。アプリ実害なし・検証アーティファクト）→ 隔離したいなら iframe realm で生成、(2) **iframe で作った File は iframe を remove すると実体が無効化される** → `arrayBuffer()` で親 realm にコピーしてから捨てる。出力検証は「バイト列に av01/avc1/mp4a があるか + moov が mdat より前（fastStart）」+ **`<video>` で実デコードして寸法と中間フレームの画素を入力と比較**（実測: 平均差 1.89/255）。実測値: 8Mbps H.264 1080p 3s 2.35MB → AV1 1080p 394KB(−83.6%) / AV1 720p 193KB(−92%) / H.264 720p 526KB(−78.1%)
+
+### アニメーション WebP（compress の webp 対応）
+- **compress にアニメ WebP を入れると静止画になっていた原因は `createImageBitmap(file)`**（先頭コマだけ返す）。対応は `lib/webp-anim-compress.ts` の `compressAnimatedWebP(file, {quality}, onProgress)`。キュー側で先頭バイトの VP8X アニメフラグ（`isAnimatedWebP`）を見て、**出力形式が webp に解決されるときだけ**この経路（jpeg/png 指定なら従来どおり静止画）
+- 中身: `parseAnimatedWebP`（ANMF デマルチプレクサ。X/Y は格納値×2、blend/dispose フラグ、ALPH/`VP8 `/VP8L 以外のサブチャンクと ICCP/EXIF/XMP は読み飛ばし）→ 各コマを `wrapFrameAsStillWebP` で単独 WebP に包んで `createImageBitmap` → **合成は canvas ではなく純関数（RGBA 配列）**で、WebP 仕様の非 premultiplied source-over と dispose（libwebp `anim_decode.c` と同じく ANIM 背景色は無視して透明化）を実装 → libwebp の合成結果と maxDiff=0 で一致。**直前状態との差分 bbox（x,y は偶数に切り下げ）だけを再エンコードし、no-blend/dispose-none の置換で mux** するので、alpha-blend の多段再圧縮による世代誤差が蓄積しない。変化なしコマは直前コマの duration に統合。膨張時は原本を返す
+- マキサー（`buildAnimatedWebP`）はコマごとの `durationMs` と任意の `x/y/width/height`（x,y は偶数必須）に対応。共有フレームエンコーダは `lib/webp-encode.ts`（toBlob 主経路 + Safari 自己ホスト wasm。video-to-webp.ts と共用）
+- **画像品質プリセット `IMAGE_QUALITY`**（high 0.9 / PNG ロスレス、balanced 0.8 / 128 色 = 従来の固定値、max 0.65 / 64 色）を追加。**q80 で作った WebP を balanced（q80）で再圧縮しても縮まない**（実測 −0.9%）ので、縮めたいときは max
+- 実測: Pillow（`minimize_size=True`）製の部分矩形 + alpha-blend + dispose 入力（6 コマ）→ **−37%**、透過版 → −13%、いずれも再生タイムライン一致（合成画素差 ≤ 0.55/255）。自前ツール出力 63 コマ → コマ数・loop・合計時間を保持
+- 検証: `.claude/tmp/webp-tests/e2e/compare-anim.py <in> <out>`（入力の各コマ中点時刻で出力側の合成画素を比較。統合でコマ数が減ってもよい）。**dev の React StrictMode では `addFiles` の `setItems(prev => …)` 内の `createObjectURL(file)` が 2 回呼ばれる**（更新関数の二重実行。本番は 1 回）ので、blob フックで出力を数えるときは `instanceof File` で除外する
+- GIF 入力は従来どおり静止 PNG（デコーダが必要。将来課題）
+
+## WebPコンバーター（webp）固有の注意点
+- **アニメーションWebP をブラウザで直接書き出す API は存在しない** → フレームごとの静止 WebP を `lib/webp-anim.ts` の自前マキサー（RIFF/VP8X/ANIM/ANMF）で連結する。マキサーは純関数・ブラウザAPI非依存（Node でそのまま動く＝Pillow と組み合わせてユニット検証可能）
+- **マキサー最大の罠は奇数ペイロードの偶数パディング**: チャンクのペイロードが奇数長なら 0x00 を1バイト詰めて偶数境界に揃えるが、**サイズフィールドにはパディングを含めない**。忘れると「一部のデコーダでだけ壊れる」。FourCC `VP8 ` は**末尾半角スペース**（`'VP8'` 前方一致だと `VP8L` に誤マッチ）。ANIM の loopCount は uint16LE で **0=無限**。ANMF の X/Y は仕様上「実座標÷2」で格納
+- **フレームエンコードの経路**: 主経路 `canvas.toBlob('image/webp')`（Chrome/Edge/**Firefox 96+**）。**blob.type の検証必須**（非対応ブラウザは PNG に静かにフォールバックする）。Safari は `@jsquash/webp`（libwebp wasm、Squoosh 由来）にフォールバック。実行時の経路選択は毎回 `toDataURL('image/webp')` プローブ
+- **@jsquash/webp を runtime import してはいけない（ffmpeg と同型の Turbopack 罠）**: `import("@jsquash/webp")` は `npm run build`（webpack/Turbopack とも）は通るが、**dev の Turbopack ランタイムで内部の `import('./codec/enc/webp_enc_simd.js')` が破綻**する（`import.meta.url` が file:// に化けて `net::ERR_FILE_NOT_FOUND` + Emscripten グルーの `Identifier 'Module' has already been declared`、しかも import() が reject せず **uncaught でハング**）。→ **`webp_enc(.simd).js/.wasm` 4ファイルを `public/jsquash-webp/` に自己ホスト**し、**変数URLの native import**（`` `${window.location.origin}/jsquash-webp/webp_enc_simd.js` ``）で `.default` factory を取得。`locateFile` は渡さない（グルーが `import.meta.url` 基準で同ディレクトリの .wasm を自力解決する）。SIMD 判定は wasm-feature-detect と同一のプローブバイト直書き。パッケージは devDependencies に **exact pin（コピー元専用・runtime import ゼロ）**。CDN は使わない（「全処理ブラウザ内・外部送信なし」がこのアプリの前提）
+- **Blink は `toBlob` の quality 1.0 を lossless（VP8L）として扱う** → サイズが不連続に跳ね、wasm 経路（lossy のまま）と挙動が割れるため、canvas 経路のみ quality を 0.995 上限にクランプ
+- フレーム抽出は `<video>` シーク方式（`seeked` を1回ずつ await、`duration - 0.0001` エスケープ、5秒タイムアウト）。キーフレーム間隔によっては同じ絵が続きうるが GIF 代替用途では許容（rVFC 全フレーム取得は将来の改善候補）
+- 画像モード（コマ画像→アニメ）: ファイル名の**自然順ソート**（`localeCompare` numeric）、キャンバスは1枚目基準、異寸は contain 中央配置・**余白は透明のまま**（ALPH 付きフレーム → マキサーが VP8X のアルファフラグ 0x10 を自動で立てる）。コマ画像ZIPは変換時の静止WebPを**そのまま**連番格納（再エンコードなし、JSZip 動的 import）
+- **サイズは原理的に動画より大きい**（全コマ独立圧縮。AV1 24fps 8s 232KB → 12fps 96コマで 1.64MB）。効くレバーの実測: **重複コマの統合 −34%**（後半が静止する AI 生成動画では 96 コマ中 33 が直前採用コマと同一。4px ストライド・チャンネル差 >12 の画素が 0.5% 未満なら同一とみなし、エンコードせず直前コマの表示時間を延長 = ANMF はコマごと duration）/ fps 12→8 −33% / 解像度 720→480 −55% / 品質 80→70 −21%。**差分矩形（変化 bbox だけ記録）は毛が全面で揺れる素材だと効果 9%、高圧縮 method 6 は −3%** で不採用。重複判定は**キーイング前の RGB** で行う（アルファは色の関数で独立情報がなく、含めると境界ノイズで統合率が 33→25 に落ちた）
+- **背景透過（クロマキー）の正解は「外周からの領域拡張 + 正規化 Color-to-Alpha」**。固定幅ソフト帯 `dist∈[t0, t0+soft]` 方式は (1) キャラ内部の白〜クリーム（目・歯・本のページ）も抜ける（実測ページの 71% が半透明）、(2) アルファが実際の混合率と合わず白フリンジが残る（半透明画素の平均色 (239,218,185)・白寄り 87%。エンコード前の PNG でも同じ = 圧縮ではなく式の問題）。正解: 画像の外周にある「背景に近い画素」から BFS で連結領域を拡張（内側の白には届かない）→ 領域内のみ `α = maxₙ |Pₙ−Bₙ| / max(Bₙ, 255−Bₙ)` を `[tLow, 0.9]` で線形リスケール、色は `(P − B(1−α)) / α` で厳密アンブレンド。実測: ページ 100% 不透明・半透明エッジ平均 (208,96,15)=オレンジ・白寄り 0%・サイズ差なし・12ms/コマ。**GIMP 原式 `(P−B)/(255−B)` は B≈253 のとき 254 のノイズで α=0.5 になり破綻**するので正規化を変えている。許容度 UI は tLow（背景ノイズの切り捨て、既定 0.10。上限 0.9 は `KEY_SOLID_DISTANCE` 定数）。**既知のトレードオフ**: 上限 0.9 固定は「輪郭線のあるイラスト × 白背景」（この用途の主素材）に最適だが、**背景に近いパステル色の被写体（肌色 d≈0.25・水色 d≈0.32）が外周の背景と直接接していると半透明化して色シフトする**（Color-to-Alpha の原理的な限界）。実写・パステル系で問題になったら上限を tLow 相対（tLow+0.3 程度）にするか「ソフトネス」を UI に出す。実装は `lib/video-to-webp.ts` の `keyBackground()`（ImageData 非依存の純関数 → `.claude/tmp/webp-tests/keying-test.ts` で Node 検証）。背景色は `detectBackgroundColor()`（外周 2 リングの最頻色）で自動検出
+- 透過のサイズコスト: アルファ面（ロスレス）の追加で、毛のように輪郭が長いキャラは **+80〜110%**（ハードエッジなら +25%）。libwebp の alpha_quality を落としても −9% 程度で割に合わない。透明画素の RGB を近傍色で埋める dilation は効果ゼロ（exact=0 のクリーンアップで既に足りている）
+- 色: 変換自体の色差はキャラ部分で平均 1.2/255（毛のオレンジは前後で同一）。「動画と色が違う」と感じる場合の容疑は `<video>` 要素の表示経路（macOS は BT.709 動画を静止画と別ガンマで表示 → 中間調が明るい）。**この差は Chrome の CDP スクリーンショット（コンポジタ読み戻し）に写らず、`screencapture` も sandbox で不可**なので、ペインの screenshot では検証できない → ユーザーの目で比較する
+- **検証メモ（2026-09）**: 生成物の機械検証は **Pillow（ローカル導入済み）** が最適 — `is_animated / n_frames / size / info['loop'] / seek(i)+load() 後の info['duration']`（**load() しないと duration が None**）+ `getpixel` でフレーム順まで見られる。fixture の静止 WebP（lossy/lossless/RGBA）も Pillow で生成できるので **ffmpeg 不要**。E2E の fixture 動画は mediabunny（esm.sh）+ OffscreenCanvas 合成（compress の検証メモ参照）。ブラウザ生成 blob の取り出しは **base64 の手動転写は事故る**（実際に2バイト欠損した）→ ローカル受信サーバー（`python3 http.server` 拡張）に `fetch POST` で転送するか、`URL.createObjectURL` をフックして **Blob 参照ごと**保持（URL だけだと downloadBlob 後に revoke されて fetch 不能）
 
 ## アナリティクス
 - **Vercel Analytics** 導入済み（`@vercel/analytics/react`）。`app/layout.tsx` に `<Analytics />` コンポーネント配置

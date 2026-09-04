@@ -13,9 +13,6 @@
 // a frame identical to the one before it is dropped and its time handed to the
 // frame already in the animation (see the DUP_* constants), and — when the
 // caller asks — the background colour is keyed out to transparency.
-//
-// The per-frame still WebPs are handed back alongside the animation: the app
-// zips them for the "frame images" export, so no frame is ever encoded twice.
 
 import { buildAnimatedWebP } from "./webp-anim";
 import { asBlobPart, createFrameEncoder, type FrameEncoder } from "./webp-encode";
@@ -58,11 +55,9 @@ export const CANCELLED = "cancelled";
 export interface WebpConversionResult {
   /** The muxed animated WebP. */
   blob: Blob;
-  /** Every frame as a still WebP, in display order (reused for the frame ZIP). */
-  frames: Uint8Array[];
   width: number;
   height: number;
-  /** Frames the animation actually holds — the same as `frames.length`. */
+  /** Frames the animation actually holds. */
   frameCount: number;
   /** Sampled frames that were folded into the frame before them as duplicates. */
   mergedCount: number;
@@ -97,12 +92,29 @@ const BG_DETECT_MAX_EDGE = 640;
 
 /**
  * Normalised distance at which a pixel is fully foreground: anything this far
- * from the background colour is solid, and the flood fill will not cross it.
- * Fixed rather than exposed — the UI's tolerance moves the *other* end of the
- * ramp, and a ceiling below 1.0 keeps the fill from leaking through antialiased
- * outlines while staying clear of real subject colours.
+ * from the background colour is solid, and neither stage of the region growth
+ * will cross it. Fixed rather than exposed — the UI's tolerance moves the
+ * *other* end of the ramp, and a ceiling below 1.0 lets an antialiased edge that
+ * only gets *near* the subject's colour still come out fully opaque.
  */
 const KEY_SOLID_DISTANCE = 0.9;
+
+/**
+ * How far from the background colour the *flood* stage may travel. Well below
+ * KEY_SOLID_DISTANCE on purpose: antialiasing and video compression leave
+ * outline pixels sitting mid-grey (0.5–0.9 on the mascot clip), and a fill
+ * allowed through those slips into the subject and empties the whites inside it.
+ * Anything above this line is reached by the climb instead.
+ */
+const KEY_PASS_DISTANCE = 0.5;
+
+/**
+ * Minimum rise per step for the climb stage. Zero would let it creep across a
+ * flat-but-noisy subject one dithered pixel at a time; asking for ~5/255 more
+ * distance each step keeps it to the couple of pixels where the distance really
+ * is ramping up out of the background.
+ */
+const KEY_ASCENT_EPS = 0.02;
 
 /**
  * Distances are kept as bytes rather than floats: 1B/px instead of 4 across
@@ -311,12 +323,26 @@ function isDuplicateFrame(a: Uint8ClampedArray, b: Uint8ClampedArray): boolean {
  *    GIMP's Color-to-Alpha divides by `255 − B`, which blows up on a near-white
  *    backdrop: with B = 253, a pixel one step brighter than the noise floor
  *    would come out half transparent.
- * 2. **Only the region connected to the frame border is touched.** A flood fill
- *    starts at the edges and spreads through pixels that look like background,
- *    stopping at anything solid. Colours *inside* the subject — the white of an
- *    eye, a cream-coloured page — are never reached, so they stay opaque.
+ * 2. **Only the region connected to the frame border is touched, and it is
+ *    grown in two stages.** A flood fill starts at the edges and spreads
+ *    through pixels that still look like plain background
+ *    (`KEY_PASS_DISTANCE`), so colours *inside* the subject — the white of an
+ *    eye, a cream-coloured page — are never reached and stay opaque. Then that
+ *    whole region climbs outward into the soft edge, taking a neighbour only
+ *    when it is *further* from the background than the pixel it was reached
+ *    from (`KEY_ASCENT_EPS`). A climb that has to keep rising can walk up the
+ *    ramp from backdrop to outline but never back down the far side, which is
+ *    what stops the region at the outline instead of inside the face.
  *    Measured on the real clip: those pages went from 71% semi-transparent to
  *    100% opaque.
+ *
+ *    Neither stage carries this alone. Letting the fill itself run all the way
+ *    to `KEY_SOLID_DISTANCE` — which it used to — is exactly how it slipped
+ *    through mid-grey outline pixels: on the mascot clip all 12,188 white
+ *    pixels inside the face went transparent, against 52 once the climb was
+ *    split out. Stopping the fill low and just dilating the result by a pixel
+ *    instead abandons the long soft edges — 13,087 pixels of fur left behind on
+ *    another clip, against 164 with the climb.
  *
  * Pixels inside the region get their alpha from the distance rescaled out of
  * `[threshold, KEY_SOLID_DISTANCE]` and *scaled by the alpha they came in with*,
@@ -368,13 +394,16 @@ export function keyBackground(
     distance[p] = Math.round(far * KEY_DISTANCE_STEPS);
   }
 
-  // Flood fill (4-neighbour) inward from every border pixel that still looks
-  // like background. One Int32Array queue is enough: a pixel is enqueued once.
+  // Stage 1: flood fill (4-neighbour) inward from every border pixel, through
+  // pixels that still look like plain background. One Int32Array queue is
+  // enough for both stages: `region` doubles as the visited map, so a pixel is
+  // enqueued at most once across the two.
+  const passCut = KEY_PASS_DISTANCE * KEY_DISTANCE_STEPS;
   const solidCut = KEY_SOLID_DISTANCE * KEY_DISTANCE_STEPS;
   let head = 0;
   let tail = 0;
   const push = (p: number) => {
-    if (!region[p] && distance[p] < solidCut) {
+    if (!region[p] && distance[p] < passCut) {
       region[p] = 1;
       queue[tail++] = p;
     }
@@ -394,6 +423,33 @@ export function keyBackground(
     if (x < width - 1) push(p + 1);
     if (p >= width) push(p - width);
     if (p + width < total) push(p + width);
+  }
+
+  // Stage 2: climb the soft edge. Every pixel the flood reached is a starting
+  // point — they are all still in queue[0..tail), so rewinding `head` replays
+  // them for free — and a neighbour joins only if it sits further from the
+  // background than the pixel it is reached from. Strictly rising steps cannot
+  // loop, so this terminates on its own. `ascentStep` is KEY_ASCENT_EPS in the
+  // byte scale the distances are stored in (0.02 → 5).
+  const ascentStep = Math.round(KEY_ASCENT_EPS * KEY_DISTANCE_STEPS);
+  const climb = (from: number, p: number) => {
+    if (
+      !region[p] &&
+      distance[p] > distance[from] + ascentStep &&
+      distance[p] < solidCut
+    ) {
+      region[p] = 1;
+      queue[tail++] = p;
+    }
+  };
+  head = 0;
+  while (head < tail) {
+    const p = queue[head++];
+    const x = p % width;
+    if (x > 0) climb(p, p - 1);
+    if (x < width - 1) climb(p, p + 1);
+    if (p >= width) climb(p, p - width);
+    if (p + width < total) climb(p, p + width);
   }
 
   const low = clamp(opts.threshold, 0, KEY_SOLID_DISTANCE);
@@ -533,7 +589,6 @@ async function muxFrameSource(
   );
   return {
     blob: new Blob([asBlobPart(bytes)], { type: "image/webp" }),
-    frames,
     width: source.width,
     height: source.height,
     frameCount: frames.length,

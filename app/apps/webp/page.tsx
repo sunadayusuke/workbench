@@ -9,7 +9,6 @@ import { ControlPanel } from "@/components/ui/control-panel";
 import { ControlRow } from "@/components/ui/control-row";
 import { DragParam } from "@/components/ui/drag-param";
 import { NestedGroup } from "@/components/ui/nested-group";
-import { OutputMenu, OutputMenuItem } from "@/components/ui/output-menu";
 import { PanelSection } from "@/components/ui/panel-section";
 import { PushButton } from "@/components/ui/push-button";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
@@ -58,8 +57,6 @@ interface Result {
   blob: Blob;
   url: string;
   size: number;
-  /** Each frame as a still WebP — zipped on demand for the frame export. */
-  frames: Uint8Array[];
   /** Frames in the animation, after duplicates were folded together. */
   frameCount: number;
   mergedCount: number;
@@ -173,7 +170,6 @@ export default function WebpPage() {
 
   const [converting, setConverting] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
-  const [zipping, setZipping] = useState(false);
   const [showSource, setShowSource] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -387,7 +383,6 @@ export default function WebpPage() {
         blob: converted.blob,
         url,
         size: converted.blob.size,
-        frames: converted.frames,
         frameCount: converted.frameCount,
         mergedCount: converted.mergedCount,
         transparent,
@@ -424,26 +419,6 @@ export default function WebpPage() {
     if (!result) return;
     await downloadBlob(result.blob, webpName);
   }, [result, webpName]);
-
-  const handleDownloadFrames = useCallback(async () => {
-    if (!result || zipping) return;
-    setZipping(true);
-    try {
-      const JSZip = (await import("jszip")).default;
-      const zip = new JSZip();
-      // The frames are the very bytes that went into the animation — no re-encode.
-      result.frames.forEach((bytes, i) => {
-        zip.file(`frame_${String(i + 1).padStart(4, "0")}.webp`, bytes);
-      });
-      const blob = await zip.generateAsync({ type: "blob" });
-      await downloadBlob(blob, `${outputBaseName}-frames.zip`);
-    } catch {
-      // Without this the spinner would just vanish and nothing would say why.
-      setErrorKey("errorConvertFailed");
-    } finally {
-      setZipping(false);
-    }
-  }, [result, zipping, outputBaseName]);
 
   const handleReset = useCallback(() => {
     abortRef.current?.abort();
@@ -587,7 +562,7 @@ export default function WebpPage() {
                 variant="light"
                 className="shrink-0"
                 onClick={handleReset}
-                disabled={!source || converting || zipping}
+                disabled={!source || converting}
               >
                 {t.reset}
               </PushButton>
@@ -596,14 +571,9 @@ export default function WebpPage() {
                   {t.cancel}
                 </PushButton>
               ) : result ? (
-                <OutputMenu label={t.download} disabled={zipping}>
-                  <OutputMenuItem onSelect={handleDownloadWebp}>
-                    {t.webp.outputAnimated}
-                  </OutputMenuItem>
-                  <OutputMenuItem onSelect={handleDownloadFrames}>
-                    {t.webp.outputFrames}
-                  </OutputMenuItem>
-                </OutputMenu>
+                <PushButton variant="dark" className="flex-1" onClick={handleDownloadWebp}>
+                  {t.download}
+                </PushButton>
               ) : (
                 <PushButton
                   variant="dark"
@@ -615,11 +585,9 @@ export default function WebpPage() {
                 </PushButton>
               )}
             </div>
-            {(converting || zipping) && (
+            {converting && (
               <p className="mt-2 text-center text-[12px] text-wb-500 tabular-nums">
-                {converting
-                  ? `${t.webp.converting} ${progress.done} / ${progress.total}`
-                  : t.webp.zipping}
+                {t.webp.converting} {progress.done} / {progress.total}
               </p>
             )}
           </>

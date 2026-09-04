@@ -5,7 +5,7 @@ import { useLanguage } from "@/lib/i18n";
 import { LangToggle } from "@/components/ui/lang-toggle";
 import { AppPreview } from "@/components/app-preview";
 
-const APP_KEYS = ["color", "shader", "image", "compress", "easing", "gradient", "particle", "dotmap", "signal", "aurora", "badge", "qr", "webp"] as const;
+const APP_KEYS = ["compress", "qr", "webp", "badge", "color", "shader", "image", "easing", "gradient", "particle", "dotmap", "signal", "aurora"] as const;
 
 const APP_HREFS: Record<typeof APP_KEYS[number], string> = {
   color:    "/apps/color",

@@ -398,9 +398,6 @@ export interface Translations {
     framesWarning: string;
     convert: string;
     converting: string;
-    zipping: string;
-    outputAnimated: string;
-    outputFrames: string;
     result: string;
     sourceVideo: string;
     sourceImages: string;
@@ -876,9 +873,6 @@ const ja: Translations = {
     framesWarning: "フレーム数が多いため変換に時間がかかります。フレームレートを下げるか、短い動画で試してください。",
     convert: "変換",
     converting: "変換中",
-    zipping: "ZIP圧縮中...",
-    outputAnimated: "WebP — アニメーション",
-    outputFrames: "ZIP — コマ画像",
     result: "出力",
     sourceVideo: "元動画",
     sourceImages: "元画像",
@@ -1351,9 +1345,6 @@ const en: Translations = {
     framesWarning: "That many frames will take a while. Try a lower frame rate or a shorter video.",
     convert: "Convert",
     converting: "Converting",
-    zipping: "Zipping...",
-    outputAnimated: "WebP — Animation",
-    outputFrames: "ZIP — Frames",
     result: "Output",
     sourceVideo: "Source",
     sourceImages: "Source",
